@@ -1,7 +1,7 @@
 ---
 name: "terraform"
 displayName: "Terraform"
-description: "Build and manage infrastructure as code with Terraform - access registry providers, modules, policies, and HCP Terraform workspace management"
+description: "Build and manage Infrastructure as Code with Terraform - access registry providers, modules, policies, and HCP Terraform workflow management"
 keywords: ["terraform", "hashicorp", "infrastructure", "iac", "hcp", "providers", "modules", "registry"]
 author: "HashiCorp"
 ---
@@ -30,37 +30,67 @@ Access Terraform Registry APIs and HCP Terraform for IaC development. Search pro
 
 **Provider Tools:**
 
-| Tool | Purpose | Key Parameters |
-|------|---------|----------------|
-| `search_providers` | Find provider docs | `provider_name`, `provider_namespace`, `service_slug`, `provider_document_type` (resources/data-sources/guides/functions) |
-| `get_provider_details` | Get full resource docs | `provider_doc_id` (from search_providers) |
-| `get_provider_capabilities` | List provider features | `namespace`, `name` |
-| `get_latest_provider_version` | Get latest version | `namespace`, `name` |
+| Tool | Purpose | Returns |
+|------|---------|---------|
+| `search_providers` | Find provider documentation by service name | List of available documentation with IDs, titles, and categories |
+| `get_provider_details` | Retrieve complete documentation for a specific provider component | Full documentation content in markdown format |
+| `get_latest_provider_version` | Retrieve the latest version of a specific provider | The latest version of a provider |
 
 **Module Tools:**
 
-| Tool | Purpose | Key Parameters |
-|------|---------|----------------|
-| `search_modules` | Find modules | `module_query` |
-| `get_module_details` | Get module docs | `module_id` (from search_modules) |
-| `get_latest_module_version` | Get latest version | `module_publisher`, `module_name`, `module_provider` |
+| Tool | Purpose | Returns |
+|------|---------|---------|
+| `search_modules` | Find modules by name or functionality | Module details including names, descriptions, download counts, and verification status |
+| `get_module_details` | Get comprehensive module information | Complete documentation with inputs, outputs, examples, and submodules |
+| `get_latest_module_version` | Retrieve the latest version of a specific module | The latest version of a module |
 
 **Policy Tools:**
 
-| Tool | Purpose | Key Parameters |
-|------|---------|----------------|
-| `search_policies` | Find Sentinel policies | `policy_query` |
-| `get_policy_details` | Get policy docs | `terraform_policy_id` (from search_policies) |
+| Tool | Purpose | Returns |
+|------|---------|---------|
+| `search_policies` | Find Sentinel policies by topic or requirement | Policy listings with IDs, names, and download statistics |
+| `get_policy_details` | Retrieve detailed policy documentation | Policy implementation details and usage instructions |
 
-**HCP Terraform Tools** (require `TFE_TOKEN`):
+**HCP Terraform/Enterprise Tools** (require `TFE_TOKEN`):
 
-| Tool | Purpose |
-|------|---------|
-| `list_terraform_orgs`, `list_terraform_projects` | List orgs/projects |
-| `list_workspaces`, `get_workspace_details`, `create_workspace`, `update_workspace` | Workspace management |
-| `list_runs`, `get_run_details`, `create_run`, `action_run` | Run management |
-| `list_variable_sets`, `create_variable_set`, `list_workspace_variables`, `create_workspace_variable` | Variables |
-| `search_private_modules`, `search_private_providers` | Private registry |
+| Tool | Purpose | Returns |
+|------|---------|---------|
+| `list_terraform_orgs` | Fetch all Terraform organizations | List of organizations with their details |
+| `list_terraform_projects` | Fetch all Terraform projects | List of projects with their metadata |
+| `list_workspaces` | Search and list workspaces in an organization | Workspace details including configuration and status |
+| `get_workspace_details` | Get comprehensive workspace information | Complete workspace configuration, variables, and state information |
+| `create_workspace` | Create a new Terraform workspace | Confirmation of workspace creation (destructive operation) |
+| `update_workspace` | Update workspace configuration | Updated workspace configuration (potentially destructive) |
+| `delete_workspace_safely` | Delete workspace if it manages no resources | Confirmation of deletion (requires `ENABLE_TF_OPERATIONS`) |
+| `list_runs` | List or search runs in a workspace | Run details with optional filtering |
+| `get_run_details` | Get detailed information about a specific run | Complete run information including logs and status |
+| `create_run` | Create a new Terraform run | Run creation confirmation with available run types |
+| `action_run` | Perform actions on runs (apply, discard, cancel) | Action confirmation (requires `ENABLE_TF_OPERATIONS`) |
+| `search_private_modules` | Find private modules in your organization | List of private modules matching search criteria |
+| `get_private_module_details` | Get detailed private module information | Complete module details including inputs, outputs, and examples |
+| `search_private_providers` | Find private providers in your organization | List of private providers matching search criteria |
+| `get_private_provider_details` | Get detailed private provider information | Provider details including usage and version information |
+
+**Variable Management Tools** (require `TFE_TOKEN`):
+
+| Tool | Purpose | Returns |
+|------|---------|---------|
+| `list_variable_sets` | List all variable sets in an organization | Variable set details and configurations |
+| `create_variable_set` | Create a new variable set | Confirmation of variable set creation |
+| `create_variable_in_variable_set` | Add a variable to a variable set | Variable creation confirmation |
+| `delete_variable_in_variable_set` | Remove a variable from a variable set | Variable deletion confirmation |
+| `attach_variable_set_to_workspaces` | Attach variable set to workspaces | Attachment confirmation |
+| `detach_variable_set_from_workspaces` | Detach variable set from workspaces | Detachment confirmation |
+| `list_workspace_variables` | List all variables in a workspace | Workspace variable details |
+| `create_workspace_variable` | Create a variable in a workspace | Variable creation confirmation |
+| `update_workspace_variable` | Update an existing workspace variable | Updated variable configuration |
+
+**Workspace Tagging Tools** (require `TFE_TOKEN`):
+
+| Tool | Purpose | Returns |
+|------|---------|---------|
+| `create_workspace_tags` | Add tags to a workspace | Tag creation confirmation |
+| `read_workspace_tags` | Read all tags from a workspace | List of workspace tags |
 
 ## Examples
 
@@ -133,13 +163,15 @@ By default, this power only includes Terraform Registry tools (providers, module
         "hashicorp/terraform-mcp-server"
       ],
       "env": {
-        "TFE_TOKEN": "your-api-token-here"
+        "TFE_TOKEN": "${TFE_TOKEN}"
       },
       "disabled": false
     }
   }
 }
 ```
+
+This uses shell expansion to read the token from your environment. Set it with `export TFE_TOKEN=your-api-token-here` before launching Kiro.
 
 ### Terraform Enterprise (Custom Endpoint)
 
@@ -159,8 +191,8 @@ For organizations using Terraform Enterprise with a custom endpoint, add the `TF
         "hashicorp/terraform-mcp-server"
       ],
       "env": {
-        "TFE_TOKEN": "your-api-token-here",
-        "TFE_ADDRESS": "https://terraform.your-company.com"
+        "TFE_TOKEN": "${TFE_TOKEN}",
+        "TFE_ADDRESS": "${TFE_ADDRESS}"
       },
       "disabled": false
     }
@@ -192,7 +224,7 @@ For organizations using Terraform Enterprise with a custom endpoint, add the `TF
 
 ## Resources
 
-[Terraform Docs](https://developer.hashicorp.com/terraform/docs) · [Registry](https://registry.terraform.io) · [HCP Terraform](https://app.terraform.io) · [MCP Server](https://github.com/hashicorp/terraform-mcp-server)
+[Terraform MCP Docs](https://developer.hashicorp.com/terraform/mcp-server/reference) · [Registry](https://registry.terraform.io) · [HCP Terraform](https://app.terraform.io) · [MCP Server repo](https://github.com/hashicorp/terraform-mcp-server)
 
 ---
 
