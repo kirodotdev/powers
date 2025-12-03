@@ -12,7 +12,7 @@ Before proceeding, validate that the user has completed the following steps befo
 
 ## Step 1
 
-Prompt the user to configure their own Postman API key for authentication. They can either set it as an environment variable named POSTMAN_API_KEY on their system, or hardcode it directly into the MCP configuration file. To obtain an API key, they log into their Postman account, navigate to Settings → API Keys, and generate a new key with appropriate permissions for workspace, collection, and environment management. The key will be automatically used by the MCP server to authenticate all API requests to Postman's services.
+Prompt the user to configure their own Postman API key for authentication. They can either set it as an environment variable named POSTMAN_API_KEY on their system, or hardcode it directly into the user level MCP configuration file (usually at ~/.kiro/settings/mcp.json) in the power section. To obtain an API key, they log into their Postman account, navigate to Settings → API Keys, and generate a new key with appropriate permissions for workspace, collection, and environment management. The key will be automatically used by the MCP server to authenticate all API requests to Postman's services.
 
 ## Step 2
 
