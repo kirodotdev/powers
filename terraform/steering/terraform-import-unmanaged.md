@@ -1,16 +1,16 @@
 # Import Unmanaged Resources
 
-Import existing AWS resources into Terraform management using the modern `terraform query` and import block approach.
+Import existing AWS resources into Terraform management using the modern `terraform query` and import block approach. User can provide a unique identifier for a resource or list of resources to import into state.
 
-## Workflow: Discover → Generate → Filter → Import
+* Workflow: Discover → Generate → Filter → Import
 
 ## Step-by-Step Process
 
 ### 1. Check Resource List Support
 Use MCP tools to verify resource type supports list operations:
 
-```javascript
-// Check AWSCC provider capabilities
+```
+// Check provider capabilities ( AWS or AWSCC based on the request)
 get_provider_capabilities({
   "name": "awscc",
   "namespace": "hashicorp"
@@ -39,13 +39,9 @@ Run `terraform plan` and `terraform apply` for config-driven import.
 
 ## Provider Selection
 
-**Prefer AWS Provider First:**
-- Familiar syntax and patterns
-- Better compatibility with existing configurations
-
-**Use AWSCC When:**
-- AWS provider doesn't support list operations
-- Need comprehensive resource discovery
+* Prefer AWS Provider First:
+* Use AWSCC When:**
+  - AWS provider doesn't support list operations for this resource
 
 ## Configuration
 
