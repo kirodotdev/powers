@@ -22,6 +22,7 @@ Access Terraform Registry APIs and HCP Terraform for IaC development. Search pro
 
 - **getting-started** - Interactive setup guide for new projects
 - **terraform-best-practices** - Coding conventions and patterns (auto-loads for .tf files)
+- **terraform-import-unmanaged** - Import existing AWS resources into Terraform management
 
 ## Available MCP Servers
 
