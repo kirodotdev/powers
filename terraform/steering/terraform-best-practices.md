@@ -102,4 +102,6 @@ data "aws_iam_policy_document" "lambda" {
 
 **Do:** Pin versions, use modules, validate inputs, use remote state, review plans
 
-**Don't:** Hardcode secrets, use wildcards in IAM, skip version constraints, commit .tfvars with secrets
+**Don't:** Hardcode secrets, use wildcards in IAM, skip version constraints, commit .tfvars with secrets.
+
+**IMPORT WORKFLOW:** When user asks to import existing resources, ALWAYS use `terraform query` command and follow the import workflow in terraform-import-unmanaged.md. Never manually create import blocks or resource configurations for import scenarios.
