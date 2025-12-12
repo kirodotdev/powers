@@ -83,6 +83,13 @@ Documentation is available at https://kiro.dev/docs/powers/
 
 ---
 
+### spec-kit
+**Spec-Driven Development** - Complete SDD methodology with 8 workflows: Steering, Specify, Clarify, Plan, Tasks, Implement, Analyze, and Checklist. Transform specifications into executable code with multi-step refinement.
+
+**MCP Servers:** None (standalone power)
+
+---
+
 ### strands
 **Strands Agents SDK** - Build AI agents with Strands SDK using Bedrock, Anthropic, OpenAI, Gemini, or Llama models.
 
