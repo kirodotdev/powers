@@ -88,69 +88,69 @@ Present EXACTLY ONE question at a time.
 **For multiple-choice questions (MUST follow this format exactly)**:
 
 ```markdown
-**问题:** [问题背景和具体问题]
+**Question:** [Question background and specific question]
 
-**推荐:** 选项 [X] - [推荐理由]
+**Recommended:** Option [X] - [Reason for recommendation]
 
-**可选答案:**
+**Options:**
 
-► **A** - [选项 A 描述]
+► **A** - [Option A description]
 
-► **B** - [选项 B 描述]
+► **B** - [Option B description]
 
-► **C** - [选项 C 描述]
+► **C** - [Option C description]
 
-► **其他** - 提供您自己的答案（≤5 个词）
+► **Other** - Provide your own answer (≤5 words)
 
-**为什么这个问题重要:** [说明这个决策会影响哪些方面，列出 2-4 个具体影响点]
+**Why This Matters:** [Explain what aspects this decision will impact, list 2-4 specific impact points]
 
 ---
-回复选项字母（如 "A"），或输入 "yes" 接受推荐，或直接输入您的答案。
+Reply with option letter (e.g., "A"), or type "yes" to accept recommendation, or enter your own answer.
 ```
 
-**IMPORTANT**: The "为什么这个问题重要" section is **MANDATORY** for EVERY question. Do NOT skip this section.
+**IMPORTANT**: The "Why This Matters" section is **MANDATORY** for EVERY question. Do NOT skip this section.
 
-**Example (示例)**:
+**Example**:
 
 ```markdown
-**问题:** 系统应如何限制团队并发执行数量？
+**Question:** How should the system limit concurrent team executions?
 
-**推荐:** 选项 C - 动态调整更灵活，能适应不同负载场景
+**Recommended:** Option C - Dynamic adjustment is more flexible and adapts to different load scenarios
 
-**可选答案:**
+**Options:**
 
-► **A** - 不限制，允许所有团队同时执行
+► **A** - No limit, allow all teams to execute simultaneously
 
-► **B** - 限制最多 5 个团队同时执行
+► **B** - Limit to maximum 5 teams executing concurrently
 
-► **C** - 根据系统资源动态调整并发数
+► **C** - Dynamically adjust concurrency based on system resources
 
-► **其他** - 提供您自己的答案（≤5 个词）
+► **Other** - Provide your own answer (≤5 words)
 
-**为什么这个问题重要:** 这个决策会影响：
-- 系统资源的分配策略和负载均衡设计
-- 用户体验（等待时间和公平性）
-- 基础设施成本和扩展性规划
+**Why This Matters:** This decision will impact:
+- System resource allocation strategy and load balancing design
+- User experience (wait times and fairness)
+- Infrastructure costs and scalability planning
 
 ---
-回复选项字母，或输入 "yes" 接受推荐，或直接输入您的答案。
+Reply with option letter, or type "yes" to accept recommendation, or enter your own answer.
 ```
 
 **For short-answer questions (MUST follow this format exactly)**:
 
 ```markdown
-**问题:** [问题背景和具体问题]
+**Question:** [Question background and specific question]
 
-**建议答案:** [您的建议] - [简要理由]
+**Suggested Answer:** [Your suggestion] - [Brief reason]
 
-**为什么这个问题重要:** [说明这个决策会影响哪些方面，列出 2-4 个具体影响点]
+**Why This Matters:** [Explain what aspects this decision will impact, list 2-4 specific impact points]
 
 ---
-请输入简短答案（≤5 个词）。
-输入 "yes" 接受建议，或直接输入您的答案。
+Please enter a short answer (≤5 words).
+Type "yes" to accept suggestion, or enter your own answer.
 ```
 
-**IMPORTANT**: The "为什么这个问题重要" section is **MANDATORY** for short-answer questions as well.
+**IMPORTANT**: The "Why This Matters" section is **MANDATORY** for short-answer questions as well.
 
 ### Step 4: Record Answers (MANDATORY - DO NOT SKIP)
 
