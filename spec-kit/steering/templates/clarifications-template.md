@@ -7,7 +7,7 @@ Use this template when recording clarification sessions.
 # Clarification Log: [FEATURE NAME]
 
 **Feature**: [###-feature-name]
-**Session Date**: YYYY-MM-DD
+**Session Date**: [USE ACTUAL CURRENT DATE in YYYY-MM-DD format]
 **Total Questions**: [N]
 
 ---

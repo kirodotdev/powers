@@ -132,6 +132,6 @@ Use this template when creating feature specifications.
   This section is populated by the Clarify workflow.
 -->
 
-### Session YYYY-MM-DD
+### Session [ACTUAL CURRENT DATE]
 
 - Q: [question] -> A: [answer]

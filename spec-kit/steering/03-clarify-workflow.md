@@ -168,11 +168,13 @@ Use `templates/clarifications-template.md` as reference.
 
 **File Format (MUST follow exactly)**:
 
+**NOTE**: For `Session Date`, use the ACTUAL CURRENT DATE (today's date), NOT a placeholder or outdated date. Query the system for the current date if needed.
+
 ```markdown
 # Clarification Log: [FEATURE NAME]
 
 **Feature**: [###-feature-name]
-**Session Date**: YYYY-MM-DD
+**Session Date**: [USE ACTUAL CURRENT DATE in YYYY-MM-DD format]
 **Total Questions**: [N]
 
 ---
@@ -246,7 +248,7 @@ After recording in `clarifications.md`:
 
    See [clarifications.md](./clarifications.md) for full clarification log.
 
-   ### Session YYYY-MM-DD
+   ### Session [ACTUAL CURRENT DATE]
    - Q1: [brief question] -> A: [answer]
    - Q2: [brief question] -> A: [answer]
    ```
@@ -292,7 +294,7 @@ Output completion report:
 ### Session Summary
 
 **Questions asked**: [N]
-**Session date**: YYYY-MM-DD
+**Session date**: [USE ACTUAL CURRENT DATE in YYYY-MM-DD format]
 
 ### Questions & Answers
 
