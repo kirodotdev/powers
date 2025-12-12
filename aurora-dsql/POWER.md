@@ -308,7 +308,6 @@ usePower("dsql", "aurora-dsql", "execute", {
 
 **Database Name**: Always use `postgres` (only database available in DSQL)
 
-
 ## Best Practices
 
 - **SHOULD read guidelines first** - Check [development_guide.md](steering/development-guide.md) before making schema changes
@@ -316,16 +315,13 @@ usePower("dsql", "aurora-dsql", "execute", {
 - **REQUIRED: Follow DDL Guidelines** - Refer to [DDL Rules](steering/development-guide.md#schema-ddl-rules)
 - **SHALL repeatedly generate fresh tokens** - Refer to [Connection Limits](steering/development-guide.md#connection-rules)
 - **ALWAYS use ASYNC indexes** - `CREATE INDEX ASYNC` is mandatory
-- **ALWAYS validate references in code** - implement referential integrity at the application layer 
 - **MUST Serialize arrays/JSON as TEXT** - Store arrays/JSON as TEXT (comma separated, JSON.stringify)
-- **ALWAYS Include tenant_id everywhere** - First parameter in all queries for isolation
 - **ALWAYS Batch under 3,000 rows** - maintain transaction limits
 - **REQUIRED: Use parameterized queries** - Prevent SQL injection with $1, $2 placeholders
-- **ALWAYS Check dependents before delete** - Implement cascade logic in application
+- **MUST follow correct Application Layer Patterns** - when multi-tenant isolation or application referential itegrity are required; refer to [Application Layer Patterns](steering/development-guide.md#application-layer-patterns)
 - **REQUIRED use DELETE for truncation** - DELETE is the only supported operation for truncation
 - **SHOULD test any migrations** - Verify DDL on dev clusters before production
 - **SHOULD use partial indexes** - For sparse data with WHERE clauses
-- **Plan for Scale** - DSQL is designed to optimize for massive scales without latency drops
 - **Plan for Scale** - DSQL is designed to optimize for massive scales without latency drops
 - **SHOULD use connection pooling in production applications** - Refer to [Connection Pooling](steering/development-guide.md#connection-pooling-recommended)
 - **SHOULD debug with the troubleshooting guide:** - Always refer to the resources and guidelines in [troubleshooting.md](steering/troubleshooting.md)
