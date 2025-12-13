@@ -20,11 +20,9 @@ mcpServers: ["defang"]
 
 ## Validate tools work
 
-Before using Defang, ensure the following are installed and running:
+Before using Defang, ensure the Defang CLI is installed and running.
 
-- **Defang CLI**: Install via npm, Homebrew, Winget, or `eval "$(curl -fsSL s.defang.io/install)"`
-  - Verify with: `defang --version`
-  - Prefer using MCP tools
+The Defang CLI can be installed via npm, Homebrew, Winget, or `eval "$(curl -fsSL s.defang.io/install)"`
 
 ## First Steps:
 
@@ -39,8 +37,8 @@ Ensure that the step above ## Validate tools is completed before proceeding to t
 
 # Available Steering Files
 
-- `getting-started-aws`: Guide on setting up and deploying to AWS using Defang
-- `getting-started-gcp`: Guide on setting up and deploying to GCP using Defang
+- `deploying-to-aws`: Guide on setting up and deploying to AWS using Defang
+- `deploying-to-gcp`: Guide on setting up and deploying to GCP using Defang
 
 # Best Practices
 

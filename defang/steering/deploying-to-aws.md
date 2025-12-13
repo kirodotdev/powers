@@ -1,4 +1,4 @@
-# Get Started with Defang for AWS Deployments
+# Deploying to AWS with Defang
 
 ## Overview
 
@@ -6,7 +6,6 @@ This guide describes how to deploy applications to AWS with Defang.
 
 **IMPORTANT**:
 
-- The user should have already completed the onboarding steps outlined in the "Onboarding" section from the `POWER.md` file.
 - Avoid automatically estimating deployment costs, wait for the user to request it.
 
 ## Trigger
@@ -29,8 +28,6 @@ The following information will be needed to create a stack:
 - AWS Profile: the AWS profile with which the user should authenticate to AWS
 - Deployment Mode: The deployment mode is the primary parameter for managing the cost and resiliency of your application's deployment. The following deployment modes are available: `affordable`, `balanced`, and `high_availability`. The default is `affordable`. Learn more at https://docs.defang.io/docs/concepts/deployment-modes
 
-## Step 2: Select the stack
-
 If a new stack is created, make sure to select it before it can be used.
 
 ## Step 2: Deploy the project
@@ -40,5 +37,3 @@ Now that a stack is selected, the project can be deployed.
 ## Step 3: Monitor the deployment
 
 Once the deployment has begun, progress can be monitored by tailing the logs or periodically checking service status.
-
-After the defang MCP "deploy" tool call ends, present the return data from tool. Lastly, Kiro should not progress with any further steps unless user explicitly requests so.
