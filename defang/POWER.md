@@ -1,7 +1,7 @@
 ---
 name: "defang"
-displayName: "Defang with local MCP"
-description: "Deploy Docker Compose apps to your own cloud account using Defang MCP."
+displayName: "Defang"
+description: "Deploy Docker Compose apps to your own cloud account using Defang."
 keywords:
   [
     "deploy",
@@ -20,11 +20,25 @@ mcpServers: ["defang"]
 
 ## Validate tools work
 
-Before using Defang Local MCP, ensure the following are installed and running:
+Before using Defang, ensure the Defang CLI is installed and running.
 
-- **Defang CLI**: Install via npm, Homebrew, Winget, or `eval "$(curl -fsSL s.defang.io/install)"`
-  - Verify with: `defang --version`
-  - Perfer using MCP tools
+The Defang CLI can be installed via npm, Homebrew, Winget, or `eval "$(curl -fsSL s.defang.io/install)"`
+
+## First Steps:
+
+**IMPORTANT**:
+Ensure that the step above ## Validate tools is completed before proceeding to the steps below.
+
+- Ask the user which cloud provider they want to use (AWS, GCP)
+  - If AWS:
+    - Use the steering file `getting-started-aws`
+  - If GCP:
+    - Use the steering file `getting-started-gcp`
+
+# Available Steering Files
+
+- `deploying-to-aws`: Guide on setting up and deploying to AWS using Defang
+- `deploying-to-gcp`: Guide on setting up and deploying to GCP using Defang
 
 # Best Practices
 
