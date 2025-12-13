@@ -1,4 +1,4 @@
-# Get Started with Defang
+# Get Started with Defang for GCP Deployments
 
 ## Overview
 
