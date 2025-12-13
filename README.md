@@ -41,6 +41,13 @@ Documentation is available at https://kiro.dev/docs/powers/
 
 ---
 
+### defang
+**Deploy Anywhere with Defang** - Easily deploy any Docker Compose application to the cloud with Defang. Networking, compute, storage, databases, queues, LLMs - all deployed natively to the cloud of your choice - AWS, GCP, or DigitalOcean - in a secure, scalable, and cost-efficient way.
+
+**MCP Servers:** defang
+
+---
+
 ### dynatrace
 **Dynatrace Observability** - Query logs, metrics, traces, problems, and security vulnerabilities using DQL (Dynatrace Query Language) and Davis AI.
 
