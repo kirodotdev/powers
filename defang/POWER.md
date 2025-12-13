@@ -24,7 +24,23 @@ Before using Defang Local MCP, ensure the following are installed and running:
 
 - **Defang CLI**: Install via npm, Homebrew, Winget, or `eval "$(curl -fsSL s.defang.io/install)"`
   - Verify with: `defang --version`
-  - Perfer using MCP tools
+  - Prefer using MCP tools
+
+## First Steps:
+
+**IMPORTANT**:
+Ensure that the step above ## Validate tools work is completed before proceeding to the steps below.
+
+- Ask the user which cloud provider they want to use (AWS, GCP)
+  - If AWS:
+    - Use the steering file `getting-started-aws`
+  - If GCP:
+    - Use the steering file `getting-started-gcp`
+
+# Available Steering Files
+
+- `getting-started-aws`: Guide on setting up and deploying to AWS using Defang MCP
+- `getting-started-gcp`: Guide on setting up and deploying to GCP using Defang MCP
 
 # Best Practices
 
