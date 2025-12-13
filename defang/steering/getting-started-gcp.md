@@ -2,42 +2,37 @@
 
 ## Overview
 
-Guide on how to use Defang MCP server on how to set up and deploy to GCP.
+This guide describes how to deploy applications to GCP with Defang.
 
 **IMPORTANT**:
 
-- This steering file assumes that the user has already completed the onboarding steps outlined in the #Onboarding section from the defang/POWER.md file.
-- Do not call the defang MCP "estimate" tool in this steering file, as it is not part of this getting started flow.
+- The user should have already completed the onboarding steps outlined in the "Onboarding" section from the `POWER.md` file.
+- Avoid automatically estimating deployment costs, wait for the user to request it.
 
 ## Trigger
 
-When user runs the Defang power tool, or "I would like to deploy to gcp".
+When the user's project has a compose.yaml file and would like to deploy to aws.
 
-## Step 1: Check if there is a stack in the current project
+## Step 1: Select the stack to which the application will be deployed
+A stack is a single deployed instance of your project in a specific AWS account and region. You can deploy multiple stacks into the same account and region, for example: `staging` and `production`.
 
-Check if there are any stacks in the current project by using the defang MCP tool called "list-stacks".
+Check if there are any stacks in the current project.
 
-- If there is no stack, prompt user to create a new stack using defang MCP tool "create_gcp_stack".
+- If a stack is already defined, ask the user if they would like to select one of the existing stacks, or if they would like to create a new one.
+- If there are no stacks, prompt user to create a new AWS stack.
 
-A stack will need the following information:
+The following information will be needed to create a stack:
 
-- Stack name
-- Region (default: us-central1)
-- GCPProjectID
-- Mode ["affordable", "balanced", "high_availability"] (default: affordable)
+- Stack name: must be alphanumeric and must not start with a number
+- Region: for example: `us-central1`
+- Deployment Mode: The deployment mode is the primary parameter for managing the cost and resiliency of your application's deployment. The following deployment modes are available: `affordable`, `balanced`, and `high_availability`. The default is `affordable`. Learn more at https://docs.defang.io/docs/concepts/deployment-modes
 
-## Step 2: Select the stack
+If a new stack is created, make sure to select it before it can be used.
 
-Now prompt user to select the stack to deploy to by calling the defang MCP "list-stacks" tool.
+## Step 2: Deploy the project
 
-Present the user with the list of stacks to choose from.
+Now that a stack is selected, the project can be deployed.
 
-Then we set the selected stack as the active stack by calling the defang MCP "select_stack" tool.
+## Step 3: Monitor the deployment
 
-## Step 3: Deploy the project
-
-Now that the stack is selected, we can deploy the project using the defang MCP "deploy" tool.
-
-## Step 4: Post-deployment
-
-After the defang MCP "deploy" tool call ends, present the return data from tool. Lastly, Kiro should not progress with any further steps unless user explicitly requests so.
+Once the deployment has begun, progress can be monitored by tailing the logs or periodically checking service status.
