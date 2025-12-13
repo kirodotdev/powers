@@ -25,6 +25,7 @@ The following information will be needed to create a stack:
 
 - Stack name: must be alphanumeric and must not start with a number
 - Region: for example: `us-central1`
+- GCP Project ID: The GCP Project in which the application will be deployed. This must be created beforehand in the GCP Console.
 - Deployment Mode: The deployment mode is the primary parameter for managing the cost and resiliency of your application's deployment. The following deployment modes are available: `affordable`, `balanced`, and `high_availability`. The default is `affordable`. Learn more at https://docs.defang.io/docs/concepts/deployment-modes
 
 If a new stack is created, make sure to select it before it can be used.
