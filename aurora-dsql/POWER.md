@@ -1,9 +1,9 @@
 ---
 name: "aurora-dsql"
-displayName: "Deploy a distributed SQL database on AWS"
-description: "PostgreSQL-compatible serverless distributed SQL database with Aurora DSQL - manage schemas, execute queries, and handle migrations with DSQL-specific constraints"
+displayName: "Build a database with Aurora DSQL"
+description: "Build and deploy a PostgreSQL-compatible serverless distributed SQL database with Aurora DSQL - manage schemas, execute queries, and handle migrations with DSQL-specific requirements."
 keywords: ["aurora", "dsql", "postgresql", "serverless", "database", "sql", "aws", "distributed"]
-author: "Rolf Koski"
+author: "AWS"
 ---
 
 # Amazon Aurora DSQL Power
@@ -19,16 +19,16 @@ Aurora DSQL is a true serverless database with scale-to-zero capability, zero op
 - **Schema Management**: Create tables, indexes, and manage DDL operations
 - **Migration Support**: Execute schema migrations with DSQL constraints
 - **Multi-Tenant Patterns**: Built-in tenant isolation and data scoping
-- **Token-Based Auth**: Automatic AWS IAM authentication with 15-minute tokens
-- **Constraint Awareness**: Guidance on DSQL limitations and workarounds
-
-**Authentication**: Uses AWS IAM credentials with automatic token generation.
+- **Authentication**: Uses AWS IAM credentials with automatic token generation.
 
 ## Available Steering Files
 
-This power includes the following steering files:
-- **dsql** - Critical constraints, operational rules, and DSQL mandates (always loaded)
+This power includes the following steering files in [steering](./steering)
+- **development-guide** - DSQL Guidelines and Operational Rules (always loaded)
 - **dsql-examples** - Code examples and implementation patterns (load when implementing)
+- **language** - Language-based implementation examples and references (load when implementing)
+- **troubleshooting** - Common pitfalls and errors and how to solve (load when debugging an error)
+- **onboarding** - Interactive "Get Started with DSQL" guide for onboarding users step-by-step
 
 ## Available MCP Servers
 
@@ -74,6 +74,7 @@ This power includes the following steering files:
 
 Provides additional AWS context and documentation access for DSQL operations.
 
+
 ## Tool Usage Examples
 
 ### Querying Data
@@ -94,7 +95,7 @@ usePower("dsql", "aurora-dsql", "query", {
 })
 ```
 
-**Join query (no foreign keys needed):**
+**Join query:**
 ```javascript
 usePower("dsql", "aurora-dsql", "query", {
   "sql": `
@@ -158,7 +159,7 @@ usePower("dsql", "aurora-dsql", "execute", {
 })
 ```
 
-**Batch update (under 3,000 row limit):**
+**Batch update:**
 ```javascript
 usePower("dsql", "aurora-dsql", "execute", {
   "sql": `
@@ -285,84 +286,6 @@ usePower("dsql", "aurora-dsql", "execute", {
 })
 ```
 
-## Best Practices
-
-### ✅ Do:
-
-- **Execute queries directly** - Use MCP tools for ad-hoc queries, not temporary scripts
-- **Always use ASYNC indexes** - `CREATE INDEX ASYNC` is mandatory
-- **Validate references in code** - Foreign keys aren't enforced, validate in application
-- **Serialize arrays/JSON as TEXT** - Store as comma-separated or JSON.stringify
-- **Execute DDL individually** - One DDL statement per operation, no transactions
-- **Include tenant_id everywhere** - First parameter in all queries for isolation
-- **Batch under 3,000 rows** - Stay well under transaction limits
-- **Generate fresh tokens** - Tokens expire in 15 minutes
-- **Use parameterized queries** - Prevent SQL injection with $1, $2 placeholders
-- **Check dependents before delete** - Implement cascade logic in application
-
-### ❌ Don't:
-
-- **Never rely on foreign keys** - They're not enforced in DSQL
-- **Never use array/JSON columns** - Use TEXT with serialization instead
-- **Never mix DDL statements** - Execute one at a time
-- **Never use DEFAULT in ADD COLUMN** - Add column, then UPDATE separately
-- **Never create synchronous indexes** - Must use ASYNC
-- **Never cache tokens long-term** - 15-minute expiry
-- **Never allow cross-tenant queries** - Always filter by tenant_id
-- **Never use TRUNCATE** - Not supported, use DELETE
-- **Never exceed 3,000 rows** - Per transaction limit
-- **Never write throwaway scripts** - Execute queries directly
-
-## Troubleshooting
-
-### Error: "Foreign key constraint not supported"
-**Cause:** Attempting to create FOREIGN KEY constraint
-**Solution:**
-1. Remove FOREIGN KEY from DDL
-2. Implement validation in application code
-3. Check parent exists before INSERT
-4. Check dependents before DELETE
-
-### Error: "Datatype array not supported"
-**Cause:** Using TEXT[] or other array types
-**Solution:**
-1. Change column to TEXT
-2. Store as comma-separated: `"tag1,tag2,tag3"`
-3. Or use JSON.stringify: `"["tag1","tag2","tag3"]"`
-4. Deserialize in application layer
-
-### Error: "Please use CREATE INDEX ASYNC"
-**Cause:** Creating index without ASYNC keyword
-**Solution:**
-```sql
--- Wrong
-CREATE INDEX idx_name ON table(column);
-
--- Correct
-CREATE INDEX ASYNC idx_name ON table(column);
-```
-
-### Error: "Transaction exceeds 3000 rows"
-**Cause:** Modifying too many rows in single transaction
-**Solution:**
-1. Batch operations into chunks of 500-1000 rows
-2. Process each batch separately
-3. Add WHERE clause to limit scope
-
-### Error: "Token has expired"
-**Cause:** Authentication token older than 15 minutes
-**Solution:**
-1. Tokens auto-regenerate on each query
-2. Don't cache connections longer than 15 minutes
-3. Reconnect if seeing auth errors
-
-### Error: "OC001 - Concurrent DDL operation"
-**Cause:** Multiple DDL operations on same resource
-**Solution:**
-1. Wait for current DDL to complete
-2. Retry with exponential backoff
-3. Execute DDL operations sequentially
-
 ## Configuration
 
 **Authentication Required**: AWS IAM credentials
@@ -385,54 +308,31 @@ CREATE INDEX ASYNC idx_name ON table(column);
 
 **Database Name**: Always use `postgres` (only database available in DSQL)
 
-## Critical DSQL Constraints
+## Best Practices
 
-### Transaction Limits
-- **3,000 rows** maximum per transaction
-- **10 MiB** data size per write transaction
-- **5 minutes** maximum duration
-- **Repeatable Read** isolation only (cannot change)
+- **SHOULD read guidelines first** - Check [development_guide.md](steering/development-guide.md) before making schema changes
+- **SHOULD Execute queries directly** - PREFER MCP tools for ad-hoc queries 
+- **REQUIRED: Follow DDL Guidelines** - Refer to [DDL Rules](steering/development-guide.md#schema-ddl-rules)
+- **SHALL repeatedly generate fresh tokens** - Refer to [Connection Limits](steering/development-guide.md#connection-rules)
+- **ALWAYS use ASYNC indexes** - `CREATE INDEX ASYNC` is mandatory
+- **MUST Serialize arrays/JSON as TEXT** - Store arrays/JSON as TEXT (comma separated, JSON.stringify)
+- **ALWAYS Batch under 3,000 rows** - maintain transaction limits
+- **REQUIRED: Use parameterized queries** - Prevent SQL injection with $1, $2 placeholders
+- **MUST follow correct Application Layer Patterns** - when multi-tenant isolation or application referential itegrity are required; refer to [Application Layer Patterns](steering/development-guide.md#application-layer-patterns)
+- **REQUIRED use DELETE for truncation** - DELETE is the only supported operation for truncation
+- **SHOULD test any migrations** - Verify DDL on dev clusters before production
+- **Plan for Horizontal Scale** - DSQL is designed to optimize for massive scales without latency drops; refer to [Horizontal Scaling](steering/development-guide.md#horizontal-scaling-best-practice)
+- **SHOULD use connection pooling in production applications** - Refer to [Connection Pooling](steering/development-guide.md#connection-pooling-recommended)
+- **SHOULD debug with the troubleshooting guide:** - Always refer to the resources and guidelines in [troubleshooting.md](steering/troubleshooting.md)
 
-### Unsupported Features
-- Foreign key enforcement (can define but not enforced)
-- Array column types (TEXT[], INTEGER[])
-- JSON/JSONB columns
-- Triggers and stored procedures
-- Sequences (use UUIDs instead)
-- TRUNCATE command
-- Temporary tables
-- Materialized views
-- PostgreSQL extensions
+## Additional Resources
 
-### DDL Requirements
-- One DDL statement per operation
-- No DDL in transactions
-- All indexes must use ASYNC
-- Cannot add DEFAULT in ADD COLUMN
-- Cannot add NOT NULL in ADD COLUMN
-- No multi-column ALTER TABLE
+- [Aurora DSQL Documentation](https://docs.aws.amazon.com/aurora-dsql/latest/userguide/)
+- [Aurora DSQL Starter Kit](https://github.com/awslabs/aurora-dsql-starter-kit/tree/main)
+- [Code Samples Repository](https://github.com/aws-samples/aurora-dsql-samples)
+- [IAM Authentication Guide](https://docs.aws.amazon.com/aurora-dsql/latest/userguide/using-database-and-iam-roles.html)
+- [Getting Started Guide](https://docs.aws.amazon.com/aurora-dsql/latest/userguide/getting-started.html)
+- [What Comaptibility DSQL Supports with PostgreSQL](https://docs.aws.amazon.com/aurora-dsql/latest/userguide/working-with-postgresql-compatibility.html)
+- [Incompatible Postgres Features](https://docs.aws.amazon.com/aurora-dsql/latest/userguide/working-with-postgresql-compatibility-unsupported-features.html)
+- [CloudFormation Resource](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-dsql-cluster.html)
 
-### Connection Limits
-- 15-minute token expiry
-- 60-minute connection maximum
-- 10,000 connections per cluster
-- SSL required
-
-## Tips
-
-1. **Execute directly** - Use MCP tools for queries, not temporary scripts
-2. **Read constraints first** - Check dsql.md steering file before schema changes
-3. **Validate in application** - Implement foreign key logic in your code
-4. **Serialize complex types** - Store arrays/JSON as TEXT
-5. **Batch carefully** - Keep well under 3,000 row limit
-6. **Index strategically** - Use ASYNC, focus on tenant_id and common filters
-7. **Test migrations** - Verify DDL on dev cluster before production
-8. **Monitor token expiry** - Reconnect if seeing auth errors
-9. **Use partial indexes** - For sparse data with WHERE clause
-10. **Plan for scale** - DSQL is built for massive scale, design accordingly
-
----
-
-**Package:** awslabs.aurora-dsql-mcp-server
-**Source:** AWS Labs
-**License:** Apache-2.0

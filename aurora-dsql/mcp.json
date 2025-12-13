@@ -9,7 +9,8 @@
         "--region",
         "${REGION}",
         "--database_user",
-        "admin"
+        "admin",
+        "--allow-writes"
       ],
       "env": {
         "FASTMCP_LOG_LEVEL": "ERROR",

@@ -1,8 +1,10 @@
 # Aurora DSQL Implementation Examples
 
-This file contains code examples for working with Aurora DSQL. Only load this when actively implementing database code.
+This file contains code examples for working with DSQL. Only load this when actively implementing database code.
 
-For constraints and mandates, see [steering.md](./steering.md).
+For language-specific framework selection, recommendations, and examples see [language.md](./language.md). 
+
+For developer rules, see [development-guide.md](./development-guide.md).
 
 ---
 
@@ -53,11 +55,6 @@ CREATE TABLE entities (
 CREATE INDEX ASYNC idx_entities_tenant ON entities(tenant_id);
 CREATE INDEX ASYNC idx_entities_tenant_name ON entities(tenant_id, name);
 CREATE INDEX ASYNC idx_entities_created ON entities(tenant_id, created_at DESC);
-
--- Partial index for sparse data
-CREATE INDEX ASYNC idx_entities_deleted
-  ON entities(tenant_id, deleted_at)
-  WHERE deleted_at IS NOT NULL;
 ```
 
 ### ALTER TABLE Operations
@@ -231,47 +228,62 @@ class EntityRepository {
 
 ## Connection Management
 
-### Token-Based Authentication
+### RECOMMENDED: Connector
 
 ```typescript
-import { DsqlSigner } from '@aws-sdk/dsql-signer';
-import { Client } from 'pg';
+import { AuroraDSQLClient } from "@aws/aurora-dsql-node-postgres-connector";
 
-class DSQLConnection {
-  private region: string;
-  private clusterId: string;
-  private hostname: string;
+async function getConnection(
+  clusterEndpoint: string,
+  user: string,
+  region: string
+): Promise<pg.Client> {
+  const client = new AuroraDSQLClient({
+    host: clusterEndpoint,
+    user: user,
+  });
 
-  constructor(clusterId: string, region: string = 'us-east-1') {
-    this.clusterId = clusterId;
-    this.region = region;
-    this.hostname = `${clusterId}.dsql.${region}.on.aws`;
-  }
+  // Connect
+  await client.connect();
+  return client;
+}
+```
 
-  async getConnection(): Promise<Client> {
-    const token = await this.generateAuthToken();
+### Token Generation (NOT PREFERRED)
+```javascript
+import { DsqlSigner } from "@aws-sdk/dsql-signer";
 
-    return new Client({
-      host: this.hostname,
-      port: 5432,
-      database: 'postgres',  // Always 'postgres'
-      user: 'admin',
-      password: token,
-      ssl: { rejectUnauthorized: false },
-      connectionTimeoutMillis: 3000
-    });
-  }
+async function getConnection(clusterEndpoint, user, region) {
+  
+  let client = postgres({
+    host: clusterEndpoint,
+    user: user,
+    // We can pass a function to password instead of a value, which will be triggered whenever
+    // connections are opened.
+    password: async () => await getPasswordToken(clusterEndpoint, user, region),
+    database: "postgres",
+    port: 5432,
+    idle_timeout: 2,
+    ssl: {
+      rejectUnauthorized: true,
+    }
+    // max: 1, // Optionally set maximum connection pool size
+  })
 
-  private async generateAuthToken(): Promise<string> {
-    const signer = new DsqlSigner({
-      region: this.region,
-      hostname: this.hostname,
-      port: 5432,
-      username: 'admin'
-    });
+  return client;
+}
 
-    // Token expires in 15 minutes
+async function getPasswordToken(clusterEndpoint, user, region) {
+  const signer = new DsqlSigner({
+    hostname: clusterEndpoint,
+    region,
+  });
+  if (user === "admin") {
     return await signer.getDbConnectAdminAuthToken();
+  }
+  else {
+    signer.user = user;
+    return await signer.getDbConnectAuthToken()
   }
 }
 ```
@@ -405,11 +417,11 @@ abstract class TenantRepository<T> {
 
 ## Batch Operations
 
-### Safe Batching Under Limits
+### Safe Batching Within Limits
 
 ```typescript
 class BatchProcessor {
-  private readonly BATCH_SIZE = 500;  // Well under 3,000 limit
+  private readonly BATCH_SIZE = 500; // < 3000
 
   async batchInsert(tenantId: string, items: any[]) {
     const chunks = this.chunkArray(items, this.BATCH_SIZE);
@@ -515,5 +527,6 @@ async findDescendants(tenantId: string, entityId: string): Promise<Entity[]> {
 
 ## References
 
-- **Constraints:** [steering.md](./steering.md)
-- **AWS Documentation:** [Aurora DSQL User Guide](https://docs.aws.amazon.com/aurora-dsql/latest/userguide/)
+- **Developing Guide:** [development-guide.md](./development-guide.md)
+- **Onboarding Guide:** [onboarding.md](./onboarding.md)
+- **AWS Documentation:** [DSQL User Guide](https://docs.aws.amazon.com/aurora-dsql/latest/userguide/)
