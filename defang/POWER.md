@@ -29,7 +29,7 @@ Before using Defang Local MCP, ensure the following are installed and running:
 ## First Steps:
 
 **IMPORTANT**:
-Ensure that the step above ## Validate tools work is completed before proceeding to the steps below.
+Ensure that the step above ## Validate tools is completed before proceeding to the steps below.
 
 - Ask the user which cloud provider they want to use (AWS, GCP)
   - If AWS:
