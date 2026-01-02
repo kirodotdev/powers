@@ -2,10 +2,7 @@
   "mcpServers": {
     "Neon": {
       "url": "https://mcp.neon.tech/mcp",
-      "disabled": false,
-      "disabledTools": [
-        "compare_database_schema"
-      ]
+      "disabled": false
     }
   }
 }
