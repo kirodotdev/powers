@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "awslabs.valkey-mcp-server": {
+      "command": "uvx",
+      "args": [
+        "awslabs.valkey-mcp-server@latest"
+      ],
+      "env": {
+        "VALKEY_HOST": "127.0.0.1",
+        "VALKEY_PORT": "6379",
+        "FASTMCP_LOG_LEVEL": "ERROR"
+      },
+      "autoApprove": [],
+      "disabled": false
+    }
+  }
+}
