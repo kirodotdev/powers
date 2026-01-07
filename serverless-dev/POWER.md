@@ -4,6 +4,7 @@ displayName: "AWS Serverless Development"
 description: "Build production-ready serverless applications on AWS using AWS SAM, Lambda, API Gateway, EventBridge, and other serverless services following AWS best practices"
 keywords: ["serverless", "lambda", "sam", "api gateway", "eventbridge", "dynamodb", "s3", "step functions", "sqs", "sns", "cloudformation", "lambda durable functions", "workflow"]
 mcpServers: ["awslabs.aws-serverless-mcp-server", "aws-knowledge-mcp-server"]
+author: "AWS"
 ---
 
 # Onboarding
