@@ -3,7 +3,7 @@ name: "frontend-design"
 displayName: "Frontend Design"
 description: "Create distinctive, production-grade frontend interfaces that avoid generic AI aesthetics. Guides bold design choices with memorable typography, color, and motion."
 keywords: ["frontend", "design", "ui", "css", "aesthetics", "web", "react", "tailwind"]
-author: "Anthropic (adapted for Kiro)"
+author: "inariku"
 ---
 
 # Frontend Design
