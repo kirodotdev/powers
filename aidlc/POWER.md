@@ -178,7 +178,12 @@ AI-DLC will automatically:
 - [AI-DLC GitHub Repository](https://github.com/awslabs/aidlc-workflows)
 - [AI-DLC Methodology Blog](https://aws.amazon.com/blogs/)
 
+## Attribution
+
+This power is based on the [AI-DLC (AI-Driven Development Life Cycle) workflows](https://github.com/awslabs/aidlc-workflows) by AWS Labs, which is licensed under the MIT No Attribution License (MIT-0).
+
 ---
 
 **Workflow:** AI-DLC (AI-Driven Development Life Cycle)
 **Source:** AWS Labs
+**License:** MIT-0 (MIT No Attribution)
