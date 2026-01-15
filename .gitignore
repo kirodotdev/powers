@@ -1,0 +1,13 @@
+# IDE and editor settings
+.vscode/
+.idea/
+
+# Kiro settings (user-specific)
+.kiro/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Node modules (if any)
+node_modules/
