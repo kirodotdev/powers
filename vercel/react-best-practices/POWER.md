@@ -131,16 +131,27 @@ Advanced patterns for specific cases that require careful implementation.
 
 ## Available Steering Files
 
-This power includes detailed steering files for each rule category. Use these for in-depth guidance on specific optimization areas:
+This power includes detailed documentation for all 45+ rules:
 
-- **eliminating-waterfalls.md** - Critical async optimization patterns
-- **bundle-optimization.md** - Critical bundle size reduction techniques
-- **server-performance.md** - High-impact server-side optimizations
-- **client-data-fetching.md** - Client-side data fetching patterns
-- **rerender-optimization.md** - Re-render reduction strategies
-- **rendering-performance.md** - Browser rendering optimizations
-- **javascript-performance.md** - JavaScript micro-optimizations
-- **advanced-patterns.md** - Advanced React patterns
+- **all-rules.md** - Complete index of all rules organized by category with descriptions and links to individual rule files
+
+### Individual Rule Files
+
+Each rule has its own detailed file in the `rules/` directory with:
+- Detailed explanation of the optimization
+- Incorrect code examples with explanations
+- Correct code examples with explanations
+- Impact metrics and real-world context
+
+Access individual rules by category:
+- **Async/Waterfalls**: `rules/async-*.md` (5 rules)
+- **Bundle Size**: `rules/bundle-*.md` (5 rules)
+- **Server Performance**: `rules/server-*.md` (5 rules)
+- **Client Data Fetching**: `rules/client-*.md` (2 rules)
+- **Re-render Optimization**: `rules/rerender-*.md` (7 rules)
+- **Rendering Performance**: `rules/rendering-*.md` (7 rules)
+- **JavaScript Performance**: `rules/js-*.md` (12 rules)
+- **Advanced Patterns**: `rules/advanced-*.md` (2 rules)
 
 ## Best Practices
 
@@ -178,9 +189,3 @@ When reviewing React/Next.js code, check for:
 - [SWR Documentation](https://swr.vercel.app)
 - [How we optimized package imports in Next.js](https://vercel.com/blog/how-we-optimized-package-imports-in-next-js)
 - [How we made the Vercel dashboard twice as fast](https://vercel.com/blog/how-we-made-the-vercel-dashboard-twice-as-fast)
-
----
-
-**Version:** 1.0.0  
-**Source:** Vercel Engineering  
-**License:** MIT

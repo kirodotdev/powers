@@ -306,10 +306,3 @@ Consider integrating automated accessibility testing:
 ### Issue: Conflicting recommendations
 
 **Solution:** When guidelines conflict with project requirements, document the decision and reasoning. Accessibility should rarely be compromised.
-
----
-
-**Version:** 1.0.0  
-**Source:** Vercel  
-**License:** MIT  
-**Guidelines URL:** https://raw.githubusercontent.com/vercel-labs/web-interface-guidelines/main/command.md

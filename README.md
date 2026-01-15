@@ -124,8 +124,6 @@ Powers ported from [Vercel Agent Skills](https://github.com/vercel-labs/agent-sk
 
 **Categories:** Accessibility, Focus States, Forms, Animation, Typography, Images, Performance, Navigation & State, Dark Mode & Theming, Touch & Interaction, Locale & i18n
 
-**Guidelines Source:** https://raw.githubusercontent.com/vercel-labs/web-interface-guidelines/main/command.md
-
 ---
 
 
