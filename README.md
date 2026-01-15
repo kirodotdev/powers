@@ -104,6 +104,30 @@ Documentation is available at https://kiro.dev/docs/powers/
 
 ---
 
+## Vercel Powers
+
+Powers ported from [Vercel Agent Skills](https://github.com/vercel-labs/agent-skills).
+
+### vercel/react-best-practices
+**React Best Practices** - React and Next.js performance optimization guidelines from Vercel Engineering. Contains 45+ rules across 8 categories, prioritized by impact to guide code review, refactoring, and optimization.
+
+**MCP Servers:** None (Knowledge Base Power)
+
+**Categories:** Eliminating Waterfalls (CRITICAL), Bundle Size Optimization (CRITICAL), Server-Side Performance (HIGH), Client-Side Data Fetching (MEDIUM-HIGH), Re-render Optimization (MEDIUM), Rendering Performance (MEDIUM), JavaScript Performance (LOW-MEDIUM), Advanced Patterns (LOW)
+
+---
+
+### vercel/web-design-guidelines
+**Web Design Guidelines** - Review UI code for compliance with web interface best practices. Audits code for 100+ rules covering accessibility, performance, UX, forms, animations, typography, images, navigation, dark mode, touch interactions, and internationalization.
+
+**MCP Servers:** None (Knowledge Base Power)
+
+**Categories:** Accessibility, Focus States, Forms, Animation, Typography, Images, Performance, Navigation & State, Dark Mode & Theming, Touch & Interaction, Locale & i18n
+
+**Guidelines Source:** https://raw.githubusercontent.com/vercel-labs/web-interface-guidelines/main/command.md
+
+---
+
 
 ## Security
 
