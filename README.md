@@ -84,6 +84,13 @@ Documentation is available at https://kiro.dev/docs/powers/
 
 ---
 
+### polar
+**Power Builder** - Build monetization platform for developers - manage products, subscriptions, payments, and customer billing.
+
+**MCP Servers:** polar
+
+---
+
 ### saas-builder
 **SaaS Builder** - Build production-ready multi-tenant SaaS applications with serverless architecture, integrated billing, and enterprise-grade security.
 

@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "polar": {
+      "command": "npx",
+      "args": ["-y", "@polar-sh/mcp-server-polar"],
+      "env": {
+        "POLAR_ACCESS_TOKEN": "${POLAR_ACCESS_TOKEN}",
+        "POLAR_ENVIRONMENT": "${POLAR_ENVIRONMENT:-sandbox}"
+      }
+    }
+  }
+}
+
