@@ -112,6 +112,13 @@ Documentation is available at https://kiro.dev/docs/powers/
 
 ---
 
+### valkey 
+**Valkey/Redis Integration** - Execute commands, manage data structures, and administer Valkey/Redis instances directly from Kiro.
+
+**MCP Servers:** awslabs.valkey-mcp-server
+
+---
+
 
 ## Security
 
