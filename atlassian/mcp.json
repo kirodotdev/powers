@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "atlassian": {
+      "url": "https://mcp.atlassian.com/v1/sse",
+      "disabled": false,
+      "disabledTools": []
+    }
+  }
+}
