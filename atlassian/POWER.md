@@ -3,7 +3,7 @@ name: "atlassian"
 displayName: "Atlassian Admin"
 description: "Manage Jira projects, issues, and sprints alongside Confluence spaces and pages - plan work, track bugs, and document everything using the official Atlassian MCP server"
 keywords: ["atlassian", "jira", "confluence", "project-management", "issues", "sprints", "documentation", "wiki", "tickets", "agile"]
-author: "stevenjmiklovic"
+author: "Steven J Miklovic"
 ---
 
 # Atlassian Admin Power
