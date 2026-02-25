@@ -1,9 +1,9 @@
 ---
 name: "arm-soc-migration"
-displayName: "Kiro Arm SoC Migration Power"
+displayName: "Perform Migration between Arm SoC"
 description: "Guides migration of code from one Arm SoC to another, with architecture-aware analysis and safe migration practices."
 keywords: ["arm", "soc", "migration", "embedded", "cortex", "neon", "sve", "hal", "platform", "cross-compile"]
-author: "Daniel Schleicher"
+author: "ARM"
 ---
 
 # Kiro Arm SoC Migration Power
@@ -1270,6 +1270,7 @@ Advanced users can modify `mcp.json` to:
 - Modify environment variables
 
 ---
-
 **MCP Server:** arm-mcp-server
 **Package:** `arm-mcp-server`
+**License**: Apache-2.0
+**Support contact**: mcpserver@arm.com
