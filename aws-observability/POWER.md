@@ -6,6 +6,66 @@ keywords: ["cloudwatch", "logs", "metrics", "traces", "alarms", "alerts", "monit
 author: "AWS"
 ---
 
+# ⚠️ CRITICAL: ALWAYS LOAD STEERING FILES FIRST
+
+**BEFORE using ANY tools, you MUST:**
+
+1. **Identify the user's scenario** from their request
+2. **Load the appropriate steering file** using `kiroPowers` action with `readSteering`
+3. **Follow the steering file's workflow** before making tool calls
+
+## Scenario Detection & Steering File Selection
+
+### 🚨 Incident Response & Troubleshooting → `incident-response.md`
+
+**Load when user mentions:**
+- Service health: "unhealthy", "down", "broken", "failing", "degraded", "not working"
+- Investigation: "investigate", "troubleshoot", "debug", "what's wrong", "help me check", "root cause"
+- Performance: "slow", "timeout", "errors", "high latency", "issues", "performance problems"
+- Incidents: "outage", "incident", "production issue", "emergency", "sev1", "sev2"
+- Vague concerns: "something's wrong", "having problems", "seems off"
+
+### 📊 Log Analysis → `log-analysis.md`
+
+**Load when user mentions:**
+- "query logs", "search logs", "find in logs", "show me logs"
+- "log patterns", "parse logs", "filter logs", "extract from logs"
+- "aggregate logs", "log statistics", "count errors"
+
+### 🔔 Alerting Setup → `alerting-setup.md`
+
+**Load when user mentions:**
+- "set up monitoring", "create alarms", "configure alerts"
+- "improve alarms", "reduce false positives", "alarm fatigue"
+
+### � Performance Monitoring → `performance-monitoring.md`
+
+**Load when user mentions:**
+- "monitor performance", "check service health", "service metrics"
+- "distributed traces", "trace analysis", "X-Ray"
+- "SLOs", "Service Level Objectives", "error rates", "latency"
+
+### � Security Auditing → `security-auditing.md`
+
+**Load when user mentions:**
+- "security audit", "compliance", "CloudTrail"
+- "who did what", "track changes", "API activity"
+- "IAM changes", "unauthorized access"
+
+### 🔍 Observability Gaps → `observability-gap-analysis.md`
+
+**Load when user mentions:**
+- "audit codebase", "check instrumentation", "observability gaps"
+- "missing logs", "improve observability"
+
+### ⚙️ Application Signals Setup → `application-signals-setup.md`
+
+**Load when user mentions:**
+- "enable Application Signals", "set up monitoring", "instrument service"
+- "auto-instrumentation", "getting started"
+
+---
+
 # Onboarding
 
 ## Prerequisites
@@ -18,7 +78,7 @@ author: "AWS"
    - `logs:*` for CloudWatch Logs operations (includes CloudTrail log querying)
    - `xray:*` for distributed tracing
    - `cloudtrail:*` for CloudTrail queries
-   - `application-signals:*` for Application Signals (e.g., `ListServices`, `GetService`, `ListServiceOperations`, `ListServiceLevelObjectives`, `GetServiceLevelObjective`, `BatchGetServiceLevelObjectiveBudgetReport`, `ListAuditFindings`, `ListEntityEvents`, `ListServiceStates`)
+   - `application-signals:*` for Application Signals
    - `synthetics:GetCanary`, `synthetics:GetCanaryRuns` for canary analysis
    - `s3:GetObject`, `s3:ListBucket` for canary artifacts
    - `iam:GetRole`, `iam:ListAttachedRolePolicies`, `iam:GetPolicy`, `iam:GetPolicyVersion` for the enablement guide
@@ -55,7 +115,7 @@ The comprehensive AWS observability platform combining monitoring, troubleshooti
 - **CloudWatch Logs** - Query and analyze logs using CloudWatch Logs Insights
 - **Metrics & Alarms** - Metric querying with Metrics Insights and intelligent alarm recommendations
 - **Application Signals** - APM with distributed tracing, service maps, SLOs, and enablement guides
-- **Codebase Observability Analysis** - Automated analysis of codebases to identify observability gaps and provide actionable recommendations
+- **Codebase Observability Analysis** - Automated analysis of codebases to identify observability gaps
 - **CloudTrail Integration** - Security auditing and compliance tracking
 - **AWS Documentation** - Direct access to official AWS docs for troubleshooting
 
@@ -154,43 +214,7 @@ See `cloudtrail-data-source-selection.md` steering file for detailed decision tr
 - Detecting unauthorized access attempts
 - Root cause analysis for configuration changes
 
-### 5. Cost Explorer
-
-**Primary Use Case**: AWS cost analysis, forecasting, and optimization
-
-**Key Features**:
-- Cost and usage data retrieval with flexible grouping
-- Cost forecasting based on historical patterns
-- Cost comparison between time periods
-- Cost driver analysis to identify spending changes
-- Support for filtering by service, region, tags, and more
-- Dimension and tag value discovery
-
-**When to Use**:
-- Analyzing AWS spending patterns
-- Forecasting future costs
-- Identifying cost optimization opportunities
-- Comparing costs across time periods
-- Understanding what's driving cost changes
-- Budget planning and cost allocation
-
-### 6. AWS Documentation Access
-
-**Primary Use Case**: Quick access to official AWS documentation
-
-**Key Features**:
-- Search AWS documentation directly
-- Read documentation pages in markdown format
-- Get content recommendations for related topics
-- Access service-specific guides and API references
-
-**When to Use**:
-- Looking up AWS service documentation
-- Understanding API parameters and behavior
-- Finding best practices and tutorials
-- Troubleshooting with official guidance
-
-### 7. Codebase Observability Analysis
+### 5. Codebase Observability Analysis
 
 **Primary Use Case**: Automated analysis of application codebases to identify observability gaps
 
@@ -212,403 +236,96 @@ See `cloudtrail-data-source-selection.md` steering file for detailed decision tr
 - Establishing observability baselines
 - Training teams on observability patterns
 
+### 6. AWS Documentation Access
+
+**Primary Use Case**: Quick access to official AWS documentation
+
+**Key Features**:
+- Search AWS documentation directly
+- Read documentation pages in markdown format
+- Get content recommendations for related topics
+- Access service-specific guides and API references
+
+**When to Use**:
+- Looking up AWS service documentation
+- Understanding API parameters and behavior
+- Finding best practices and tutorials
+- Troubleshooting with official guidance
+
 ## Available Steering Files
 
+The following steering files provide detailed workflows for each scenario. **Always load the appropriate file first** using the decision tree at the top of this document.
+
 ### 1. `incident-response.md`
-**Troubleshooting and incident management workflows**
-
-Load this when the user needs to:
-- Respond to production incidents
-- Troubleshoot application errors or performance issues
-- Investigate service outages
-- Perform root cause analysis
-- Create incident reports and postmortems
-
-Do NOT load this when:
-- General log querying without an active incident (use `log-analysis.md`)
-- Routine performance monitoring or SLO tracking (use `performance-monitoring.md`)
-- Standalone security audits or compliance reviews (use `security-auditing.md`)
-- Setting up or configuring alarms (use `alerting-setup.md`)
+Comprehensive incident response framework with multi-tool correlation strategies.
 
 ### 2. `log-analysis.md`
-**Log querying and analysis patterns**
-
-Load this when the user needs to:
-- Query logs using CloudWatch Logs Insights
-- Search and filter log events
-- Extract structured data from JSON logs
-- Aggregate log data with statistics
-- Troubleshoot application issues using logs
-
-Do NOT load this when:
-- Active incident response with multi-tool correlation (use `incident-response.md`)
-- CloudTrail-specific security analysis (use `security-auditing.md`)
-- Application Signals APM metrics and traces (use `performance-monitoring.md`)
+CloudWatch Logs Insights query patterns and log analysis techniques.
 
 ### 3. `alerting-setup.md`
-**Creating intelligent alarms and notifications**
-
-Load this when the user needs to:
-- Set up new CloudWatch alarms
-- Improve existing alarm configurations
-- Reduce alarm fatigue and false positives
-- Create intelligent alerting strategies
-- Implement SLO-based alerting
-
-Do NOT load this when:
-- Investigating or responding to active alarms (use `incident-response.md`)
-- General metric analysis without alarm creation (use `performance-monitoring.md`)
+Intelligent alarm configuration and notification strategies.
 
 ### 4. `performance-monitoring.md`
-**Application Signals APM and performance tracking**
-
-Load this when the user needs to:
-- Monitor microservices health and performance
-- Analyze distributed traces
-- Set up Service Level Objectives (SLOs)
-- Troubleshoot performance issues
-- Understand service dependencies
-- Track error rates and latency
-
-Do NOT load this when:
-- Active incident response requiring multi-tool triage (use `incident-response.md`)
-- Log-only analysis without Application Signals (use `log-analysis.md`)
-- Setting up or configuring alarms (use `alerting-setup.md`)
+Application Signals APM workflows and performance optimization.
 
 ### 5. `security-auditing.md`
-**CloudTrail security analysis and compliance**
-
-Load this when the user needs to:
-- Investigate security incidents
-- Track API activity and resource changes
-- Perform compliance audits
-- Monitor IAM changes
-- Detect unauthorized access attempts
-- Generate audit reports
-
-Do NOT load this when:
-- Active incident response requiring multi-tool triage (use `incident-response.md`)
-- General application log analysis (use `log-analysis.md`)
+CloudTrail security analysis and compliance auditing.
 
 ### 6. `observability-gap-analysis.md`
-**Codebase observability analysis and recommendations**
-
-Load this when the user needs to:
-- Audit a codebase for observability best practices
-- Identify missing instrumentation points
-- Analyze logging patterns and gaps
-- Review metrics collection coverage
-- Assess distributed tracing implementation
-- Get recommendations for observability improvements
+Codebase instrumentation assessment and recommendations.
 
 ### 7. `application-signals-setup.md`
-**Step-by-step Application Signals enablement**
-
-This steering file provides comprehensive guidance for setting up AWS Application Signals using the power's enablement guide feature. Always start by getting the official enablement guide from AWS using the `get_enablement_guide` tool.
+Step-by-step Application Signals enablement guide.
 
 ### 8. `cloudtrail-data-source-selection.md`
-**CloudTrail data source priority and selection strategy**
-
-Referenced by `security-auditing.md` for CloudTrail data access priority logic. Not intended for direct loading in response to user queries.
+CloudTrail data source priority logic (referenced by security-auditing.md).
 
 ## Quick Start Examples
 
 ### Example 1: Investigate High Error Rate
 
 ```
-1. Check active alarms for service health
-   - Identify services with elevated error rates
-   - View service dependencies and call paths in Application Signals
-
-2. Query CloudWatch Logs
-   - Find error patterns and stack traces
-   - Correlate errors across multiple services
-
-3. Review CloudTrail for recent changes
-   - Check for deployments or configuration changes
-   - Identify who made changes and when
-
-4. Analyze traces for root cause
-   - Examine slow or failed traces
-   - Identify bottlenecks in service dependencies
-
-5. Check AWS Documentation
-   - Look up error codes and troubleshooting steps
-   - Review best practices for the affected services
+1. Load incident-response.md steering file
+2. Follow the structured workflow:
+   - Check active alarms for service health
+   - Query CloudWatch Logs for error patterns
+   - Review CloudTrail for recent changes
+   - Analyze traces for root cause
+   - Check AWS Documentation for error codes
 ```
 
 ### Example 2: Performance Optimization
 
 ```
-1. Analyze CloudWatch Metrics
-   - Review CPU, memory, and latency metrics
-   - Identify performance trends and anomalies
-   - Get recommended alarm thresholds
-
-2. Query Application Signals
-   - Check P95/P99 latency for services
-   - Analyze service maps for bottlenecks
-   - Review SLO compliance
-
-3. Examine logs for patterns
-   - Calculate percentiles and aggregations
-   - Identify slow operations and outliers
+1. Load performance-monitoring.md steering file
+2. Follow the workflow:
+   - Analyze CloudWatch Metrics
+   - Query Application Signals for P95/P99 latency
+   - Examine logs for patterns
 ```
 
 ### Example 3: Security Audit
 
 ```
-1. Query CloudTrail events
-   - Track IAM changes and permission modifications
-   - Identify unauthorized access attempts
-   - Review resource deletions
-
-2. Correlate with CloudWatch Logs
-   - Connect CloudTrail events with application logs
-   - Analyze access patterns
-
-3. Check Application Signals
-   - Review service-to-service authentication
-   - Identify unusual traffic patterns
-
-4. Document findings
-   - Access AWS documentation for security best practices
+1. Load security-auditing.md steering file
+2. Follow the workflow:
+   - Query CloudTrail events
+   - Correlate with CloudWatch Logs
+   - Check Application Signals for unusual patterns
+   - Document findings with AWS documentation
 ```
 
 ### Example 4: Codebase Observability Gap Audit
 
 ```
-1. Analyze codebase structure
-   - Identify entry points (API handlers, Lambda functions)
-   - Map critical business operations
-   - Review error handling patterns
-
-2. Assess logging coverage
-   - Check for structured logging implementation
-   - Identify missing correlation IDs
-   - Find silent failures and empty catch blocks
-
-3. Evaluate metrics instrumentation
-   - Review custom CloudWatch metrics
-   - Check business metric coverage
-   - Assess performance metric collection
-
-4. Review distributed tracing
-   - Verify X-Ray SDK integration
-   - Check trace context propagation
-   - Evaluate subsegment coverage
-
-5. Generate actionable report
-   - Prioritize gaps by severity
-   - Provide code examples for fixes
-   - Estimate implementation effort
+1. Load observability-gap-analysis.md steering file
+2. Follow the workflow:
+   - Analyze codebase structure
+   - Assess logging coverage
+   - Evaluate metrics instrumentation
+   - Review distributed tracing
+   - Generate actionable report
 ```
-
-## Log Query Patterns
-
-The CloudWatch MCP server uses CloudWatch Logs Insights query syntax via the `execute_log_insights_query` tool. It also provides `analyze_log_group` for automated pattern and anomaly detection.
-
-### Basic Error Search
-
-```
-fields @timestamp, @message, @logStream, level
-| filter level = "ERROR"
-| sort @timestamp desc
-| limit 100
-```
-
-### Performance Analysis with Aggregations
-
-```
-stats count() as requestCount,
-      avg(duration) as avgDuration,
-      pct(duration, 95) as p95Duration,
-      pct(duration, 99) as p99Duration
-by endpoint
-| filter requestCount > 10
-| sort p95Duration desc
-```
-
-### JSON Field Extraction
-
-```
-fields @timestamp, @message
-| parse @message '{"userId": "*", "action": "*"}' as userId, action
-| stats count() as actionCount by userId, action
-| sort actionCount desc
-| limit 100
-```
-
-### Error Rate Over Time
-
-```
-stats count() as total,
-      sum(statusCode >= 500) as errors,
-      (sum(statusCode >= 500) / count()) * 100 as errorRate
-by bin(5m) as timeWindow
-| sort timeWindow
-```
-
-### Multi-Log-Group Query
-
-Use the `log_group_identifiers` parameter to query across multiple log groups:
-```
-fields @timestamp, @message, @logStream
-| filter @message like /ERROR|Exception/
-| sort @timestamp desc
-| limit 50
-```
-
-## Common Observability Workflows
-
-### Workflow 1: Complete Incident Investigation
-
-1. **Identify the Issue**
-   - Check Application Signals for service health and SLO breaches
-   - Review active CloudWatch alarms
-   - Analyze metric trends for anomalies
-
-2. **Gather Evidence**
-   - Query logs to find error patterns
-   - Examine distributed traces for failed requests
-   - Check CloudTrail for recent changes
-
-3. **Root Cause Analysis**
-   - Correlate logs, metrics, and traces
-   - Analyze service dependencies and bottlenecks
-   - Review AWS documentation for known issues
-
-4. **Document and Resolve**
-   - Create runbooks for future incidents
-   - Set up preventive alarms
-
-### Workflow 2: Performance Optimization
-
-1. **Baseline Current Performance**
-   - Collect metrics for all services
-   - Analyze Application Signals SLOs
-   - Query logs for latency patterns
-
-2. **Identify Bottlenecks**
-   - Use log aggregations to find slow operations
-   - Examine traces for long-running spans
-   - Check service maps for dependency issues
-
-3. **Implement and Monitor**
-   - Set up alarms with recommended thresholds
-   - Track SLO compliance
-
-### Workflow 3: Security and Compliance Audit
-
-1. **Collect Audit Data**
-   - Query CloudTrail for IAM changes
-   - Track resource modifications
-   - Identify access patterns
-
-2. **Analyze Activity**
-   - Correlate CloudTrail with application logs
-   - Check for unauthorized access attempts
-   - Review permission changes
-
-3. **Generate Reports**
-   - Document findings with AWS documentation references
-   - Track compliance metrics
-
-4. **Remediate and Monitor**
-   - Set up CloudTrail alarms for critical events
-   - Implement preventive controls
-   - Establish ongoing monitoring
-
-## Best Practices
-
-### CloudWatch Logs
-1. Always include timestamp filters to minimize scan volume
-2. Use specific log groups to improve query performance
-3. Use LIMIT to prevent overwhelming result sets
-4. Use `analyze_log_group` for automated pattern and anomaly detection
-5. Test queries on small time windows first
-6. Leverage `stats` and `parse` commands for structured analysis
-
-### CloudWatch Metrics & Alarms
-1. Use appropriate statistics for different metric types:
-   - `Sum` for count metrics (Errors, Invocations)
-   - `Average` for utilization metrics (CPUUtilization)
-   - Percentiles (p95, p99) for latency metrics
-2. Leverage Metrics Insights for complex queries
-3. Use recommended alarm configurations as starting points
-4. Monitor alarm history to tune thresholds
-
-### Application Signals
-1. Instrument applications with AWS X-Ray SDK
-2. Define meaningful service names with environment prefixes
-3. Set realistic SLOs aligned with business requirements
-4. Use adaptive sampling for high-volume services
-5. Always capture error traces for debugging
-
-### CloudTrail
-1. Enable CloudTrail in all regions
-2. **Consider CloudTrail Lake** for long-term retention and SQL-based analysis
-3. Integrate with CloudWatch Logs for real-time analysis and alerting
-4. Set up alerts for critical security events
-5. Regular audit log reviews
-6. Use the data source priority approach for efficient querying
-
-## Integration Patterns
-
-### Logs + Metrics + Traces
-```
-# Correlate logs with Application Signals traces
-fields @timestamp, requestId, traceId, @message, duration, statusCode
-| filter traceId like /./
-| filter duration > 1000
-| sort @timestamp desc
-| limit 50
-```
-
-### CloudTrail + Logs
-```
-# Find errors correlated with recent changes
-fields @timestamp, @message, errorType, requestId
-| filter level = "ERROR"
-| sort @timestamp desc
-| limit 50
-```
-Then cross-reference timestamps with CloudTrail events using the data source priority:
-1. Query CloudTrail Lake event data store (if available)
-2. Query CloudWatch Logs for CloudTrail events (if integrated)
-3. Use `lookup_events` API (fallback)
-
-This helps identify configuration changes that may have caused errors.
-
-### Metrics + Cost
-Use CloudWatch Metrics to identify high-utilization resources, then analyze their costs in Cost Explorer to find optimization opportunities.
-
-## Troubleshooting
-
-### Common Issues
-
-1. **"Insufficient permissions" errors**
-   - Verify IAM policies include all required actions
-   - Check resource-based policies on log groups
-   - Ensure Cost Explorer is enabled in your account
-
-2. **"Query timeout" errors**
-   - Reduce time range in queries
-   - Use more specific filters
-   - Query fewer log groups at once
-
-3. **"No results found"**
-   - Verify log group names and ARNs are correct
-   - Check time range matches your data
-   - Ensure field names are case-sensitive correct
-
-4. **MCP server connection issues**
-   - Verify uvx is installed: `pip install uv`
-   - Check AWS credentials: `aws sts get-caller-identity`
-   - Review MCP server logs (set FASTMCP_LOG_LEVEL=DEBUG)
-
-5. **Audit log file location**
-   - The `cloudwatch-applicationsignals-mcp-server` supports an `AUDITOR_LOG_PATH` environment variable that controls where audit tools write their log files (defaults to `/tmp`)
 
 ## Available MCP Servers
 
