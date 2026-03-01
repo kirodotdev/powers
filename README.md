@@ -35,6 +35,13 @@ Documentation is available at https://kiro.dev/docs/powers/
 
 ---
 
+### aws-sam
+**Build serverless applications with AWS SAM** - Build, test, and deploy serverless applications using AWS Serverless Application Model (SAM) with local development workflow and MCP tooling.
+
+**MCP Servers:** awslabs.aws-serverless-mcp-server, fetch
+
+---
+
 ### cloud-architect
 **Build infrastructure on AWS** - Build AWS infrastructure with CDK in Python following AWS Well-Architected framework best practices.
 

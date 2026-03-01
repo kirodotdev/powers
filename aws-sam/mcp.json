@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "awslabs.aws-serverless-mcp-server": {
+      "command": "uvx",
+      "args": [
+        "awslabs.aws-serverless-mcp-server@latest"
+      ],
+      "disabled": false,
+      "autoApprove": []
+    },
+    "fetch": {
+      "command": "uvx",
+      "args": ["mcp-server-fetch"],
+      "env": {},
+      "disabled": false
+    }
+  }
+}
