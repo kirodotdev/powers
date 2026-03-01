@@ -63,6 +63,13 @@ Documentation is available at https://kiro.dev/docs/powers/
 
 ---
 
+### frontend-design
+**Frontend Design** - Create distinctive, production-grade frontend interfaces that avoid generic AI aesthetics. Guides bold design choices with memorable typography, color, and motion.
+
+**MCP Servers:** None (Knowledge Base Power)
+
+---
+
 ### figma
 **Design to Code with Figma** - Connect Figma designs to code components - automatically generate design system rules, map UI components to Figma designs, and maintain design-code consistency.
 
