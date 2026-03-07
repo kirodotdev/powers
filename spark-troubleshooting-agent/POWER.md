@@ -34,7 +34,7 @@ Before proceeding, ensure the following are installed:
 
 ## Step 2: Deploy CloudFormation Stack
 
-**Note**: If you already have a role configured with `sagemaker-unified-studio-mcp` permissions, please ignore. However, it is recommended to deploy the stack as will contain latest updatest for permissions and role policies
+**Note**: If the customer already has a role configured with `sagemaker-unified-studio-mcp` permissions, please ignore this step, get the AWS CLI profile for that role from the customer and configure your (Kiro's) mcp.json file (typically located at `~/.kiro/settings/mcp.json`) with that profile. However, it is recommended to deploy the stack as will contain latest updates for permissions and role policies
 
 1. Log into the AWS Console with the role your AWS CLI is configured with - this role must have permissions to deploy Cloud Formation stacks.
 1. Navigate to [troubleshooting agent setup page](https://docs.aws.amazon.com/emr/latest/ReleaseGuide/spark-troubleshooting-agent-setup.html#spark-troubleshooting-agent-setup-resources).
