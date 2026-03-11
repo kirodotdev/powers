@@ -91,6 +91,13 @@ Documentation is available at https://kiro.dev/docs/powers/
 
 ---
 
+### react-best-practices
+**React Best Practices** - React and Next.js performance optimization guidelines from Vercel Engineering. 45 rules across 8 categories, prioritized by impact from CRITICAL to LOW.
+
+**MCP Servers:** None (Knowledge Base Power)
+
+---
+
 ### saas-builder
 **SaaS Builder** - Build production-ready multi-tenant SaaS applications with serverless architecture, integrated billing, and enterprise-grade security.
 
