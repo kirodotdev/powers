@@ -6,6 +6,7 @@ Documentation is available at https://kiro.dev/docs/powers/
 
 ## Available powers
 
+
 ### aws-agentcore
 **Build an agent with Amazon Bedrock AgentCore** - Build, test, and deploy AI agents using AWS Bedrock AgentCore with local development workflow. Amazon Bedrock AgentCore is an agentic platform for building, deploying, and operating effective agents.
 
@@ -123,6 +124,13 @@ Documentation is available at https://kiro.dev/docs/powers/
 **Deploy infrastructure with Terraform** - Build and manage Infrastructure as Code with Terraform - access registry providers, modules, policies, and HCP Terraform workflow management.
 
 **MCP Servers:** terraform (Docker stdio)
+
+---
+
+### appwrite
+**Appwrite Backend Platform** - Build backend services with Appwrite - databases, authentication, storage, functions, and messaging for web and mobile apps.
+
+**MCP Servers:** appwrite-api, appwrite-docs
 
 ---
 
