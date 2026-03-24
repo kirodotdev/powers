@@ -56,6 +56,13 @@ Documentation is available at https://kiro.dev/docs/powers/
 
 ---
 
+### code-simplifier
+**Code Simplifier** - Simplify and refine code across languages and frameworks for clarity, consistency, and maintainability while preserving functionality.
+
+**MCP Servers:** context7
+
+---
+
 ### datadog
 **Datadog Observability** - Query logs, metrics, traces, RUM events, incidents, and monitors from Datadog for production debugging and performance analysis.
 
