@@ -42,6 +42,13 @@ Documentation is available at https://kiro.dev/docs/powers/
 
 ---
 
+### sagemaker-ai
+**Amazon SageMaker AI** - Deploy and train ML models on Amazon SageMaker AI — inference endpoints, LLM fine-tuning, HyperPod clusters, Model Monitor, AutoML with AutoGluon, and SageMaker Python SDK v3 patterns.
+
+**MCP Servers:** None (Knowledge Base Power)
+
+---
+
 ### cloud-architect
 **Build infrastructure on AWS** - Build AWS infrastructure with CDK in Python following AWS Well-Architected framework best practices.
 
