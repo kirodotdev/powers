@@ -34,7 +34,31 @@ HyperPod Cluster
     └── EBS (local scratch)
 ```
 
-## Quick Setup with hyp CLI
+## Quick Setup
+
+### Option 1: MCP Server (Recommended when using Kiro)
+
+Use the `manage_hyperpod_stacks` MCP tool for automated cluster deployment via managed CloudFormation templates (same templates as the HyperPod console UI):
+
+```
+manage_hyperpod_stacks(operation="deploy", stack_name="my-cluster-stack", region_name="us-east-1")
+```
+
+To check status:
+```
+manage_hyperpod_stacks(operation="describe", stack_name="my-cluster-stack")
+```
+
+To list and inspect cluster nodes:
+```
+manage_hyperpod_cluster_nodes(operation="list_clusters")
+manage_hyperpod_cluster_nodes(operation="list_nodes", cluster_name="my-cluster")
+manage_hyperpod_cluster_nodes(operation="describe_node", cluster_name="my-cluster", node_id="node-id")
+```
+
+**Note**: Cluster creation typically takes ~30 minutes.
+
+### Option 2: hyp CLI
 
 ```bash
 pip install sagemaker-hyperpod
@@ -226,7 +250,8 @@ Before creating a cluster:
 ## Troubleshooting
 
 ### Cluster stuck in Creating
-- Check CloudFormation stack events for errors
+- Use `manage_hyperpod_stacks(operation="describe", stack_name="...")` to check CloudFormation stack status and events
+- Check CloudFormation console for detailed errors
 - Verify service quotas are approved
 - Ensure subnets are private (not public)
 
@@ -236,9 +261,11 @@ Before creating a cluster:
 - Verify namespace and queue labels in job YAML
 
 ### Node replacement taking too long
+- Use `manage_hyperpod_cluster_nodes(operation="describe_node", cluster_name="...", node_id="...")` to check node status
 - Deep health checks add NoSchedule taint — check: `kubectl get nodes -o wide`
 - Verify instance availability in your AZ
 - Check HyperPod cluster events in SageMaker console
+- To update node software: `manage_hyperpod_cluster_nodes(operation="update_software", cluster_name="...")`
 
 ### Neuron compilation slow (Trainium)
 - First run compiles model graph (10-20 min) — subsequent runs use cache

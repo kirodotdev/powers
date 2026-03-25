@@ -45,7 +45,7 @@ Documentation is available at https://kiro.dev/docs/powers/
 ### sagemaker-ai
 **Amazon SageMaker AI** - Deploy and train ML models on Amazon SageMaker AI — inference endpoints, LLM fine-tuning, HyperPod clusters, Model Monitor, AutoML with AutoGluon, and SageMaker Python SDK v3 patterns.
 
-**MCP Servers:** None (Knowledge Base Power)
+**MCP Servers:** awslabs.sagemaker-ai-mcp-server
 
 ---
 

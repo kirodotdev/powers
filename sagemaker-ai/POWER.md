@@ -16,11 +16,39 @@ Whenever you are asked to perform a task related to any of the following scenari
 
 - Deploying models to SageMaker real-time endpoints (container selection, DJL LMI/vLLM, DLC configuration, multimodal models) -> use `./steering/inference-endpoints.md`
 - Fine-tuning or training models (serverless customization, QLoRA/LoRA, GPU vs Trainium, instance sizing) -> use `./steering/training-jobs.md`
-- Setting up or managing HyperPod clusters for training (EKS orchestration, Training Operator, Task Governance, resiliency) -> use `./steering/hyperpod.md`
+- Setting up or managing HyperPod clusters for training (EKS orchestration, Training Operator, Task Governance, resiliency) -> use `./steering/hyperpod.md` — also use MCP tools `manage_hyperpod_stacks` and `manage_hyperpod_cluster_nodes` for cluster operations
 - Deploying inference on HyperPod clusters (JumpStart models, custom models from S3/FSx, kubectl CRDs, autoscaling) -> use `./steering/hyperpod-inference.md`
 - Setting up model monitoring (Data Quality, Model Quality, Bias, Explainability, baselines, schedules) -> use `./steering/model-monitor.md`
 - Using AutoGluon for AutoML (tabular, time series, multimodal, SageMaker Pipelines) -> use `./steering/automl-autogluon.md`
 - Writing SageMaker SDK v3 code (correct imports, image_uris, deployment patterns, invocation) -> use `./steering/sdk-v3-reference.md`
+
+# Available MCP Tools
+
+This power integrates with the [Amazon SageMaker AI MCP Server](https://github.com/awslabs/mcp/tree/main/src/sagemaker-ai-mcp-server) (Apache-2.0 license) for HyperPod cluster management.
+
+## manage_hyperpod_stacks
+
+Orchestrates HyperPod cluster infrastructure via CloudFormation.
+
+- `operation="describe"` — Describe existing HyperPod CloudFormation stacks (read-only)
+- `operation="deploy"` — Deploy a new HyperPod cluster via managed CloudFormation templates (requires `--allow-write`)
+- `operation="delete"` — Delete a HyperPod CloudFormation stack and its resources (requires `--allow-write`)
+
+Parameters: `operation`, `stack_name`, `region_name`, `profile_name`, `params_file` (for deploy)
+
+**Safety**: Only modifies/deletes stacks originally created by this tool.
+
+## manage_hyperpod_cluster_nodes
+
+Manages cluster nodes within HyperPod deployments.
+
+- `operation="list_clusters"` — List HyperPod clusters with filtering by name, creation time, training plan ARN
+- `operation="list_nodes"` — List nodes in a cluster with filtering by instance group
+- `operation="describe_node"` — Get detailed info about a specific node
+- `operation="update_software"` — Update AMIs for all nodes or specific instance groups (requires `--allow-write`)
+- `operation="batch_delete"` — Delete multiple nodes in a single operation (requires `--allow-write`)
+
+Parameters: `operation`, `cluster_name`, `node_id` (for describe_node), `node_ids` (for batch_delete)
 
 # Onboarding
 
@@ -28,6 +56,7 @@ Whenever you are asked to perform a task related to any of the following scenari
 2. **Verify AWS CLI access** Using `aws sts get-caller-identity`
 3. **Check Python and SDK version** SageMaker Python SDK v3 requires Python <= 3.13. Install with `pip install 'sagemaker>=3'`
 4. **Execution role** In SageMaker Studio, always use `get_execution_role()`. Outside Studio, ensure an IAM role with SageMaker permissions is available.
+5. **MCP server dependencies** The SageMaker AI MCP server requires [`uv`](https://docs.astral.sh/uv/getting-started/installation/) (for `uvx` command)
 
 # SDK v3 Guardrails (Always-On)
 
