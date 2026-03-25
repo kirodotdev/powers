@@ -6,6 +6,13 @@ Documentation is available at https://kiro.dev/docs/powers/
 
 ## Available powers
 
+### amazon-bedrock
+**Amazon Bedrock** - Build generative AI applications on Amazon Bedrock — model invocation via Converse API, cross-region inference (CRIS), agents, knowledge bases (RAG), guardrails, model customization, prompt management, and flows.
+
+**MCP Servers:** awslabs.bedrock-kb-retrieval-mcp-server, awslabs.aws-bedrock-custom-model-import-mcp-server
+
+---
+
 ### aws-agentcore
 **Build an agent with Amazon Bedrock AgentCore** - Build, test, and deploy AI agents using AWS Bedrock AgentCore with local development workflow. Amazon Bedrock AgentCore is an agentic platform for building, deploying, and operating effective agents.
 
