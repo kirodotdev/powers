@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0b0f1a"/>
+      <stop offset="100%" style="stop-color:#0e1825"/>
+    </linearGradient>
+    <linearGradient id="ring" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1D9E75"/>
+      <stop offset="100%" style="stop-color:#00bcd4"/>
+    </linearGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="128" height="128" rx="28" fill="url(#bg)"/>
+  <!-- Outer ring — represents the learning loop -->
+  <circle cx="64" cy="64" r="40" fill="none" stroke="url(#ring)" stroke-width="3" opacity="0.4"/>
+  <!-- Orbital arc — knowledge accumulating -->
+  <path d="M 64 24 A 40 40 0 0 1 104 64" fill="none" stroke="#1D9E75" stroke-width="3" stroke-linecap="round"/>
+  <!-- Inner pulsing dot — the "eye" of Nora -->
+  <circle cx="64" cy="64" r="12" fill="#1D9E75" opacity="0.9"/>
+  <circle cx="64" cy="64" r="6" fill="#00bcd4"/>
+  <!-- Three small orbiting dots — patterns, decisions, anti-patterns -->
+  <circle cx="64" cy="24" r="4" fill="#1D9E75"/>
+  <circle cx="98" cy="82" r="4" fill="#378ADD"/>
+  <circle cx="30" cy="82" r="4" fill="#BA7517"/>
+  <!-- N lettermark -->
+  <text x="64" y="120" text-anchor="middle" fill="#6a8aaa" font-family="ui-monospace,monospace" font-size="14" font-weight="600">NORA</text>
+</svg>
