@@ -1,7 +1,7 @@
 ---
 name: "aws-step-functions"
 displayName: "AWS Step Functions"
-description: "Build AWS Step Functions state machines using the JSONata query language. Covers Amazon States Language (ASL) structure, all state types, variables, data transformation, error handling, and service integrations."
+description: "Build workflows with AWS Step Functions state machines using the JSONata query language. Covers Amazon States Language (ASL) structure, all state types, variables, data transformation, error handling, and service integrations."
 keywords: ["step functions", "state machine", "serverless", "jsonata", "asl", "amazon states language", "workflow", "orchestration"]
 author: "AWS"
 ---
