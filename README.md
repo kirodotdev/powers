@@ -42,6 +42,13 @@ Documentation is available at https://kiro.dev/docs/powers/
 
 ---
 
+### aws-transform-custom
+**Crush tech debt with AWS Transform custom (Public Preview)** - Perform code upgrades, migrations, codebase analysis, and transformations using AWS Transform custom.
+
+**MCP Servers:** None
+
+---
+
 ### cloud-architect
 **Build infrastructure on AWS** - Build AWS infrastructure with CDK in Python following AWS Well-Architected framework best practices.
 
