@@ -44,7 +44,7 @@ You are enhanced with the **AWS DevOps Agent**, an AI-powered operational intell
 
 ---
 
-## DevOps Agent Operations (40 total)
+## DevOps Agent Operations (36 total)
 
 Call these via `aws___call_aws` with service `devops-agent`:
 
@@ -340,6 +340,8 @@ Copy `mcp.json` from this directory to `~/.kiro/settings/mcp.json`:
 }
 ```
 
+> **Region note**: `us-east-1` is the default. DevOps Agent is available in 6 regions: `us-east-1`, `us-west-2`, `ap-southeast-2`, `ap-northeast-1`, `eu-central-1`, `eu-west-1`. Replace both the MCP endpoint URL and `AWS_REGION` value to use a different region. The agent can monitor resources in any region regardless of which region hosts your Agent Space. See [Supported Regions](https://docs.aws.amazon.com/devopsagent/latest/userguide/about-aws-devops-agent-supported-regions.html).
+
 ### 4. Reload & Verify
 Restart Kiro → `/mcp` to check connection → `/tools` to see `aws___call_aws`.
 
@@ -354,7 +356,7 @@ Restart Kiro → `/mcp` to check connection → `/tools` to see `aws___call_aws`
 → Missing IAM permissions. For AWS MCP Server: add `aws-mcp:InvokeMcp`, `aws-mcp:CallReadOnlyTool`, `aws-mcp:CallReadWriteTool`. For DevOps Agent APIs: attach `AIDevOpsAgentFullAccess` to your user/role and create an agent service role with `AIDevOpsAgentAccessPolicy`. See [IAM docs](https://docs.aws.amazon.com/devopsagent/latest/userguide/security-iam.html).
 
 **"Service not available in your region"**
-→ DevOps Agent is currently in `us-east-1`. Set `--metadata AWS_REGION=us-east-1` in mcp.json args.
+→ DevOps Agent is available in 6 regions (`us-east-1`, `us-west-2`, `ap-southeast-2`, `ap-northeast-1`, `eu-central-1`, `eu-west-1`). Update `AWS_REGION` in mcp.json args to a supported region.
 
 **"Tools not appearing"**
 → Verify: run `/mcp` in Kiro to check connection, ensure `mcp-proxy-for-aws` is installed, check credentials with `aws sts get-caller-identity`.
