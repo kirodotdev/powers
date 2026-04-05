@@ -1,13 +1,15 @@
-# Nora Patterns
+# Nora — Effective Patterns
 
-*This file is auto-updated by Nora after each session analysis.*
-*Patterns will appear here after 2-3 coding sessions.*
+> Auto-updated after session analysis. Activates automatically in Kiro.
 
-## How Patterns Work
+Patterns are extracted from your coding sessions and ranked by effectiveness score (0–1.0).
+Higher scores mean the pattern is frequently used and consistently produces good outcomes.
 
-Nora extracts effective coding patterns from your sessions — approaches that worked well,
-shortcuts that saved time, and techniques worth repeating. Each pattern includes an
-effectiveness score (0-1) based on how reliably it produces good outcomes.
+## How patterns work
 
-Kiro reads this file automatically on every prompt, so these patterns inform your agent's
-behavior without you needing to do anything.
+1. Nora observes tool usage and code changes during each session
+2. After analysis, recurring effective approaches are extracted as patterns
+3. Patterns are injected into future sessions when relevant context matches
+4. Effectiveness scores update as Nora observes whether injected patterns are adopted
+
+*This file populates after your first analyzed session.*
