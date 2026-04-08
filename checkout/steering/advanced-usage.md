@@ -19,24 +19,24 @@ For complex integrations, use a systematic approach to discover and understand r
 
 1. **Domain Exploration**
    ```
-   List all operations with tag "Payments"
-   List all operations with tag "Workflows" 
-   Search for operations containing "webhook"
+   ListOperations with tag "Payments"
+   ListOperations with tag "Workflows"
+   ApiSearch for "webhook"
    ```
 
 2. **Relationship Mapping**
    ```
-   Get details for createPayment operation
-   Get schema for PaymentRequest
-   Get schema for PaymentResponse
-   Search for operations containing "payment" and "capture"
+   GetOperation for createPayment
+   GetSchema for PaymentRequest
+   GetSchema for PaymentResponse
+   ApiSearch for "payment capture"
    ```
 
 3. **Error Scenario Planning**
    ```
-   Search for operations containing "void"
-   Search for operations containing "refund"
-   Get details for disputePayment operation
+   ApiSearch for "void"
+   ApiSearch for "refund"
+   GetOperation for disputePayment
    ```
 
 ### Schema Deep Diving
@@ -45,14 +45,14 @@ Understanding complex data structures requires systematic schema exploration:
 
 1. **Identify Core Schemas**
    ```
-   Get schema for PaymentRequest
-   Get schema for CustomerRequest
-   Get schema for WebhookEvent
+   GetSchema for PaymentRequest
+   GetSchema for CustomerRequest
+   GetSchema for WebhookEvent
    ```
 
 2. **Explore Nested Objects**
-   - Look for `$ref` references in schemas
-   - Follow object hierarchies to understand data relationships
+   - `GetOperation` shows schema names referenced in request bodies
+   - Use `GetSchema` to follow those references and understand full structures
    - Map required vs optional fields across related schemas
 
 3. **Validate Data Flow**
@@ -68,24 +68,24 @@ For sophisticated payment processing:
 
 1. **Authorization and Capture Pattern**
    ```
-   Get details for authorizePayment operation
-   Get details for capturePayment operation
-   Get schema for AuthorizationRequest
-   Get schema for CaptureRequest
+   GetOperation for authorizePayment
+   GetOperation for capturePayment
+   GetSchema for AuthorizationRequest
+   GetSchema for CaptureRequest
    ```
 
 2. **Payment Instrument Management**
    ```
-   Search for operations containing "instrument"
-   Get details for createPaymentInstrument operation
-   Get details for updatePaymentInstrument operation
+   ApiSearch for "instrument"
+   GetOperation for createPaymentInstrument
+   GetOperation for updatePaymentInstrument
    ```
 
 3. **Recurring Payment Setup**
    ```
-   Search for operations containing "recurring"
-   Search for operations containing "subscription"
-   Get schema for RecurringPaymentRequest
+   ApiSearch for "recurring"
+   ApiSearch for "subscription"
+   GetSchema for RecurringPaymentRequest
    ```
 
 ### Platform and Marketplace Integrations
@@ -94,23 +94,23 @@ For multi-entity scenarios:
 
 1. **Sub-Entity Management**
    ```
-   List operations with tag "Platforms"
-   Get details for createSubEntity operation
-   Get schema for SubEntityRequest
+   ListOperations with tag "Platforms"
+   GetOperation for createSubEntity
+   GetSchema for SubEntityRequest
    ```
 
 2. **Split Payment Scenarios**
    ```
-   Search for operations containing "split"
-   Search for operations containing "marketplace"
-   Get schema for SplitPaymentRequest
+   ApiSearch for "split"
+   ApiSearch for "marketplace"
+   GetSchema for SplitPaymentRequest
    ```
 
 3. **Onboarding Workflows**
    ```
-   Search for operations containing "onboard"
-   Get details for uploadDocument operation
-   Get schema for OnboardingRequest
+   ApiSearch for "onboard"
+   GetOperation for uploadDocument
+   GetSchema for OnboardingRequest
    ```
 
 ### Advanced Dispute Management
@@ -119,17 +119,17 @@ For comprehensive dispute handling:
 
 1. **Dispute Lifecycle Management**
    ```
-   Get details for getDispute operation
-   Get details for acceptDispute operation
-   Get details for provideDisputeEvidence operation
-   Get schema for DisputeEvidence
+   GetOperation for getDispute
+   GetOperation for acceptDispute
+   GetOperation for provideDisputeEvidence
+   GetSchema for DisputeEvidence
    ```
 
 2. **Chargeback Prevention**
    ```
-   Search for operations containing "alert"
-   Search for operations containing "prevention"
-   Get details for getDisputeAlert operation
+   ApiSearch for "alert"
+   ApiSearch for "prevention"
+   GetOperation for getDisputeAlert
    ```
 
 ## Workflow Automation Patterns
@@ -140,23 +140,16 @@ Understanding webhook and event patterns:
 
 1. **Event Type Discovery**
    ```
-   Search documentation for "webhook events"
-   Get schema for WebhookEvent
-   Search for operations containing "event"
+   DocsSearch for "webhook events"
+   GetSchema for WebhookEvent
+   ApiSearch for "event"
    ```
 
 2. **Workflow Configuration**
    ```
-   List operations with tag "Workflows"
-   Get details for createWorkflow operation
-   Get schema for WorkflowRequest
-   ```
-
-3. **Event Processing Patterns**
-   ```
-   Search documentation for "event handling"
-   Search for operations containing "retry"
-   Get details for getWorkflowExecution operation
+   ListOperations with tag "Workflows"
+   GetOperation for createWorkflow
+   GetSchema for WorkflowRequest
    ```
 
 ### Identity Verification Workflows
@@ -165,56 +158,36 @@ For KYC and compliance:
 
 1. **Verification Process Discovery**
    ```
-   List operations with tag "Identity Verification"
-   Get details for createIdentityVerification operation
-   Get schema for IdentityVerificationRequest
+   ListOperations with tag "Identity Verification"
+   GetOperation for createIdentityVerification
+   GetSchema for IdentityVerificationRequest
    ```
 
 2. **Document Management**
    ```
-   Search for operations containing "document"
-   Get details for uploadDocument operation
-   Get schema for DocumentRequest
+   ApiSearch for "document"
+   GetOperation for uploadDocument
+   GetSchema for DocumentRequest
    ```
 
 ## Performance and Optimization
 
-### Efficient API Usage Patterns
+### Efficient Tool Usage
 
-1. **Batch Operations Discovery**
-   ```
-   Search for operations containing "batch"
-   Search for operations containing "bulk"
-   Get details for batchPayments operation
-   ```
+1. **Start with Search** - Use `ApiSearch` or `DocsSearch` to find relevant operations first
+2. **Get Simplified Details** - `GetOperation` returns token-efficient responses (~300 tokens)
+3. **Drill into Schemas** - Only call `GetSchema` when you need full data structure details
+4. **Use Tag Filtering** - `ListOperations` with a tag is more efficient than broad searches
 
-2. **Pagination Understanding**
-   ```
-   Search documentation for "pagination"
-   Get schema for PaginatedResponse
-   Look for limit/offset parameters in list operations
-   ```
+### Token-Efficient Workflows
 
-3. **Rate Limit Management**
-   ```
-   Search documentation for "rate limits"
-   Search documentation for "throttling"
-   Look for rate limit headers in operation responses
-   ```
+The `GetOperation` tool returns simplified responses by default:
+- Parameters show only name, location, required status, and type
+- Request bodies show schema names with hints to use `GetSchema()`
+- Responses are grouped into success/error code arrays
+- Security shows only required scopes
 
-### Caching and Data Management
-
-1. **Cacheable Resource Identification**
-   - Identify GET operations that return stable data
-   - Look for ETags and cache headers in responses
-   - Understand data freshness requirements
-
-2. **Idempotency Patterns**
-   ```
-   Search documentation for "idempotency"
-   Look for idempotency key parameters
-   Understand retry-safe operations
-   ```
+This means a typical workflow uses ~300 tokens per operation lookup instead of ~1,200.
 
 ## Security and Compliance
 
@@ -222,66 +195,29 @@ For KYC and compliance:
 
 1. **Auth Method Discovery**
    ```
-   Search documentation for "authentication"
-   Search documentation for "authorization"
-   Look for security requirements in operation details
+   DocsSearch for "authentication"
+   DocsSearch for "authorization"
    ```
 
 2. **Token Management**
    ```
-   Search for operations containing "token"
-   Get details for createToken operation
-   Get schema for TokenRequest
+   ApiSearch for "token"
+   GetOperation for createToken
+   GetSchema for TokenRequest
    ```
 
 ### PCI and Compliance
 
 1. **Secure Data Handling**
    ```
-   Search documentation for "PCI compliance"
-   Search documentation for "sensitive data"
-   Identify operations that handle card data
+   DocsSearch for "PCI compliance"
+   DocsSearch for "sensitive data"
    ```
 
 2. **Audit and Logging**
    ```
-   Search for operations containing "audit"
-   Search for operations containing "log"
-   Get details for getAuditLog operation
-   ```
-
-## Troubleshooting Advanced Scenarios
-
-### Error Analysis Patterns
-
-1. **Error Code Mapping**
-   ```
-   Search documentation for "error codes"
-   Look for error responses in operation details
-   Get schema for ErrorResponse
-   ```
-
-2. **Diagnostic Operations**
-   ```
-   Search for operations containing "status"
-   Search for operations containing "health"
-   Get details for getSystemStatus operation
-   ```
-
-### Integration Testing
-
-1. **Test Environment Setup**
-   ```
-   Search documentation for "sandbox"
-   Search documentation for "testing"
-   Look for test-specific operations and endpoints
-   ```
-
-2. **Mock Data Discovery**
-   ```
-   Search documentation for "test data"
-   Search documentation for "examples"
-   Look for example values in schema definitions
+   ApiSearch for "audit"
+   ApiSearch for "log"
    ```
 
 ## Best Practices for Power Usage
@@ -291,17 +227,10 @@ For KYC and compliance:
 - Use schema exploration to understand data relationships
 - Map complete workflows before implementation
 
-### Documentation Strategy
-- Save important operation IDs and schema names for quick reference
-- Document discovered patterns and relationships
-- Create integration checklists based on discovered operations
-
 ### Continuous Learning
 - Regularly explore new API areas as your integration grows
 - Stay updated with new operations and schema changes
 - Use the power to understand deprecation notices and migration paths
-
-This advanced usage guide helps you leverage the full potential of the Checkout.com Developer Experience MCP for sophisticated payment processing integrations.
 
 ## Additional Resources
 

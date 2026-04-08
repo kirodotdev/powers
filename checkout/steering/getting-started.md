@@ -12,22 +12,58 @@ For comprehensive information about Checkout.com's APIs, refer to the official d
 
 ## Quick Start
 
-Once the power is activated, you have access to five main tools for exploring Checkout.com's API documentation:
+### First: Determine the Integration Path
 
-### 1. Search for API Operations (`docssearch`)
+The most important question to ask is: **what kind of payment integration does the user need?**
 
-The fastest way to find relevant endpoints is through keyword search:
+#### Flow (Prebuilt Payment UI)
+If the user wants to accept payments on their website with minimal effort, guide them to **Flow** - Checkout.com's prebuilt payment interface.
+
+Flow manages the entire payment experience: tokenization, payment method display, customer data capture, 3D Secure authentication, and redirects. The user creates a Payment Session server-side, then mounts Flow client-side using the `@checkout.com/checkout-web-components` npm package.
+
+**Key steps for Flow:**
+1. Create a Payment Session (`CreatePaymentSession` endpoint)
+2. Install `@checkout.com/checkout-web-components`
+3. Initialize `CheckoutWebComponents` with the payment session and public key
+4. Mount Flow onto the page with `checkout.create('flow').mount('#container')`
+5. Handle payment response via webhooks or `onPaymentCompleted` callback
+
+**Resources:**
+- [Get started with Flow](https://www.checkout.com/docs/get-started)
+- [Customize Flow](https://www.checkout.com/docs/payments/accept-payments/accept-a-payment-on-your-website/customize-your-flow-integration)
+- [Add localization](https://www.checkout.com/docs/payments/accept-payments/accept-a-payment-on-your-website/add-localization-to-your-flow-integration)
+
+Use `ApiSearch` with "payment session" to find the relevant operationId, then `GetOperation` and `GetSchema` for `PaymentSessionRequest` to explore the server-side setup.
+
+#### API-to-API (Direct Integration)
+If the user needs full control, custom UI, or server-to-server processing, they should use the payment API endpoints directly. Start exploring with `ApiSearch` for "payment" or `ListOperations` with tag "Payments".
+
+---
+
+Once the integration path is clear, you have access to six tools for exploring the API:
+
+### 1. Get Integration Guidance (`Guide`)
+
+Start here. The `Guide` tool returns structured guidance on the two integration paths (Flow vs API-to-API), including getting-started steps, relevant documentation links, and suggested next tools to call.
+
+```
+Call Guide to understand integration options
+```
+
+### 2. Search for API Operations (`ApiSearch`)
+
+The fastest way to find relevant API endpoints is through keyword search:
 
 ```
 Search for payment processing endpoints
 ```
 
-This will use the `docssearch` tool to find operations related to payments. You can search for:
+This will use the `ApiSearch` tool to find operations related to payments. Supports fuzzy matching so typos like "paymnt" still find results. You can search for:
 - **Business functions**: "payment", "refund", "customer", "dispute"
 - **Technical terms**: "webhook", "authentication", "token"
 - **Specific operations**: "create", "update", "delete", "list"
 
-### 2. Browse Operations by Category (`openapilistOperations`)
+### 3. Browse Operations by Category (`ListOperations`)
 
 To explore operations in a specific domain:
 
@@ -37,22 +73,22 @@ List all customer-related operations
 
 This helps you understand the full scope of functionality available in each API domain.
 
-### 3. Get Detailed Operation Information (`openapigetOperation`)
+### 4. Get Operation Information (`GetOperation`)
 
-Once you find an interesting operation, get comprehensive details:
+Once you find an interesting operation, get its details:
 
 ```
 Get details for the createPayment operation
 ```
 
-This provides complete information including:
+This provides a simplified, token-efficient response including:
 - HTTP method and path
-- Required and optional parameters
-- Request/response schemas
-- Authentication requirements
-- Example requests and responses
+- Parameter names, locations, and types
+- Request body schema names (with hints to use `GetSchema` for full details)
+- Success and error response codes
+- Required authentication scopes
 
-### 4. Understand Data Structures (`openapigetSchema`)
+### 5. Understand Data Structures (`GetSchema`)
 
 To understand the data structures used in requests and responses:
 
@@ -66,7 +102,7 @@ This is essential for:
 - Generating client code
 - Creating proper API requests
 
-### 5. Search Documentation (`markdownsearch`)
+### 6. Search Documentation (`DocsSearch`)
 
 For additional context and implementation guidance:
 
@@ -146,33 +182,18 @@ Search for webhook implementation examples
 
 ### Search Strategy
 - Start with broad terms like "payment" or "customer"
+- Fuzzy matching handles 1-character typos automatically
 - Use specific operation names when you know them
-- Try different variations: "create", "add", "new" might find the same operations
 
 ### Understanding Relationships
 - Operations often work together in workflows
-- Use schema definitions to understand data flow between operations
+- Use `GetSchema` to understand data flow between operations
 - Look for common parameters that link operations
 
 ### Schema Exploration
-- Always check schema definitions for complex operations
+- `GetOperation` shows schema names in request bodies - use `GetSchema` to get full details
 - Pay attention to required vs optional fields
 - Look for nested objects and their schemas
-
-### Documentation Context
-- Use markdown search for implementation guidance
-- Look for best practices and common patterns
-- Find troubleshooting information for complex scenarios
-
-## Next Steps
-
-After getting familiar with the basic tools:
-
-1. **Explore Specific Domains**: Focus on the API areas most relevant to your use case
-2. **Understand Authentication**: Learn about API keys, OAuth, and other auth methods
-3. **Review Error Handling**: Understand error codes and proper error handling
-4. **Check Rate Limits**: Learn about API usage limits and best practices
-5. **Explore Advanced Features**: Discover webhooks, workflows, and platform features
 
 ## Getting Help
 
@@ -181,8 +202,6 @@ If you need assistance:
 - Check schema definitions for data structure questions
 - Search documentation for implementation guidance
 - Explore related operations to understand complete workflows
-
-The power provides access to comprehensive, up-to-date API documentation, making it easy to find exactly what you need for your Checkout.com integration.
 
 For additional resources and detailed implementation guides, visit:
 - [Checkout.com Developer Portal](https://www.checkout.com/docs/)

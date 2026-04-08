@@ -1,7 +1,7 @@
 {
   "mcpServers": {
     "checkout-dx": {
-      "url": "https://dx-mcp.checkout.com/rpc",
+      "url": "https://docs.mcp.checkout.com/rpc",
       "disabled": false
     }
   }
