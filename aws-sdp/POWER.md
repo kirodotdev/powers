@@ -2,7 +2,7 @@
 name: aws-sdp
 description: AWS Service Delivery Program (SDP) documentation assistant. Helps AWS Partners create, complete and validate customer reference cases for APN designations.
 version: 1.0.0
-displayName	AWS SDP Agent for ITera
+displayName: AWS SDP Agent for ITera
 author: ITERA Cloud Architecture Team - Stiven Avila
 keywords:
   - SDP
