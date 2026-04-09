@@ -89,7 +89,7 @@ JSONata expressions can fail at runtime. Common causes:
 3. Value out of range — negative number for `TimeoutSeconds`
 4. Undefined result — `{% $data.nonExistentField %}` — JSON cannot represent undefined
 
-Prevent these errors with defensive expressions: use `$exists()` before accessing fields evaluated at runtime, `$type()` before arithmetic, and guard filtered results that may return a single object instead of an array. Always guard with `$exists()` — if a variable was never assigned (e.g., the Catch didn't fire for that path), referencing it directly throws `States.QueryEvaluationError`. Reference variables-and-data.md for defensive JSONata examples.
+Prevent these errors with defensive expressions: use `$exists()` before accessing fields evaluated at runtime, `$type()` before arithmetic, and guard filtered results that may return a single object instead of an array. Always guard with `$exists()` — if a variable was never assigned (e.g., the Catch didn't fire for that path), referencing it directly throws `States.QueryEvaluationError`. See `transforming-data.md` for defensive JSONata examples.
 
 ---
 
@@ -105,9 +105,7 @@ Individual iteration failures can be tolerated with `ToleratedFailurePercentage`
 
 ---
 
-## Examples
-
-### Retry and Catch with User-Friendly Error
+## Retry and Catch with User-Friendly Error
 
 Retries transient errors with backoff, then catches all errors into a variable and transitions to a Fail state with a descriptive Cause. Guard variable references with `$exists()` in case the Catch path wasn't taken.
 
@@ -148,63 +146,5 @@ Retries transient errors with backoff, then catches all errors into a variable a
   "Type": "Fail",
   "Error": "PaymentError",
   "Cause": "{% 'Payment failed for order ' & ($exists($orderId) ? $orderId : 'unknown') & ': ' & ($exists($error.Error) ? $error.Error : 'Unknown') & ' - ' & ($exists($error.Cause) ? $error.Cause : 'No details') & '. Timestamp: ' & $now() %}"
-}
-```
-
-### Parallel State Error Handling
-
-```json
-"ParallelWork": {
-  "Type": "Parallel",
-  "Branches": [ ... ],
-  "Retry": [
-    {
-      "ErrorEquals": ["States.BranchFailed"],
-      "MaxAttempts": 1
-    }
-  ],
-  "Catch": [
-    {
-      "ErrorEquals": ["States.ALL"],
-      "Assign": {
-        "parallelError": "{% $states.errorOutput %}"
-      },
-      "Output": {
-        "error": "{% $states.errorOutput %}",
-        "failedAt": "parallel execution"
-      },
-      "Next": "HandleParallelError"
-    }
-  ],
-  "Next": "Continue"
-}
-```
-
-### Map State Error Handling
-
-```json
-"ProcessAll": {
-  "Type": "Map",
-  "Items": "{% $states.input.records %}",
-  "ToleratedFailurePercentage": 10,
-  "ItemProcessor": { ... },
-  "Catch": [
-    {
-      "ErrorEquals": ["States.ExceedToleratedFailureThreshold"],
-      "Assign": {
-        "batchError": "{% $states.errorOutput %}"
-      },
-      "Output": {
-        "error": "Too many items failed",
-        "details": "{% $states.errorOutput %}"
-      },
-      "Next": "HandleBatchFailure"
-    },
-    {
-      "ErrorEquals": ["States.ALL"],
-      "Next": "HandleMapError"
-    }
-  ],
-  "Next": "Done"
 }
 ```

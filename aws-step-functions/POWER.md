@@ -19,7 +19,7 @@ This power provides comprehensive guidance for writing state machines in ASL, co
 - Workflow variables with `Assign`
 - Error handling
 - AWS Service integration patterns
-- Data transformation and architecture examples
+- Example code for data transformation and architecture 
 - Validation and testing of state machines
 - How to migrate from JSONPath to JSONata
 
@@ -33,6 +33,9 @@ Load the appropriate steering file based on what the user is working on:
 - **Service integrations**, **Lambda invoke**, **DynamoDB**, **SNS**, **SQS**, **SDK integrations**, **Resource ARN**, **sync**, **async** → see `service-integrations.md`
 - **Migrating from JSONPath to JSONata**, **migration**, **JSONPath to JSONata**, **InputPath**, **Parameters**, **ResultSelector**, **ResultPath**, **OutputPath**, **intrinsic functions**, **Iterator**, **payload template** → see `migrating-from-jsonpath-to-jsonata.md`
 - **Validation**, **linting**, **testing**, **TestState**, **test state**, **mock**, **mocking**, **unit test**, **inspection level**, **DEBUG**, **TRACE**, **validate state**, **test in isolation** → see `validation-and-testing.md`
+- **Architecture patterns**, **examples**, **polling**, **saga**, **compensation**, **scatter-gather**, **semaphore**, **lock**, **human-in-the-loop**, **escalation**, **Express to Standard** → see `architecture-patterns.md`
+- **Data transformation**, **JSONata expressions**, **filtering**, **aggregation**, **string operations**, **$reduce**, **$lookup**, **$toMillis**, **$partition**, **$parse**, **$hash**, **$uuid** → see `transforming-data.md`
+- **State input/output**, **$states**, **Assign**, **Output**, **Arguments**, **variable scope**, **variable limits**, **evaluation order**, **passing data between states** → see `processing-state-inputs-and-outputs.md`
 
 ## Quick Reference
 
@@ -52,18 +55,6 @@ Load the appropriate steering file based on what the user is working on:
 
 **Choose Express** for: IoT data ingestion, streaming transformations, mobile backends, high-throughput short-lived processing.
 
-### Key State Types
-
-| State              | Purpose                                                                              |
-| ------------------ | ------------------------------------------------------------------------------------ |
-| `Task`             | Execute work — invoke Lambda, call any AWS service via SDK integration               |
-| `Choice`           | Branch based on input data conditions (no `Next` required on branches)               |
-| `Parallel`         | Execute multiple branches concurrently; waits for all branches to complete           |
-| `Map`              | Iterate over an array; use Distributed Map mode for up to 10M items from S3/DynamoDB |
-| `Wait`             | Pause for a fixed duration or until a specific timestamp                             |
-| `Pass`             | Pass input to output, optionally injecting or transforming data                      |
-| `Succeed` / `Fail` | End execution successfully or with an error and cause                                |
-
 ### Setting the State Machine Query Language
 
 JSONata is the modern, preferred way to reference and transform data in ASL. It replaces the five JSONPath I/O fields (`InputPath`, `Parameters`, `ResultSelector`, `ResultPath`, `OutputPath`) with just two: `Arguments` (inputs) and `Output`.
@@ -82,18 +73,9 @@ JSONata is the modern, preferred way to reference and transform data in ASL. It 
 
 **JSONPath is still supported** and is the default if `QueryLanguage` is omitted — existing state machines do not need to be migrated.
 
-### The `$states` Reserved Variable (JSONata only)
-
-```
-$states.input        → Original state input
-$states.result       → Task/Parallel/Map result (on success)
-$states.errorOutput  → Error output (only in Catch)
-$states.context      → Execution context object
-```
-
 ## Best Practices
 
-- Set `"QueryLanguage": "JSONata"` at the top level for new state machines unless JSONPath is mandatory
+- Set `"QueryLanguage": "JSONata"` at the top level for new state machines unless the user wants to use JSONPath
 - Keep `Output` minimal — only include what the state immediately after the current state needs
 - Use `Assign` to store variables needed in later states instead of threading it through Output
 - Use `$states.input` to reference original state input
@@ -117,7 +99,5 @@ $states.context      → Execution context object
 ## Resources
 
 - [ASL Specification](https://states-language.net/spec.html)
-- [Transforming data with JSONata in Step Functions](https://docs.aws.amazon.com/step-functions/latest/dg/transforming-data.html)
-- [Passing data between states with variables](https://docs.aws.amazon.com/step-functions/latest/dg/workflow-variables.html)
 - [JSONata documentation](https://docs.jsonata.org/overview.html)
 - [Step Functions Developer Guide](https://docs.aws.amazon.com/step-functions/latest/dg/welcome.html)
