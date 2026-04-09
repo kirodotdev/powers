@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "awslabs.sagemaker-ai-mcp-server": {
+      "command": "uvx",
+      "args": [
+        "awslabs.sagemaker-ai-mcp-server@latest",
+        "--allow-write",
+        "--allow-sensitive-data-access"
+      ],
+      "env": {
+        "FASTMCP_LOG_LEVEL": "ERROR"
+      },
+      "autoApprove": [],
+      "disabled": false
+    }
+  }
+}
