@@ -7,14 +7,7 @@
         "AWS_PROFILE": "your-named-profile",
         "FASTMCP_LOG_LEVEL": "ERROR"
       },
-      "disabled": false,
-      "autoApprove": [
-        "read_iac_documentation_page",
-        "search_cdk_documentation",
-        "search_cdk_samples_and_constructs",
-        "cdk_best_practices",
-        "search_cloudformation_documentation"
-      ]
+      "disabled": false
     }
   }
 }

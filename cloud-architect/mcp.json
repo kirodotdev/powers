@@ -20,8 +20,7 @@
       "env": {
         "AWS_REGION": "us-east-2"
       },
-      "disabled": false,
-      "autoApprove": []
+      "disabled": false
     },
     "context7": {
       "type": "stdio",

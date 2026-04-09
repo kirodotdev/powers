@@ -6,8 +6,7 @@
         "mcp-server-fetch"
       ],
       "env": {},
-      "disabled": false,
-      "autoApprove": []
+      "disabled": false
     },
     "stripe": {
       "url": "https://mcp.stripe.com",
@@ -25,8 +24,7 @@
       "env": {
         "FASTMCP_LOG_LEVEL": "ERROR"
       },
-      "disabled": false,
-      "autoApprove": []
+      "disabled": false
     },
     "awslabs.aws-serverless-mcp": {
       "command": "uvx",
