@@ -6,55 +6,35 @@ on:
 
 permissions:
   pull-requests: write
-  contents: read
+
+concurrency:
+  group: new-power-check-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 jobs:
   check-new-power:
     runs-on: ubuntu-latest
     steps:
-      - name: Detect new power folders and comment
+      - name: Check for new power and comment
         uses: actions/github-script@v7
         with:
           script: |
-            const SKIP_DIRS = new Set(['.git', '.github', '.kiro', 'checkout']);
-
-            // Get files changed in this PR
             const files = await github.paginate(github.rest.pulls.listFiles, {
               owner: context.repo.owner,
               repo: context.repo.repo,
               pull_number: context.issue.number,
             });
 
-            // Extract unique top-level folders from changed files
-            const touchedFolders = new Set(
+            const newPowerDirs = new Set(
               files
+                .filter(f => f.status === 'added' && /^[^/]+\/POWER\.md$/.test(f.filename))
                 .map(f => f.filename.split('/')[0])
-                .filter(f => f.includes('/') === false)
             );
 
-            // Get top-level directories on the base branch
-            const { data: baseTree } = await github.rest.git.getTree({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              tree_sha: context.payload.pull_request.base.sha,
-            });
-            const baseFolders = new Set(
-              baseTree.tree
-                .filter(item => item.type === 'tree')
-                .map(item => item.path)
-            );
-
-            // Find new folders: in PR diff, not on base, not in skip list
-            const newFolders = [...touchedFolders].filter(
-              f => !baseFolders.has(f) && !SKIP_DIRS.has(f)
-            );
-
-            if (newFolders.length === 0) {
-              console.log('No new power folders detected.');
+            if (newPowerDirs.size === 0) {
+              console.log('No new POWER.md found at a top-level folder — skipping comment.');
               return;
             }
-
-            console.log(`New power folders detected: ${newFolders.join(', ')}`);
 
             const user = context.payload.pull_request.user.login;
             const body = [
