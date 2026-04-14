@@ -20,7 +20,7 @@ inclusion: always
 - You are not allowed to use curl or any other API clients except Postman.
 - A Collection ID is required
 - Read the .postman.json file if it exists.
-- Use the environment for local testing if it exists. An Environment ID is required
-- The server must be running first
+- Always pass the environment ID to `runCollection` if one is available, regardless of whether the target API is local or remote. Environment variables must be resolved for tests to work correctly.
+- If the target API is a local server, ensure it is running before executing the collection. For remote APIs (e.g. staging, production, cloud endpoints), skip this check.
 - After running, display a summary of the results and a breakdown by endpoint
 - If any endpoint is failing, offer to investigate and fix the error
