@@ -40,6 +40,19 @@
       },
       "transportType": "stdio"
     },
+    "awslabs.prometheus-mcp-server": {
+      "command": "uvx",
+      "args": [
+        "awslabs.prometheus-mcp-server@latest"
+      ],
+      "env": {
+        "AWS_PROFILE": "default",
+        "AWS_REGION": "us-east-1",
+        "FASTMCP_LOG_LEVEL": "ERROR"
+      },
+      "disabled": false,
+      "autoApprove": []
+    },
     "awslabs.aws-documentation-mcp-server": {
       "command": "uvx",
       "args": [
