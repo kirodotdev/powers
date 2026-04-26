@@ -1,8 +1,8 @@
 ---
 name: "aws-observability"
 displayName: "AWS Observability"
-description: "Comprehensive AWS observability platform combining CloudWatch Logs, Metrics, Alarms, Application Signals (APM), CloudTrail security auditing, and automated codebase observability gap analysis, for complete monitoring, troubleshooting, and optimization."
-keywords: ["cloudwatch", "logs", "metrics", "traces", "alarms", "alerts", "monitoring", "observability", "application signals", "apm", "distributed tracing", "x-ray", "opentelemetry", "otel", "slow", "latency", "performance", "bottleneck", "degradation", "timeout", "high latency", "slow api", "api performance", "service performance", "response time", "p50", "p90", "p95", "p99", "errors", "error rate", "fault rate", "failure rate", "5xx", "4xx", "exceptions", "availability", "uptime", "downtime", "outage", "sev1", "sev2", "slo", "sli", "service level", "error budget", "breach", "troubleshooting", "root cause", "rca", "investigate", "diagnose", "log analysis", "log insights", "log query", "log patterns", "audit", "cloudtrail", "security audit", "access logs", "iam changes", "change events", "service map", "cascading failure", "canary", "synthetic monitoring", "health check", "observability gaps", "missing instrumentation", "monitoring instrumentation", "structured logging", "silent failures", "logging gaps", "alarm investigation", "trace analysis", "span analysis", "request tracing"]
+description: "Comprehensive AWS observability platform combining CloudWatch Logs, Metrics, Alarms, Application Signals (APM), CloudTrail security auditing, Amazon Managed Prometheus (AMP) metric querying, and automated codebase observability gap analysis, for complete monitoring, troubleshooting, and optimization."
+keywords: ["cloudwatch", "logs", "metrics", "traces", "alarms", "alerts", "monitoring", "observability", "application signals", "apm", "distributed tracing", "x-ray", "opentelemetry", "otel", "slow", "latency", "performance", "bottleneck", "degradation", "timeout", "high latency", "slow api", "api performance", "service performance", "response time", "p50", "p90", "p95", "p99", "errors", "error rate", "fault rate", "failure rate", "5xx", "4xx", "exceptions", "availability", "uptime", "downtime", "outage", "sev1", "sev2", "slo", "sli", "service level", "error budget", "breach", "troubleshooting", "root cause", "rca", "investigate", "diagnose", "log analysis", "log insights", "log query", "log patterns", "audit", "cloudtrail", "security audit", "access logs", "iam changes", "change events", "service map", "cascading failure", "canary", "synthetic monitoring", "health check", "observability gaps", "missing instrumentation", "monitoring instrumentation", "structured logging", "silent failures", "logging gaps", "alarm investigation", "trace analysis", "span analysis", "request tracing", "prometheus", "promql", "amp", "amazon managed prometheus", "prometheus metrics", "prometheus query", "prometheus workspace"]
 author: "AWS"
 ---
 
@@ -57,6 +57,13 @@ author: "AWS"
 **Load when user mentions:**
 - "audit codebase", "check instrumentation", "observability gaps"
 - "missing logs", "improve observability"
+
+### 📈 Prometheus / AMP Metrics → `prometheus-metrics.md`
+
+**Load when user mentions:**
+- "prometheus", "promql", "AMP", "managed prometheus"
+- "prometheus metrics", "prometheus query", "prometheus workspace"
+- "PromQL range query", "list metrics"
 
 ### ⚙️ Application Signals Setup → `application-signals-setup.md`
 
@@ -115,6 +122,7 @@ The comprehensive AWS observability platform combining monitoring, troubleshooti
 - **CloudWatch Logs** - Query and analyze logs using CloudWatch Logs Insights
 - **Metrics & Alarms** - Metric querying with Metrics Insights and intelligent alarm recommendations
 - **Application Signals** - APM with distributed tracing, service maps, SLOs, and enablement guides
+- **Amazon Managed Prometheus** - PromQL queries against AMP workspaces with SigV4 authentication
 - **Codebase Observability Analysis** - Automated analysis of codebases to identify observability gaps
 - **CloudTrail Integration** - Security auditing and compliance tracking
 - **AWS Documentation** - Direct access to official AWS docs for troubleshooting
@@ -214,7 +222,25 @@ See `cloudtrail-data-source-selection.md` steering file for detailed decision tr
 - Detecting unauthorized access attempts
 - Root cause analysis for configuration changes
 
-### 5. Codebase Observability Analysis
+### 5. Amazon Managed Prometheus (AMP)
+
+**Primary Use Case**: Query and analyze Prometheus metrics from AWS Managed Prometheus workspaces
+
+**Key Features**:
+- Execute instant and range PromQL queries
+- List available metrics in a workspace
+- Discover and manage AMP workspaces
+- AWS SigV4 authentication for secure access
+- Retrieve server configuration details
+
+**When to Use**:
+- Querying Prometheus metrics from AMP workspaces
+- Analyzing container and Kubernetes metrics
+- Running PromQL range queries for trend analysis
+- Listing available metrics across workspaces
+- Correlating Prometheus metrics with CloudWatch data
+
+### 6. Codebase Observability Analysis
 
 **Primary Use Case**: Automated analysis of application codebases to identify observability gaps
 
@@ -236,7 +262,7 @@ See `cloudtrail-data-source-selection.md` steering file for detailed decision tr
 - Establishing observability baselines
 - Training teams on observability patterns
 
-### 6. AWS Documentation Access
+### 7. AWS Documentation Access
 
 **Primary Use Case**: Quick access to official AWS documentation
 
@@ -279,6 +305,9 @@ Step-by-step Application Signals enablement guide.
 
 ### 8. `cloudtrail-data-source-selection.md`
 CloudTrail data source priority logic (referenced by security-auditing.md).
+
+### 9. `prometheus-metrics.md`
+PromQL querying, metric exploration, and AMP workspace management.
 
 ## Quick Start Examples
 
@@ -338,11 +367,14 @@ Application Signals APM with service health, SLOs, and distributed tracing.
 ### awslabs.cloudtrail-mcp-server
 CloudTrail security auditing and API activity tracking.
 
+### awslabs.prometheus-mcp-server
+Amazon Managed Prometheus PromQL queries, metric listing, and workspace management.
+
 ### awslabs.aws-documentation-mcp-server
 Search and read official AWS documentation.
 
 ## License
-This power integrates with CloudWatch MCP Server, CloudWatch Application Signals MCP Server, CloudTrail MCP Server, and AWS Documentation MCP Server from [AWS Labs](https://github.com/awslabs/mcp) (Apache-2.0 license). All steering files and power configuration are licensed under Apache-2.0.
+This power integrates with CloudWatch MCP Server, CloudWatch Application Signals MCP Server, CloudTrail MCP Server, Prometheus MCP Server, and AWS Documentation MCP Server from [AWS Labs](https://github.com/awslabs/mcp) (Apache-2.0 license). All steering files and power configuration are licensed under Apache-2.0.
 
 ---
 
