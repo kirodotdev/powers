@@ -6,6 +6,13 @@ Documentation is available at https://kiro.dev/docs/powers/
 
 ## Available powers
 
+### aidlc
+**AI-DLC Workflow** - AI-Driven Development Life Cycle - an intelligent software development workflow that adapts to your needs, maintains quality standards, and keeps you in control. Guides you through inception, construction, and operations phases with structured requirements, design, and code generation.
+
+**MCP Servers:** None (Knowledge Base Power)
+
+---
+
 ### aws-agentcore
 **Build an agent with Amazon Bedrock AgentCore** - Build, test, and deploy AI agents using AWS Bedrock AgentCore with local development workflow. Amazon Bedrock AgentCore is an agentic platform for building, deploying, and operating effective agents.
 
