@@ -56,6 +56,15 @@ the target version is not installed at all, ask the user for permission before i
 Do NOT proceed until the correct version is active. Verify the switch succeeded
 before proceeding.
 
+### Telemetry
+
+When running `atx custom def exec`, always include the `--telemetry` flag (see the Telemetry section in POWER.md). Format:
+`--telemetry "client=kiro,agent=kiro,executionMode=<local|remote>"`
+
+- `client` is always `kiro`
+- `agent` is always `kiro`
+- `executionMode` is `local` for direct CLI invocation, `remote` when submitting via Lambda
+
 Run transformations in parallel — maximum 3 concurrent repos at a time (the user
 can override this, but 3 is recommended to avoid overloading the machine). If there
 are more than 3 repos, process them in batches of 3 (wait for a batch to finish
@@ -69,14 +78,15 @@ mkdir -p ~/.aws/atx/custom/atx-agent-session
 cat > ~/.aws/atx/custom/atx-agent-session/run-<repo-name>.sh << 'RUNNER'
 #!/bin/bash
 atx custom def exec -n <td-name> -p <repo-path> -x -t \
-  --configuration 'additionalPlanContext=<config>'
+  --configuration 'additionalPlanContext=<config>' \
+  --telemetry "client=kiro,agent=kiro,executionMode=local"
 echo $? > ~/.aws/atx/custom/atx-agent-session/<repo-name>.exit
 RUNNER
 chmod +x ~/.aws/atx/custom/atx-agent-session/run-<repo-name>.sh
 nohup ~/.aws/atx/custom/atx-agent-session/run-<repo-name>.sh > ~/.aws/atx/custom/atx-agent-session/<repo-name>.log 2>&1 &
 echo $! > ~/.aws/atx/custom/atx-agent-session/<repo-name>.pid
 ```
-Omit `--configuration` if no config needed. Launch each repo's script in rapid
+Omit `--configuration` if no config needed. Include `--telemetry` always — see POWER.md for details. Launch each repo's script in rapid
 succession — do NOT wait between launches. Each runner script is backgrounded
 via nohup; the exit code is captured to `~/.aws/atx/custom/atx-agent-session/<repo-name>.exit` when ATX finishes.
 
@@ -117,10 +127,10 @@ Submit jobs via the batch Lambda in chunks of up to 128. If there are more than
 = 4 calls of 128 + 128 + 128 + 116). Each call returns its own `batchId`. Track
 all batch IDs for monitoring.
 
-Include the `environment` field on each job to set the language version matching the transformation's target (e.g., `"JAVA_VERSION":"21"` for a Java upgrade targeting 21):
+Include the `environment` field on each job to set the language version matching the transformation's target (e.g., `"JAVA_VERSION":"21"` for a Java upgrade targeting 21). Include `--telemetry` in each job's `command` string always (see POWER.md):
 ```bash
 aws lambda invoke --function-name atx-trigger-batch-jobs \
-  --payload '{"batchName":"<name>-chunk-1","jobs":[{"source":"<url>","command":"atx custom def exec -n <td> -p /source/<project> -x -t","jobName":"<name>","environment":{"JAVA_VERSION":"<target>"}}]}' \
+  --payload '{"batchName":"<name>-chunk-1","jobs":[{"source":"<url>","command":"atx custom def exec -n <td> -p /source/<project> -x -t --telemetry \"client=kiro,agent=kiro,executionMode=remote\"","jobName":"<name>","environment":{"JAVA_VERSION":"<target>"}}]}' \
   --cli-binary-format raw-in-base64-out /dev/stdout
 ```
 
@@ -159,7 +169,7 @@ Failed:
 
 For remote executions, include the CloudWatch dashboard link in the final output:
 ```bash
-REGION=${AWS_DEFAULT_REGION:-${AWS_REGION:-$(aws configure get region 2>/dev/null)}}
+REGION=${AWS_REGION:-${AWS_DEFAULT_REGION:-$(aws configure get region 2>/dev/null)}}
 REGION=${REGION:-us-east-1}
 echo "https://${REGION}.console.aws.amazon.com/cloudwatch/home#dashboards/dashboard/ATX-Transform-CLI-Dashboard"
 ```

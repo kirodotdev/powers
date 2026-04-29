@@ -85,7 +85,7 @@ cd "$ATX_INFRA_DIR" && ./teardown.sh
 cd "$ATX_INFRA_DIR" && ./setup.sh
 ```
 
-Common causes: insufficient IAM permissions, service quota limits, no default VPC, Docker not running (needed for container build).
+Common causes: insufficient IAM permissions, service quota limits, no default VPC, Docker not running (only needed when using a custom container image, not the pre-built image).
 
 ## Improving Quality
 
@@ -101,3 +101,29 @@ Diagnose in this order:
 |----------|---------|
 | `transform-cli.awsstatic.com` | CLI installation and updates |
 | `transform-custom.${REGION}.api.aws` | Transformation service API |
+
+
+## Pre-built Container Image
+
+The default pre-built image URI is `public.ecr.aws/d9h8z6l7/aws-transform:latest`.
+This is configured via `prebuiltImageUri` in `cdk.json`.
+
+
+## Remote Infrastructure Repo Issues
+
+If `git pull`, `git commit`, or any other step on the remote-infra repo fails
+(merge conflicts, corrupted state, detached HEAD, permission errors, etc.), rename
+the existing directory and re-clone from scratch. This is safe — the repo is just
+a working copy of the infrastructure scripts, and all deployed AWS resources are
+unaffected.
+
+```bash
+ATX_INFRA_DIR="$HOME/.aws/atx/custom/remote-infra"
+if [ -d "$ATX_INFRA_DIR" ]; then
+  mv "$ATX_INFRA_DIR" "$ATX_INFRA_DIR.broken-$(date +%Y%m%d-%H%M%S)"
+fi
+git clone -b atx-remote-infra --single-branch https://github.com/aws-samples/aws-transform-custom-samples.git "$ATX_INFRA_DIR"
+```
+
+After re-cloning, continue with the normal flow (e.g., `cd "$ATX_INFRA_DIR" && ./setup.sh`).
+The renamed directory can be deleted once you confirm the new clone works.

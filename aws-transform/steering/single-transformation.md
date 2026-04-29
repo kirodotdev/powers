@@ -38,7 +38,6 @@ git clone <git-url> "$CLONE_DIR"
 If the user provided an S3 path to a zip, download and extract it locally:
 ```bash
 aws s3 cp s3://user-bucket/repos/<project>.zip ~/.aws/atx/custom/atx-agent-session/<project>-$SESSION_TS.zip
-mkdir -p ~/.aws/atx/custom/atx-agent-session/repos/<project>
 unzip -qo ~/.aws/atx/custom/atx-agent-session/<project>-$SESSION_TS.zip -d ~/.aws/atx/custom/atx-agent-session/repos/<project>-$SESSION_TS/
 ```
 
@@ -51,6 +50,15 @@ ls -la <repo-path>
 git -C <repo-path> status
 ```
 If not a git repo: `cd <repo-path> && git init && git add . && git commit -m "Initial commit"`
+
+### Telemetry
+
+When running `atx custom def exec`, always include the `--telemetry` flag (see the Telemetry section in POWER.md). Format:
+`--telemetry "client=kiro,agent=kiro,executionMode=<local|remote>"`
+
+- `client` is always `kiro`
+- `agent` is always `kiro`
+- `executionMode` is `local` for direct CLI invocation, `remote` when submitting via Lambda
 
 ### 5. Execute and Monitor
 
@@ -66,7 +74,8 @@ mkdir -p ~/.aws/atx/custom/atx-agent-session
 cat > ~/.aws/atx/custom/atx-agent-session/run.sh << 'RUNNER'
 #!/bin/bash
 atx custom def exec -n <td-name> -p <repo-path> -x -t \
-  --configuration 'additionalPlanContext=<user-config>'
+  --configuration 'additionalPlanContext=<user-config>' \
+  --telemetry "client=kiro,agent=kiro,executionMode=local"
 echo $? > ~/.aws/atx/custom/atx-agent-session/transform.exit
 RUNNER
 chmod +x ~/.aws/atx/custom/atx-agent-session/run.sh
@@ -74,7 +83,7 @@ nohup ~/.aws/atx/custom/atx-agent-session/run.sh > ~/.aws/atx/custom/atx-agent-s
 echo $! > ~/.aws/atx/custom/atx-agent-session/transform.pid
 cat ~/.aws/atx/custom/atx-agent-session/transform.pid
 ```
-Omit `--configuration` if no config is needed.
+Omit `--configuration` if no config is needed. Include `--telemetry` always — see POWER.md for details.
 
 This backgrounds the runner script (not ATX directly), so the exit code is
 captured to `~/.aws/atx/custom/atx-agent-session/transform.exit` when ATX finishes. The PID file tracks
@@ -212,10 +221,11 @@ the container's IAM role cannot read from them.
 ### 3. Submit Job
 ```bash
 aws lambda invoke --function-name atx-trigger-job \
-  --payload '{"source":"<url-or-s3>","command":"atx custom def exec -n <td> -p /source/<project> -x -t","jobName":"<name>","environment":{"JAVA_VERSION":"<target>"}}' \
+  --payload '{"source":"<url-or-s3>","command":"atx custom def exec -n <td> -p /source/<project> -x -t --telemetry \"client=kiro,agent=kiro,executionMode=remote\"","jobName":"<name>","environment":{"JAVA_VERSION":"<target>"}}' \
   --cli-binary-format raw-in-base64-out /dev/stdout
 ```
 Add `--configuration \"additionalPlanContext=<config>\"` to the command string if config is needed.
+The `--telemetry` flag is included always — see POWER.md for details.
 
 Set the appropriate version environment variable to match the transformation's target version:
 - `JAVA_VERSION` for Java transformations (e.g., `"21"` for a Java 8 → 21 upgrade)
@@ -254,7 +264,7 @@ aws s3 cp s3://atx-custom-output-{account-id}/transformations/<job-name>/<conver
 
 Include the CloudWatch dashboard link in the completion output:
 ```bash
-REGION=${AWS_DEFAULT_REGION:-${AWS_REGION:-$(aws configure get region 2>/dev/null)}}
+REGION=${AWS_REGION:-${AWS_DEFAULT_REGION:-$(aws configure get region 2>/dev/null)}}
 REGION=${REGION:-us-east-1}
 echo "https://${REGION}.console.aws.amazon.com/cloudwatch/home#dashboards/dashboard/ATX-Transform-CLI-Dashboard"
 ```

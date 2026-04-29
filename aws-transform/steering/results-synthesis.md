@@ -46,7 +46,7 @@ Summary: ~/.aws/atx/custom/atx-agent-session/transformation-summaries/transforma
 
 For remote mode executions, also include the CloudWatch dashboard link:
 ```bash
-REGION=${AWS_DEFAULT_REGION:-${AWS_REGION:-$(aws configure get region 2>/dev/null)}}
+REGION=${AWS_REGION:-${AWS_DEFAULT_REGION:-$(aws configure get region 2>/dev/null)}}
 REGION=${REGION:-us-east-1}
 echo "CloudWatch Dashboard: https://${REGION}.console.aws.amazon.com/cloudwatch/home#dashboards/dashboard/ATX-Transform-CLI-Dashboard"
 ```

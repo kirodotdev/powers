@@ -31,7 +31,7 @@ TD names change over time. Always use actual names from the live output.
 | `AWS/python-boto2-to-boto3` | Migrate Python boto2 → boto3 | None required |
 | `AWS/nodejs-aws-sdk-v2-to-v3` | Migrate AWS SDK for JavaScript v2 → v3 | None required |
 | `AWS/early-access-java-x86-to-graviton` | Migrate Java x86 code to ARM64/Graviton | None required |
-| `AWS/early-access-comprehensive-codebase-analysis` | Tech debt analysis + documentation generation | Optional: `additionalPlanContext` for focus area |
+| `AWS/comprehensive-codebase-analysis` | Tech debt analysis + documentation generation | Optional: `additionalPlanContext` for focus area |
 
 ## Transformation Patterns
 

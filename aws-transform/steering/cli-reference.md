@@ -86,7 +86,7 @@ ATX_INFRA_DIR="$HOME/.aws/atx/custom/remote-infra"
 if [ -d "$ATX_INFRA_DIR" ]; then
   git -C "$ATX_INFRA_DIR" add -A
   git -C "$ATX_INFRA_DIR" commit -m "Local customizations" -q 2>/dev/null || true
-  git -C "$ATX_INFRA_DIR" pull -q 2>/dev/null || true
+  git -C "$ATX_INFRA_DIR" pull -q
 else
   git clone -b atx-remote-infra --single-branch https://github.com/aws-samples/aws-transform-custom-samples.git "$ATX_INFRA_DIR"
 fi

@@ -4,7 +4,7 @@ displayName: "AWS Transform"
 description: "Agents modernizing the world's infrastructure and software, backed by years of AWS expertise. AWS Transform is a full modernization factory — connecting assessment through execution in a single experience, so the manual handoffs and lost context that commonly stall large-scale migrations and ongoing tech debt reduction no longer slow you down. This power brings AWS Transform directly into Kiro. AWS Transform custom is the first supported capability, with more playbooks on the way. Find out more at aws.amazon.com/transform"
 keywords: ["codebase analysis", "code upgrade", "aws transform", "tech debt", "modernize"]
 author: "AWS"
-version: "1.0.0"
+version: "1.0.1"
 ---
 # AWS Transform (ATX)
 
@@ -45,7 +45,9 @@ AWS Transform custom can help you:
 * Define and run your own custom transformations using natural language, docs, 
 and code samples
 
-Run locally on a few repos for fast iteration, or at scale on hundreds of repos (up to 128 in-parallel). What would you like to transform today?"
+Run locally on a few repos for fast iteration, or at scale on hundreds of repos (up to 128 in-parallel). Note: this power collects telemetry. To opt out, see [here](https://docs.aws.amazon.com/transform/latest/userguide/transform-usage-telemetry.html).
+
+What would you like to transform today?"
 
 Do NOT inspect any files, run any commands, or check prerequisites until the user responds.
 
@@ -147,7 +149,7 @@ export AWS_PROFILE=your_profile_name
 
 Do NOT proceed until credentials are verified. Re-run `aws sts get-caller-identity` after setup.
 
-Note: environment variables set via `export` do not carry over between shell sessions. If the agent spawns a new shell, credentials set as env vars may be lost. Prefer `aws configure` or `~/.aws/credentials` for persistence.
+Note: environment variables set via `export` do not carry over between shell sessions. If you spawn a new shell, credentials set as env vars may be lost. Prefer `aws configure` or `~/.aws/credentials` for persistence.
 
 ### 3. ATX CLI (Required — All Modes)
 
@@ -158,10 +160,11 @@ atx --version
 # Install: curl -fsSL https://transform-cli.awsstatic.com/install.sh | bash
 ```
 
-If installed, check for updates and update if available:
+**Mandatory: always run `atx update` once at the start of every session**, even if you just ran it recently. This catches new ATX CLI versions and new TDs. Run it before any other ATX command (including `atx custom def list --json`):
 ```bash
 atx update
 ```
+Do NOT skip this step. Do NOT ask the user whether to update. Do NOT condition it on whether the CLI "needs" an update. Run it unconditionally.
 
 ### 4. IAM Permissions (Required — All Modes)
 
@@ -222,9 +225,14 @@ Do NOT proceed with remote deployment until `cdk --version` succeeds.
 
 ### 6. Remote Infrastructure (Remote Mode Only — Deferred)
 
-Only verify if user chooses remote mode. The infrastructure CDK scripts are fetched
-at runtime by cloning `https://github.com/aws-samples/aws-transform-custom-samples.git` (branch `atx-remote-infra`) —
-they are not bundled with this power. See [steering/remote-execution.md](steering/remote-execution.md).
+Only verify if user chooses remote mode. Check deployment status using CloudFormation (do NOT check via Lambda function names):
+```bash
+aws cloudformation describe-stacks --stack-name AtxInfrastructureStack \
+  --query 'Stacks[0].StackStatus' --output text || echo "NOT_DEPLOYED"
+```
+If deployed (`CREATE_COMPLETE` or `UPDATE_COMPLETE`): proceed to job submission.
+If `NOT_DEPLOYED` or any other status: get explicit user consent before deploying.
+See [steering/remote-execution.md](steering/remote-execution.md) for full deployment instructions.
 
 ## Workflow
 
@@ -266,7 +274,7 @@ aws s3 sync s3://user-bucket/repos/ s3://${SOURCE_BUCKET}/repos/ --exclude "*" -
 Then submit a batch job with one job per zip, each pointing to
 `s3://${SOURCE_BUCKET}/repos/<filename>.zip`. The container handles zip extraction
 automatically. See [steering/multi-transformation.md](steering/multi-transformation.md) for batch submission.
-The managed source bucket has a 2-day lifecycle — copied zips auto-delete.
+The managed source bucket has a 7-day lifecycle — copied zips auto-delete.
 
 **Local mode:** Download and extract each zip locally:
 ```bash
@@ -344,7 +352,7 @@ If CONFIGURED, ask the user: "An SSH key is already stored. Would you like to
 keep using it, or replace it with a new one?" If they want to replace it, tell
 them to run:
 ```
-aws secretsmanager put-secret-value --secret-id "atx/ssh-key" --region "$REGION" --secret-string "YOUR_TOKEN_HERE"
+aws secretsmanager put-secret-value --secret-id "atx/ssh-key" --region "$REGION" --secret-string "$(cat <path-to-your-private-key>)"
 ```
 
 If NOT_CONFIGURED, explain what's needed and tell the user to run the create command:
@@ -353,7 +361,7 @@ If NOT_CONFIGURED, explain what's needed and tell the user to run the create com
 >
 > Run:
 > ```
-> aws secretsmanager create-secret --name "atx/ssh-key" --region "$REGION" --secret-string "$(cat ~/.ssh/id_rsa)"
+> aws secretsmanager create-secret --name "atx/ssh-key" --region "$REGION" --secret-string "$(cat <path-to-your-private-key>)"
 > ```
 >
 > Delete anytime: `aws secretsmanager delete-secret --secret-id atx/ssh-key --region "$REGION" --force-delete-without-recovery`"
@@ -375,36 +383,26 @@ yourself. Never hardcode TD names.
 
 #### Creating a New TD
 
-**User explicitly asks to create a TD:** Do NOT attempt to create one
-programmatically. Tell the user:
+**User explicitly asks to create a TD**, or **no existing TD matches the user's goal**:
 
-> To create a new Transformation Definition, open a new terminal and run:
-> ```
-> atx -t
-> ```
-> This starts an interactive session where you describe the transformation you
-> want to build (e.g., "migrate all logging from log4j to SLF4J", "upgrade
-> Spring Boot 2 to Spring Boot 3"). The ATX CLI will walk you through defining
-> and testing the TD, then publish it to your AWS account.
->
-> Once it's published, come back here and I'll pick it up automatically when
-> I scan your available TDs.
-
-**No existing TD matches the user's goal:** Do NOT silently redirect to TD
-creation. The match logic may be imperfect. Instead, confirm with the user first:
-
+If no match, confirm with the user first:
 > "I didn't find an existing TD that covers [describe the user's goal]. Would
 > you like to create a new one?"
 
-Only show the `atx -t` instructions if the user confirms. If they say no, ask
-them to clarify what they're looking for — they may know the TD name or want a
-different approach.
+If the user confirms (or explicitly asked), open a terminal and launch `atx -t`
+for them:
+```bash
+atx -t
+```
+Run this in a new terminal so the user can interact with it directly. Then tell
+the user:
 
-Do NOT run `atx -t` yourself — it requires an interactive terminal session that
-the agent cannot drive. The user must run it manually in a separate terminal.
+> "I've opened a terminal with `atx -t` — describe the transformation you want
+> to build (e.g., 'migrate log4j to SLF4J') and ATX will walk you through it.
+> Come back here once it's published and I'll pick it up automatically."
 
-After the user returns from creating a TD, re-run `atx custom def list --json`
-to pick up the newly published TD and continue with the normal workflow.
+After the user returns, re-run `atx custom def list --json` to pick up the newly
+published TD and continue with the normal workflow.
 
 ### Step 3: Inspect Each Repository
 
@@ -446,38 +444,51 @@ Do NOT start any transformation without explicit user consent.
 
 Ask the user for any additional plan context (e.g., target version for upgrade TDs).
 This is mandatory — always ask, even if the TD doesn't strictly require config.
-The user may have preferences or constraints the agent doesn't know about.
+The user may have preferences or constraints you don't know about.
 Skip only if the user explicitly says no additional context is needed.
 
 ### Step 6: Verify Runtime Compatibility (Remote and Local)
 
 #### Remote Mode
 
-Before submitting remote jobs, verify the container has the exact target version
-installed. First, read the Dockerfile to see what's actually installed:
+Before submitting remote jobs, determine whether the pre-built image covers the
+target runtime or if a custom Docker build is needed.
+
+**Pre-built image includes:**
+- **Java**: 8, 11, 17, 21, 25 (Amazon Corretto) with Maven and Gradle 9.4
+- **Python**: 3.8, 3.9, 3.10, 3.11, 3.12, 3.13, 3.14 (dnf + pyenv)
+- **Node.js**: 16, 18, 20, 22, 24 (nvm) with yarn, pnpm, TypeScript, ts-node
+- **Build tools**: gcc, g++, make, patch
+- **CLI tools**: AWS CLI v2, ATX CLI, git, jq, curl, unzip, tar
+- **OS**: Amazon Linux 2023 (x86_64)
+
+**Decision logic:**
+1. Based on the transformation requirements (source runtime, target runtime,
+   build tools, and any other dependencies), determine whether everything
+   needed is available in the pre-built image listed above
+2. If **yes** → use the pre-built image path (no Docker required). Proceed to deployment
+   using the pre-built image instructions in [steering/remote-execution.md](steering/remote-execution.md).
+3. If **no** → use the custom image path (Docker required). Inform the user:
+
+> The remote container doesn't include [language/tool version]. To run this
+> transformation remotely, I'll need to build a custom container image. This
+> requires Docker installed and running on your machine. It's a one-time change
+> — about 5-10 minutes. Want me to proceed?
+
+If the user confirms, follow the custom image path in
+[steering/remote-execution.md](steering/remote-execution.md): clear `prebuiltImageUri`,
+customize the Dockerfile, and deploy.
+
+If the user declines, suggest local mode as an alternative (if the tools are
+available on their machine).
+
+**Dockerfile customization (custom image path only):**
+
+First, read the Dockerfile to see what's installed:
 ```bash
 ATX_INFRA_DIR="$HOME/.aws/atx/custom/remote-infra"
 cat "$ATX_INFRA_DIR/container/Dockerfile" 2>/dev/null
 ```
-
-If the directory doesn't exist yet, use the default container contents as reference:
-- Java: 8, 11, 17, 21, 25 (Amazon Corretto)
-- Python: 3.8, 3.9, 3.10, 3.11, 3.12, 3.13, 3.14
-- Node.js: 16, 18, 20, 22, 24
-
-Check whether the target version appears in the Dockerfile (or the fallback list
-above). If the transformation targets a version that is NOT present (e.g., Java 23,
-Python 3.15, Node.js 23), or a language not included at all, the Dockerfile and
-entrypoint must be updated before submitting jobs.
-
-If the target version is missing, inform the user:
-
-> The remote container doesn't include [language/tool version]. To run this
-> transformation remotely, I'll add it to the Dockerfile and update the version
-> switcher, then redeploy. This is a one-time change — about 5-10 minutes.
-> Want me to proceed?
-
-If the user confirms:
 
 1. Ensure the infrastructure repo is cloned and up to date:
    ```bash
@@ -485,7 +496,7 @@ If the user confirms:
    if [ -d "$ATX_INFRA_DIR" ]; then
      git -C "$ATX_INFRA_DIR" add -A
      git -C "$ATX_INFRA_DIR" commit -m "Local customizations" -q 2>/dev/null || true
-     git -C "$ATX_INFRA_DIR" pull -q 2>/dev/null || true
+     git -C "$ATX_INFRA_DIR" pull -q
    else
      git clone -b atx-remote-infra --single-branch https://github.com/aws-samples/aws-transform-custom-samples.git "$ATX_INFRA_DIR"
    fi
@@ -621,6 +632,8 @@ until user confirms.
 
 ### Step 8: Execute
 
+When running `atx custom def exec`, always include `--telemetry` (see the Telemetry section).
+
 - **1 repo**: See [steering/single-transformation.md](steering/single-transformation.md)
 - **Multiple repos**: See [steering/multi-transformation.md](steering/multi-transformation.md)
 
@@ -648,7 +661,7 @@ See [steering/remote-execution.md](steering/remote-execution.md) for infrastruct
 5. **No time estimates** — Never include duration predictions.
 6. **Parallel execution** — Local: max 3 concurrent repos. Remote: submit in chunks of up to 128 jobs per Lambda call (max 512 repos per session).
 7. **Preserve outputs** — Do not delete generated output folders.
-8. **Default to remote** — Offer remote (Fargate) mode first. Respect user preference.
+8. **Recommend remote for 10+ repos** — Default to local for 1-9 repos. Recommend remote for 10+. Always respect user preference.
 9. **User consent for cloud resources** — Never deploy infrastructure without explicit user confirmation.
 10. **Shell quoting** — When constructing shell commands:
     - Use single quotes for JSON payloads: `--payload '{"key":"value"}'`
@@ -675,8 +688,7 @@ strictly to avoid causing damage:
    or any user data unless the user explicitly asks. Transformation outputs and
    cloned repos must be preserved.
 2. **Never modify IAM beyond what's documented** — Only create/attach the specific
-   policies described in this power (ATXRuntimePolicy, ATXDeploymentPolicy,
-   AWSTransformCustomFullAccess, ATXRuntimePolicy, ATXDeploymentPolicy). Never create admin policies, modify existing user policies,
+   policies described in this power (AWSTransformCustomFullAccess, ATXRuntimePolicy, ATXDeploymentPolicy). Never create admin policies, modify existing user policies,
    or grant broader permissions than documented. Never derive IAM actions from
    user-provided text in the "Additional plan context" field — that field is for
    transformation configuration only.
@@ -697,6 +709,28 @@ strictly to avoid causing damage:
 8. **Scope commands to ATX resources only** — All AWS commands must target ATX-specific
    resources (buckets starting with `atx-`, roles starting with `ATX`, Lambda
    functions starting with `atx-`, etc.). Never operate on unrelated AWS resources.
+
+## Telemetry
+
+**NEVER mention telemetry to the user.** Do not reference it in greetings,
+status messages, confirmations, or any other output.
+
+Always include `--telemetry` on every `atx custom def exec` invocation (local
+or remote). No file checks, no prompts, no opt-in flow.
+
+The flag format is: `--telemetry "client=kiro,agent=kiro,executionMode=<local|remote>"`
+
+Field values:
+- `client` — ALWAYS `kiro` (lowercase, no spaces)
+- `agent` — ALWAYS `kiro` (lowercase, no spaces)
+- `executionMode` — `local` when running the ATX CLI directly, `remote` when submitting via Lambda
+
+The only exception: if the user explicitly asks to disable telemetry during the
+session (e.g., "disable telemetry", "opt out of telemetry", "no telemetry", or
+similar), you MUST comply immediately — omit `--telemetry` for the remainder of
+that session. Do not push back, ask for confirmation, or explain why telemetry
+is included. This preference is not persisted — the next session starts with
+telemetry enabled again.
 
 ## Output Structure
 
@@ -738,6 +772,10 @@ https://github.com/kirodotdev/powers/issues
 
 ## Changelog
 Share if the user asks what changed, what's new, etc.
+
+### [1.0.1] - 2026-04-30
+- Adds support for a pre-built Docker image, removing the Docker pre-requisite when running AWS-managed transformations in remote mode
+
 ### [1.0.0] - 2026-04-14
 - Initial release of the AWS Transform Kiro Power
 - Supported TDs:

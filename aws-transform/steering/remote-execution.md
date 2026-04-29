@@ -27,23 +27,54 @@ If `NOT_DEPLOYED` or any other status: get explicit user consent before deployin
 ## User Consent Prompt
 
 Explain what gets created: AWS Batch (Fargate), 8 Lambda functions, S3 buckets (KMS encrypted),
-CloudWatch dashboard, IAM roles, ECR repository (container built locally). One-time setup.
+CloudWatch dashboard, IAM roles. If using the pre-built image, no Docker is needed and no ECR
+repository is created in their account. If using a custom image, an ECR repository is created
+and the container is built locally. One-time setup.
 Do NOT deploy until user confirms.
 
 ## Deployment
 
-### Clone and Run Setup
+### Pre-built vs Custom Image
 
-The infrastructure repo includes a `setup.sh` script that handles everything:
-prerequisite checks, dependency installation, TypeScript compilation, CDK bootstrap,
-and deployment. You run two commands total:
+The infrastructure supports two container modes:
+
+**Pre-built image (default):** A public ECR image with Java (8, 11, 17, 21, 25),
+Python (3.8–3.14), Node.js (16–24), Maven, Gradle, and common build tools.
+No Docker required on the user's machine. Use this when the pre-built image
+has everything the transformation needs (source runtime, target runtime, build
+tools, and any other dependencies).
+
+**Custom image (fallback):** If the transformation requires a language, tool, or
+version not in the pre-built image, you clone the infrastructure repo,
+customize the Dockerfile, and build locally. This requires Docker on the user's
+machine.
+
+You determine which mode to use during Step 6 (Verify Runtime Compatibility)
+in POWER.md. Do NOT ask the user to choose — you decide automatically based
+on whether the pre-built image has everything needed for the transformation.
+
+### Pre-built Image Runtimes
+
+The pre-built image includes:
+- **Java**: 8, 11, 17, 21, 25 (Amazon Corretto) with Maven and Gradle 9.4
+- **Python**: 3.8, 3.9, 3.10, 3.11, 3.12, 3.13, 3.14 (dnf + pyenv)
+- **Node.js**: 16, 18, 20, 22, 24 (nvm) with yarn, pnpm, TypeScript, ts-node
+- **Build tools**: gcc, g++, make, patch
+- **CLI tools**: AWS CLI v2, ATX CLI, git, jq, curl, unzip, tar
+- **OS**: Amazon Linux 2023 (x86_64)
+
+If the transformation target is in this list, use the pre-built image path.
+
+### Pre-built Image Path (No Docker Required)
+
+Clone and run setup — Docker is NOT required:
 
 ```bash
 ATX_INFRA_DIR="$HOME/.aws/atx/custom/remote-infra"
 if [ -d "$ATX_INFRA_DIR" ]; then
   git -C "$ATX_INFRA_DIR" add -A
   git -C "$ATX_INFRA_DIR" commit -m "Local customizations" -q 2>/dev/null || true
-  git -C "$ATX_INFRA_DIR" pull -q 2>/dev/null || true
+  git -C "$ATX_INFRA_DIR" pull -q
 else
   git clone -b atx-remote-infra --single-branch https://github.com/aws-samples/aws-transform-custom-samples.git "$ATX_INFRA_DIR"
 fi
@@ -53,18 +84,41 @@ If `git pull` reports a merge conflict, resolve it by keeping both the upstream
 changes and the user's customizations in the `CUSTOM LANGUAGES AND TOOLS` section
 of the Dockerfile, then commit the merge.
 
+Ensure `prebuiltImageUri` is set in `cdk.json` (it should be set to "public.ecr.aws/d9h8z6l7/aws-transform:latest" by default). Then deploy:
 ```bash
 cd "$ATX_INFRA_DIR" && ./setup.sh
 ```
 
-The script will:
-1. Verify Node.js (v18+), npm, Docker (running), AWS CLI, AWS CDK CLI, and AWS credentials
-2. Print clear error messages if any prerequisite is missing
-3. Install npm dependencies, compile TypeScript
-4. Bootstrap CDK (idempotent — skips if already done)
-5. Deploy all stacks (container is built locally and pushed to ECR)
+The setup script skips the Docker prerequisite check and container build when
+`prebuiltImageUri` is configured. First deploy takes ~3-5 minutes (no image build).
 
-First deploy takes ~5-10 minutes (container build). Subsequent deploys are faster.
+### Custom Image Path (Docker Required)
+
+If the transformation requires a runtime (source or target) or any other software not in the pre-built image,
+clone/update the repo, clear the pre-built URI, customize the Dockerfile, and deploy:
+
+```bash
+ATX_INFRA_DIR="$HOME/.aws/atx/custom/remote-infra"
+if [ -d "$ATX_INFRA_DIR" ]; then
+  git -C "$ATX_INFRA_DIR" add -A
+  git -C "$ATX_INFRA_DIR" commit -m "Local customizations" -q 2>/dev/null || true
+  git -C "$ATX_INFRA_DIR" pull -q
+else
+  git clone -b atx-remote-infra --single-branch https://github.com/aws-samples/aws-transform-custom-samples.git "$ATX_INFRA_DIR"
+fi
+
+cd "$ATX_INFRA_DIR" && sed -i.bak 's|"prebuiltImageUri": ".*"|"prebuiltImageUri": ""|' cdk.json
+```
+
+Customize the Dockerfile (see Container Customization below), then deploy:
+```bash
+cd "$ATX_INFRA_DIR" && ./setup.sh
+```
+
+This path requires Docker installed and running. First deploy takes ~5-10 minutes
+(container build). CDK auto-detects Dockerfile changes and rebuilds the image.
+
+### Deployment Failures
 
 If `setup.sh` fails, it prints the specific prerequisite that's missing. Fix that
 one thing and re-run — the script is idempotent.
@@ -253,10 +307,10 @@ aws secretsmanager create-secret --name "atx/github-token" --secret-string "<tok
 
 **`atx/ssh-key`** — plain string SSH private key for private SSH repo cloning:
 ```bash
-aws secretsmanager create-secret --name "atx/ssh-key" --secret-string "$(cat ~/.ssh/id_rsa)"
+aws secretsmanager create-secret --name "atx/ssh-key" --secret-string "$(cat <path-to-your-private-key>)"
 ```
 
-**`atx/credentials`** — JSON array of credential files for any tool/registry (see Container Customization above).
+**`atx/credentials`** — JSON array of credential files for any tool/registry (see Container Customization below).
 
 Setup (requires user consent):
 1. Explain which secrets will be created in their AWS account
@@ -276,7 +330,7 @@ CloudWatch dashboard: `ATX-Transform-CLI-Dashboard`
 
 Dashboard URL (construct dynamically using the caller's region):
 ```bash
-REGION=${AWS_DEFAULT_REGION:-${AWS_REGION:-$(aws configure get region 2>/dev/null)}}
+REGION=${AWS_REGION:-${AWS_DEFAULT_REGION:-$(aws configure get region 2>/dev/null)}}
 REGION=${REGION:-us-east-1}
 echo "https://${REGION}.console.aws.amazon.com/cloudwatch/home#dashboards/dashboard/ATX-Transform-CLI-Dashboard"
 ```
@@ -296,15 +350,10 @@ auto-detects Dockerfile changes and rebuilds the image.
 
 ### Adding Languages or Tools
 ```dockerfile
-# Example: Add Ruby
-RUN yum install -y ruby ruby-devel && gem install bundler
-
-# Example: Add .NET SDK
-RUN rpm -Uvh https://packages.microsoft.com/config/centos/7/packages-microsoft-prod.rpm && \
-    yum install -y dotnet-sdk-8.0
-
-# Example: Add Rust
+# Example: Add Rust (install as atxuser so binaries land in /home/atxuser/.cargo)
+USER atxuser
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+USER root
 ENV PATH="/home/atxuser/.cargo/bin:$PATH"
 ```
 
