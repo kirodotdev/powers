@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/kirodotdev-powers-badge.png)](https://mseep.ai/app/kirodotdev-powers)
+
 # Kiro powers repository
 
 Collection of Kiro powers for enhanced AI agent capabilities. Each power provides specialized tools and workflows for specific development tasks.
