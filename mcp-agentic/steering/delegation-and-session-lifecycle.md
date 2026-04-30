@@ -5,14 +5,15 @@
 Follow this sequence for reliable delegation:
 
 1. **Verify bridge readiness** — `bridge_health` if uncertain
-2. **Discover agents** — `agents_discover` to find available agents
-3. **Create a session** — `sessions_create` with `agentId` (returns `sessionId`)
-4. **Submit the prompt** — `sessions_prompt` with `sessionId` and `prompt`
-5. **Check status** — `sessions_status` if the task is long-running
-6. **Continue session** — `sessions_prompt` again for follow-up requests
-7. **Close session** — `sessions_close` when work is complete
+2. **Discover agents** — `agents_discover` to find available agents and their providers
+3. **Select provider** — if the agent supports multiple providers, choose one based on the `providers` field in the discovery response
+4. **Create a session** — `sessions_create` with `agentId` and optional `metadata.provider` (returns `sessionId`)
+5. **Submit the prompt** — `sessions_prompt` with `sessionId`, `prompt`, and optional `runtimeParams`
+6. **Check status** — `sessions_status` if the task is long-running
+7. **Continue session** — `sessions_prompt` again for follow-up requests (with optional `runtimeParams` overrides)
+8. **Close session** — `sessions_close` when work is complete
 
-For one-shot tasks, use `tasks_delegate` instead of steps 3–7.
+For one-shot tasks, use `tasks_delegate` (with optional `runtimeParams`) instead of steps 3–8.
 
 ## Session lifecycle states
 
@@ -41,6 +42,86 @@ Sessions also expire automatically (**in-process executor only**):
 Expired sessions are reaped and the agent's `onSessionClose` hook is called with reason `'expired'`.
 
 > **Note:** The `WorkerExecutor` does not have automatic session expiry. Worker sessions persist in the local session map until explicitly closed via `sessions_close`. Worker processes manage their own internal session lifecycle independently.
+
+## Provider-aware sessions
+
+When using `MultiProviderCompanionAgent`, sessions can be bound to a specific AI provider at creation time.
+
+### Creating a session with a specific provider:
+
+Pass `metadata.provider` to `sessions_create` to select the AI provider for the session:
+
+```
+sessions_create({
+  agentId: "multi-provider-agent",
+  metadata: {
+    provider: "anthropic",
+    runtimeParams: { model: "claude-sonnet-4-20250514", temperature: 0.7 }
+  }
+})
+→ { sessionId: "abc-123", agentId: "multi-provider-agent", status: "active" }
+```
+
+- `metadata.provider` — selects the AI provider for all prompts in this session
+- `metadata.runtimeParams` — sets session-level default parameters (model, temperature, etc.)
+- If `metadata.provider` is omitted, the agent uses its configured `defaultProviderId`
+- If `metadata.provider` specifies an unregistered provider, `sessions_create` fails with `BridgeError` CONFIG
+
+### Provider affinity:
+
+Once a session is created with a specific provider, all prompts in that session use that provider. The provider cannot be changed mid-session — create a new session to switch providers.
+
+## Runtime parameter overrides
+
+`RuntimeParams` allow dynamic control of AI generation parameters at each request, without restarting the server.
+
+### Available parameters:
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `model` | `string` | Model identifier (e.g., `"gpt-4o"`, `"claude-sonnet-4-20250514"`) |
+| `temperature` | `number` (0–2) | Sampling temperature; higher = more random |
+| `maxTokens` | `number` (positive int) | Maximum tokens to generate |
+| `topP` | `number` (0–1) | Nucleus sampling probability |
+| `topK` | `number` (positive int) | Top-K sampling parameter |
+| `stopSequences` | `string[]` | Sequences that stop generation |
+| `systemPrompt` | `string` | System prompt override for this request |
+| `providerSpecific` | `Record<string, unknown>` | Provider-native parameters not covered by common fields |
+
+### Merge priority (ascending):
+
+```
+ProviderConfig.defaults  <  session metadata.runtimeParams  <  prompt-level runtimeParams
+```
+
+Only defined fields override lower-priority values. `undefined` fields are ignored during merge. `providerSpecific` is shallow-merged across all layers.
+
+### Per-prompt overrides via `sessions_prompt`:
+
+```
+sessions_prompt({
+  sessionId: "abc-123",
+  prompt: "Explain quantum computing",
+  runtimeParams: {
+    temperature: 0.2,
+    maxTokens: 500,
+    systemPrompt: "You are a physics professor. Explain concepts simply."
+  }
+})
+→ { text: "Quantum computing uses...", stopReason: "end_turn", usage: { inputTokens: 45, outputTokens: 120 } }
+```
+
+### One-shot delegation with `runtimeParams`:
+
+```
+tasks_delegate({
+  agentId: "multi-provider-agent",
+  prompt: "Summarize this document",
+  metadata: { provider: "openai" },
+  runtimeParams: { temperature: 0, maxTokens: 200 }
+})
+→ { sessionId: "xyz-789", text: "The document covers...", stopReason: "end_turn", usage: { inputTokens: 80, outputTokens: 50 } }
+```
 
 ## Session management rules
 
@@ -131,6 +212,8 @@ The agent's `cancel` hook is called if implemented.
   }
 }
 ```
+
+The `usage` field is present when the AI provider reports token consumption. It contains `inputTokens` (tokens consumed by the prompt) and `outputTokens` (tokens generated in the response). Not all providers or configurations guarantee usage data.
 
 ### Session info format:
 

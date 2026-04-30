@@ -6,12 +6,14 @@ All errors in the system are represented as `BridgeError` instances with a `type
 
 | Category | When Used | Retryable | MCP Error Code |
 |----------|-----------|-----------|----------------|
-| `CONFIG` | Invalid configuration, no agents registered | No | `-32004` |
-| `UPSTREAM` | Agent errors, session not found, agent not found, invalid worker response | No | `-32002` |
-| `TRANSPORT` | StdioBus communication failures, worker timeouts, server overloaded (backpressure) | Yes | `-32000` |
+| `CONFIG` | Invalid configuration, no agents registered, missing provider credentials, unregistered provider id | No | `-32004` |
+| `AUTH` | Invalid API key or authentication failure from AI provider SDKs | No | `-32003` |
+| `UPSTREAM` | Agent errors, session not found, agent not found, invalid worker response, provider SDK errors (bad request, rate limit, server errors) | Varies | `-32002` |
+| `TRANSPORT` | StdioBus communication failures, worker timeouts, server overloaded (backpressure), provider network/connection errors | Yes | `-32000` |
+| `TIMEOUT` | Provider SDK request timeouts | Yes | `-32001` |
 | `INTERNAL` | Executor not started, unexpected internal errors | No | `-32603` |
 
-> **Note:** The `BridgeError` class also defines `AUTH`, `TIMEOUT`, and `PROTOCOL` types for future use, but no current code path produces them. Worker timeouts are mapped to `TRANSPORT` with `retryable: true`.
+> **Note:** The `AUTH` and `TIMEOUT` categories are now actively used by AI provider implementations (OpenAI, Anthropic, Google Gemini) for authentication failures and request timeouts respectively. The `PROTOCOL` type remains reserved for future use.
 
 ## Error sources by executor
 
@@ -45,6 +47,68 @@ All errors in the system are represented as `BridgeError` instances with a `type
 | Prompt exceeds `maxPromptBytes` | `BridgeError.upstream('Prompt exceeds maximum size')` |
 | Metadata exceeds `maxMetadataBytes` | `BridgeError.upstream('Metadata exceeds maximum size')` |
 
+### AI provider errors:
+
+Each provider maps native SDK errors to `BridgeError` with the appropriate category. All provider errors include `providerId` in the error details.
+
+#### OpenAI Provider (`openai` SDK):
+
+| SDK Error | BridgeError Category | Retryable |
+|-----------|---------------------|-----------|
+| `AuthenticationError` (401) | AUTH | No |
+| `RateLimitError` (429) | UPSTREAM | Yes |
+| `APIConnectionError` | TRANSPORT | Yes |
+| `APITimeoutError` | TIMEOUT | Yes |
+| `BadRequestError` (400) | UPSTREAM | No |
+| `InternalServerError` (500+) | UPSTREAM | Yes |
+| Unknown error | UPSTREAM | No |
+
+#### Anthropic Provider (`@anthropic-ai/sdk`):
+
+| SDK Error | BridgeError Category | Retryable |
+|-----------|---------------------|-----------|
+| `AuthenticationError` (401) | AUTH | No |
+| `RateLimitError` (429) | UPSTREAM | Yes |
+| `APIConnectionError` | TRANSPORT | Yes |
+| `APIConnectionTimeoutError` | TIMEOUT | Yes |
+| `BadRequestError` (400) | UPSTREAM | No |
+| `InternalServerError` (500+) | UPSTREAM | Yes |
+| Unknown error | UPSTREAM | No |
+
+#### Google Gemini Provider (`@google/generative-ai`):
+
+| SDK Error | BridgeError Category | Retryable |
+|-----------|---------------------|-----------|
+| Error with status `UNAUTHENTICATED` | AUTH | No |
+| Error with status `RESOURCE_EXHAUSTED` | UPSTREAM | Yes |
+| Network/fetch errors | TRANSPORT | Yes |
+| Timeout errors | TIMEOUT | Yes |
+| Error with status `INVALID_ARGUMENT` | UPSTREAM | No |
+| Error with status `INTERNAL` | UPSTREAM | Yes |
+| Unknown error | UPSTREAM | No |
+
+### Provider error examples:
+
+```
+# Invalid API key
+BridgeError AUTH: "Incorrect API key provided" { providerId: "openai", retryable: false }
+
+# Rate limiting
+BridgeError UPSTREAM: "Rate limit exceeded" { providerId: "anthropic", retryable: true }
+
+# Network error
+BridgeError TRANSPORT: "Connection error" { providerId: "google-gemini", retryable: true }
+
+# Request timeout
+BridgeError TIMEOUT: "Request timed out" { providerId: "openai", retryable: true }
+
+# Missing credentials at construction
+BridgeError CONFIG: "Missing required credential: apiKey" { retryable: false }
+
+# Unregistered provider
+BridgeError CONFIG: 'Provider "unknown" is not registered in the ProviderRegistry' { retryable: false }
+```
+
 ## Failure reporting principles
 
 When a tool call fails, **always report**:
@@ -64,8 +128,18 @@ When a tool call fails, **always report**:
 - Server overloaded (backpressure) — `TRANSPORT`
 - Worker timeout — `TRANSPORT` with `retryable: true`
 - StdioBus transport failures — `TRANSPORT`
+- Provider rate limiting — `UPSTREAM` with `retryable: true`
+- Provider network/connection errors — `TRANSPORT` with `retryable: true`
+- Provider request timeouts — `TIMEOUT` with `retryable: true`
+- Provider internal server errors (500+) — `UPSTREAM` with `retryable: true`
 
 **Strategy:** Wait and retry.
+
+### Authentication errors (not retryable):
+
+- Invalid API key — `AUTH`
+
+**Strategy:** Report to user, fix the API key, don't retry.
 
 ### Permanent errors (not retryable):
 
@@ -74,6 +148,9 @@ When a tool call fails, **always report**:
 - Session not found
 - Session capacity reached
 - Input size exceeded
+- Missing provider credentials — `CONFIG`
+- Unregistered provider id — `CONFIG`
+- Bad request to provider (invalid parameters) — `UPSTREAM`
 
 **Strategy:** Report to user, fix the issue, don't retry.
 
@@ -90,13 +167,15 @@ When a tool call fails, **always report**:
 
 ```
 CONFIG    → -32004 (Config Error)
+AUTH      → -32003 (Auth Error)
 UPSTREAM  → -32002 (Upstream Error)
+TIMEOUT   → -32001 (Timeout Error)
 TRANSPORT → -32000 (Server Error)
 INTERNAL  → -32603 (Internal Error)
 Unknown   → -32603 (Internal Error)
 ```
 
-> `AUTH` → `-32003`, `TIMEOUT` → `-32001`, `PROTOCOL` → `-32000` are defined in the error mapper but not currently produced by any runtime code path.
+> `PROTOCOL` → `-32000` is defined in the error mapper but not currently produced by any runtime code path.
 
 The MCP error response includes:
 - `code` — numeric MCP error code

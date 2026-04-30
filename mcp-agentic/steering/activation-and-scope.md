@@ -8,6 +8,8 @@ Use the MCP Agentic power **only** when external agent delegation is actually re
 
 - **External agent execution** — tasks that require specialized agents (in-process or worker-based)
 - **Agent discovery** — finding available agents and their capabilities via `agents_discover`
+- **Provider selection** — choosing the right AI provider (OpenAI, Anthropic, Gemini) for a task based on model availability or capabilities
+- **Runtime parameter tuning** — dynamically adjusting temperature, model, systemPrompt, maxTokens, and other generation parameters per request via `runtimeParams`
 - **Session-based delegation** — multi-step work that needs session continuity via `sessions_*` tools
 - **One-shot delegation** — single tasks via `tasks_delegate`
 - **Structured result collection** — retrieving formatted outputs from agents
@@ -68,8 +70,9 @@ Before using this power, verify:
 
 1. **Task requires external delegation** — cannot be completed by the MCP client alone
 2. **Agent exists** — target capability is available (use `agents_discover`)
-3. **Bridge is healthy** — use `bridge_health` if uncertain
-4. **User intent is clear** — task requirements are well-defined
+3. **Provider is available** — if a specific AI provider is needed, check the `providers` field in the `agents_discover` response to confirm the provider and desired model are registered
+4. **Bridge is healthy** — use `bridge_health` if uncertain
+5. **User intent is clear** — task requirements are well-defined
 
 ## Deactivation criteria
 
