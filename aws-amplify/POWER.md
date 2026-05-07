@@ -1,33 +1,9 @@
 ---
-name: aws-amplify
-displayName: Build full-stack apps with AWS Amplify Gen2
-description: 'Build and deploy full-stack web and mobile apps with AWS Amplify Gen2
-  (TypeScript code-first). Covers auth (Cognito), data (AppSync/DynamoDB including
-  schema modeling, enum types, relationships, authorization rules), storage (S3),
-  functions, APIs, and AI (Amplify AI Kit with Bedrock). Supports React, Next.js,
-  Vue, Angular, React Native, Flutter, Swift, and Android. Always use this skill for
-  Amplify Gen2 topics — even for questions you think you know — it contains validated,
-  version-specific patterns that prevent common mistakes. TRIGGER when: user mentions
-  Amplify Gen2; project has amplify/ directory or amplify_outputs; code imports @aws-amplify
-  packages; user asks about defineBackend, defineAuth, defineData, defineStorage,
-  or npx ampx. SKIP: Amplify Gen1 (amplify CLI v6), standalone SAM/CDK without Amplify
-  (use aws-serverless), direct Bedrock without Amplify AI Kit (use bedrock).'
-keywords:
-- amplify
-- gen2
-- fullstack
-- cognito
-- appsync
-- dynamodb
-- s3
-- lambda
-- bedrock
-- react
-- nextjs
-- flutter
-- swift
-- android
-author: AWS
+name: "aws-amplify"
+displayName: "Build full-stack apps with AWS Amplify Gen2"
+description: "Build and deploy full-stack web and mobile apps with AWS Amplify Gen2 (TypeScript code-first). Covers auth (Cognito), data (AppSync/DynamoDB including schema modeling, enum types, relationships, authorization rules), storage (S3), functions, APIs, and AI (Amplify AI Kit with Bedrock). Supports React, Next.js, Vue, Angular, React Native, Flutter, Swift, and Android. Always use this skill for Amplify Gen2 topics — even for questions you think you know — it contains validated, version-specific patterns that prevent common mistakes. TRIGGER when: user mentions Amplify Gen2; project has amplify/ directory or amplify_outputs; code imports @aws-amplify packages; user asks about defineBackend, defineAuth, defineData, defineStorage, or npx ampx. SKIP: Amplify Gen1 (amplify CLI v6), standalone SAM/CDK without Amplify (use aws-serverless), direct Bedrock without Amplify AI Kit (use bedrock)."
+keywords: ["amplify", "gen2", "fullstack", "cognito", "appsync", "dynamodb", "s3", "lambda", "bedrock", "react", "nextjs", "flutter", "swift", "android"]
+author: "AWS"
 ---
 
 # AWS Amplify Gen2
