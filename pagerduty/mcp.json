@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "pagerduty": {
+      "command": "npx",
+      "args": ["-y", "@pagerduty/mcp-server"],
+      "env": {
+        "PAGERDUTY_API_KEY": "YOUR_PAGERDUTY_API_KEY"
+      },
+      "disabled": false,
+      "autoApprove": []
+    }
+  }
+}
