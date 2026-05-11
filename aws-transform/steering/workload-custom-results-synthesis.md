@@ -21,9 +21,9 @@ blocks can hang in shell environments. Use a command (ex. `printf '%s'`) to writ
 > Repositories: <total> | Succeeded: <count> | Failed: <count>
 
 ## Results
-| Project | TD | Status | Notes |
-|---------|-----|--------|-------|
-| <name> | <td> | Succeeded/Failed | <brief note> |
+| Project | Transformation | Status | Notes |
+|---------|---------------|--------|-------|
+| <name> | <transformation-name> | Succeeded/Failed | <brief note> |
 
 ## Failed Transformations
 ### <project-name>
@@ -39,12 +39,14 @@ blocks can hang in shell environments. Use a command (ex. `printf '%s'`) to writ
 ## Presentation
 
 Tell the user:
+
 ```
 Results: <succeeded>/<total> succeeded, <failed> failed
 Summary: ~/.aws/atx/custom/atx-agent-session/transformation-summaries/transformation-summary-$SESSION_TS.md
 ```
 
 For remote mode executions, also include the CloudWatch dashboard link:
+
 ```bash
 REGION=${AWS_REGION:-${AWS_DEFAULT_REGION:-$(aws configure get region 2>/dev/null)}}
 REGION=${REGION:-us-east-1}

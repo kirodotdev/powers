@@ -1,30 +1,34 @@
 # Multi-Transformation
 
-Apply TDs to multiple repositories in parallel. TD-to-repo assignments and config
-are already confirmed from the match report. Do NOT re-discover TDs or re-prompt.
+Apply transformation definitions to multiple repositories in parallel. Transformation-definition-to-repo assignments and config
+are already confirmed from the match report. Do NOT re-discover transformation definitions or re-prompt.
 
 ## Input
 
-From the match report: repo list, TD per repo, config per TD, execution mode.
+From the match report: repo list, transformation definition per repo, config per transformation definition, execution mode.
 
 ## Prerequisite Check (Once Only)
 
 Verify AWS credentials ONCE. Do NOT repeat per repo.
+
 ```bash
 aws sts get-caller-identity
 ```
+
 Local mode also: `atx --version`
 
 ## Local Execution
 
 If any repos were provided as git URLs (HTTPS or SSH), clone them locally first.
 The user's local git config handles authentication — no Secrets Manager needed.
+
 ```bash
 CLONE_DIR=~/.aws/atx/custom/atx-agent-session/repos/<repo-name>-$SESSION_TS
 git clone <git-url> "$CLONE_DIR"
 ```
 
 If repos were provided as an S3 bucket path with zips, download and extract locally:
+
 ```bash
 mkdir -p ~/.aws/atx/custom/atx-agent-session/repos
 aws s3 sync s3://user-bucket/repos/ ~/.aws/atx/custom/atx-agent-session/repos/ --exclude "*" --include "*.zip"
@@ -37,10 +41,12 @@ done
 Use the cloned/extracted paths as `<repo-path>` for each repo.
 
 For each repo, verify it's a git repo:
+
 ```bash
 ls -la <repo-path>
 git -C <repo-path> status
 ```
+
 If not a git repo: `cd <repo-path> && git init && git add . && git commit -m "Initial commit"`
 
 The active language runtime must match the transformation's target version so that
@@ -49,6 +55,7 @@ mismatch, first check whether the target version is already installed (e.g.,
 `/usr/libexec/java_home -V 2>&1` (macOS) or `ls /usr/lib/jvm/` (Linux), `pyenv versions`, `nvm ls`). If found, switch
 to it (e.g., `export JAVA_HOME=<path to JDK> && export PATH="$JAVA_HOME/bin:$PATH"`, `pyenv shell 3.12`, `nvm use 22`). Only if
 the target version is not installed at all, ask the user for permission before installing. Suggest:
+
 - Java: `brew install --cask corretto23` (macOS), `sudo yum install java-23-amazon-corretto-devel` (RHEL/AL2), or `sudo apt install java-23-amazon-corretto-jdk` (Debian/Ubuntu)
 - Python: `pyenv install 3.15.0 && pyenv shell 3.15.0`
 - Node.js: `nvm install 23 && nvm use 23`
@@ -56,9 +63,9 @@ the target version is not installed at all, ask the user for permission before i
 Do NOT proceed until the correct version is active. Verify the switch succeeded
 before proceeding.
 
-### Telemetry
+### 5. Telemetry
 
-When running `atx custom def exec`, always include the `--telemetry` flag (see the Telemetry section in POWER.md). Format:
+When running `atx custom def exec`, always include the `--telemetry` flag (see the Telemetry section in workload-custom.md). Format:
 `--telemetry "client=kiro,agent=kiro,executionMode=<local|remote>"`
 
 - `client` is always `kiro`
@@ -73,6 +80,7 @@ but recommend remote mode for more). If the total repo count exceeds 9, suggest
 remote mode instead.
 
 For each repo, use bash to create a runner script that captures the exit code, following this exact format:
+
 ```bash
 mkdir -p ~/.aws/atx/custom/atx-agent-session
 cat > ~/.aws/atx/custom/atx-agent-session/run-<repo-name>.sh << 'RUNNER'
@@ -86,19 +94,23 @@ chmod +x ~/.aws/atx/custom/atx-agent-session/run-<repo-name>.sh
 nohup ~/.aws/atx/custom/atx-agent-session/run-<repo-name>.sh > ~/.aws/atx/custom/atx-agent-session/<repo-name>.log 2>&1 &
 echo $! > ~/.aws/atx/custom/atx-agent-session/<repo-name>.pid
 ```
-Omit `--configuration` if no config needed. Include `--telemetry` always — see POWER.md for details. Launch each repo's script in rapid
+
+Omit `--configuration` if no config needed. The `--telemetry` flag is always included — see workload-custom.md for details. Launch each repo's script in rapid
 succession — do NOT wait between launches. Each runner script is backgrounded
-via nohup; the exit code is captured to `~/.aws/atx/custom/atx-agent-session/<repo-name>.exit` when ATX finishes.
+via nohup; the exit code is captured to `~/.aws/atx/custom/atx-agent-session/<repo-name>.exit` when AWS Transform finishes.
 
 After launching all repos, find each repo's conversation log by grepping its
-process log (ATX outputs the path within 30-60 seconds of starting):
+process log (AWS Transform outputs the path within 30-60 seconds of starting):
+
 ```bash
 grep "Conversation log:" ~/.aws/atx/custom/atx-agent-session/<repo-name>.log 2>/dev/null
 ```
+
 If it hasn't appeared yet, wait 15 seconds and retry. Extract the full path from
 each — do NOT use `ls -t` across all conversations, as that may match a different run.
 
 Then start monitoring. On each 60-second cycle:
+
 1. Check each PID: `kill -0 $(cat ~/.aws/atx/custom/atx-agent-session/<repo-name>.pid) 2>/dev/null && echo "RUNNING" || echo "DONE"`
 2. Tail each repo's conversation log and relay progress to the user
 3. For each repo, list the artifacts directory (`~/.aws/atx/custom/<conversation-id>/artifacts/`)
@@ -111,7 +123,7 @@ continuous progress updates across all repos.
 A repo's transformation is done ONLY when its background process exits (i.e.,
 `kill -0` returns non-zero). Do NOT treat exit code 0 from any other command
 (grep, cat, test, ls, etc.) as transformation completion. Do NOT treat log
-messages like "TRANSFORMATION COMPLETE" as completion — ATX performs additional
+messages like "TRANSFORMATION COMPLETE" as completion — AWS Transform performs additional
 steps after that (validation summary generation).
 
 ## Remote Execution
@@ -127,7 +139,8 @@ Submit jobs via the batch Lambda in chunks of up to 128. If there are more than
 = 4 calls of 128 + 128 + 128 + 116). Each call returns its own `batchId`. Track
 all batch IDs for monitoring.
 
-Include the `environment` field on each job to set the language version matching the transformation's target (e.g., `"JAVA_VERSION":"21"` for a Java upgrade targeting 21). Include `--telemetry` in each job's `command` string always (see POWER.md):
+Include the `environment` field on each job to set the language version matching the transformation's target (e.g., `"JAVA_VERSION":"21"` for a Java upgrade targeting 21). The `--telemetry` flag is always included in each job's `command` string (see workload-custom.md):
+
 ```bash
 aws lambda invoke --function-name atx-trigger-batch-jobs \
   --payload '{"batchName":"<name>-chunk-1","jobs":[{"source":"<url>","command":"atx custom def exec -n <td> -p /source/<project> -x -t --telemetry \"client=kiro,agent=kiro,executionMode=remote\"","jobName":"<name>","environment":{"JAVA_VERSION":"<target>"}}]}' \
@@ -135,6 +148,7 @@ aws lambda invoke --function-name atx-trigger-batch-jobs \
 ```
 
 If the total exceeds 128, repeat with the next chunk:
+
 ```bash
 aws lambda invoke --function-name atx-trigger-batch-jobs \
   --payload '{"batchName":"<name>-chunk-2","jobs":[...next 128 jobs...]}' \
@@ -142,43 +156,47 @@ aws lambda invoke --function-name atx-trigger-batch-jobs \
 ```
 
 Monitor each batch by its `batchId`:
+
 ```bash
 aws lambda invoke --function-name atx-get-batch-status \
   --payload '{"batchId":"<batch-id>"}' \
   --cli-binary-format raw-in-base64-out /dev/stdout
 ```
+
 Polling: every 60 seconds for the first 10 polls, then every 5 minutes after.
 Report only on status change.
 
 ## Progress Reporting
 
 ```
-[1/N] repo-name          TD-name                    Status
-[2/N] repo-name          TD-name                    Status
+[1/N] repo-name          transformation-name                    Status
+[2/N] repo-name          transformation-name                    Status
 ```
 
 ## Result Collection
 
 Collect per repo: success/failure, transformed code path, error details.
+
 ```
 Succeeded:
-- repo-name: TD-name (config)
+- repo-name: transformation-name (config)
 Failed:
-- repo-name: TD-name (error)
+- repo-name: transformation-name (error)
 ```
 
 For remote executions, include the CloudWatch dashboard link in the final output:
+
 ```bash
 REGION=${AWS_REGION:-${AWS_DEFAULT_REGION:-$(aws configure get region 2>/dev/null)}}
 REGION=${REGION:-us-east-1}
 echo "https://${REGION}.console.aws.amazon.com/cloudwatch/home#dashboards/dashboard/ATX-Transform-CLI-Dashboard"
 ```
 
-Hand off to [results-synthesis.md](results-synthesis.md) for consolidated reporting.
+Hand off to [workload-custom-results-synthesis.md](workload-custom-results-synthesis.md) for consolidated reporting.
 
 For local executions only, tell the user: "To review changes in each repo, open it in
 Kiro (`kiro -r <repo-path>`) and use the Source Control panel to see the full
-commit history with diffs for each file ATX modified."
+commit history with diffs for each file AWS Transform modified."
 
 ## Error Handling
 
@@ -191,18 +209,19 @@ commit history with diffs for each file ATX modified."
 ## MANDATORY: Cleanup
 
 Clean up session files **before starting** and **after completing** each batch:
+
 ```bash
 [ -d ~/.aws/atx/custom/atx-agent-session ] && find ~/.aws/atx/custom/atx-agent-session -maxdepth 1 -type f \( -name "*.sh" -o -name "*.log" -o -name "*.pid" -o -name "*.exit" -o -name "*.zip" \) -delete 2>/dev/null || true
 ```
 
 For remote mode: after presenting results, also prompt the user about infrastructure
-teardown. See the Cleanup section in [remote-execution.md](remote-execution.md)
+teardown. See the Cleanup section in [workload-custom-remote-execution.md](workload-custom-remote-execution.md)
 for the exact prompt and flow.
 
 ## Key Principles
 
 1. Single prerequisite check — never repeat for parallel tasks
-2. Trust the match report — do not re-discover TDs
+2. Trust the match report — do not re-discover transformation definitions
 3. Local parallel execution — maximum 3 concurrent repos (user-overridable); recommend remote for more than 9
 4. Remote parallel execution — submit in chunks of up to 128 jobs per `atx-trigger-batch-jobs` call; split larger sets into multiple calls (max 512 repos per session)
 5. Skip prerequisite checks in parallel task prompts

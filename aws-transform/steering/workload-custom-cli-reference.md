@@ -1,22 +1,26 @@
-# ATX CLI Reference
+# AWS Transform CLI Reference
 
 ## Execution Flags (`atx custom def exec`)
 
 | Flag | Long Form | Description |
 |------|-----------|-------------|
-| `-n` | `--transformation-name <name>` | TD name (from `atx custom def list --json`) |
+| `-n` | `--transformation-name <name>` | Transformation definition name (from `atx custom def list --json`) |
 | `-p` | `--code-repository-path <path>` | Path to code repo (`.` for current dir) |
 | `-x` | `--non-interactive` | No user prompts (always use this flag) |
 | `-t` | `--trust-all-tools` | Auto-approve tool executions (required with `-x`) |
 | `-d` | `--do-not-learn` | Prevent knowledge item extraction |
 | `-g` | `--configuration <config>` | Inline configuration (`'key=val'`) |
-| `--tv` | `--transformation-version <ver>` | Specific TD version |
+| `--tv` | `--transformation-version <ver>` | Specific transformation definition version |
 
 ## Configuration
 
 Inline: `--configuration 'additionalPlanContext=Target Python 3.13'`
 
 Example: `atx custom def exec -n my-td -p /source/repo -g 'additionalPlanContext=Target Java 17' -x -t`
+
+- See the workload-custom-single-transformation.md and workload-custom-multi-transformation.md files for how to wrap this around a
+runner/launcher script to ensure this is executed in a non-blocking way, so that user is updated while the process is running instead of
+having to wait until it exits.
 
 `--configuration` is optional. Omit if no extra context needed.
 
@@ -27,11 +31,11 @@ Example: `atx custom def exec -n my-td -p /source/repo -g 'additionalPlanContext
 | Start interactive conversation | `atx` |
 | Resume most recent conversation | `atx --resume` |
 | Resume specific conversation | `atx --conversation-id <id>` (30-day limit) |
-| List TDs | `atx custom def list --json` |
-| Download TD | `atx custom def get -n <name>` (optional: `--tv <version>`, `--td <directory>`) |
-| Delete TD | `atx custom def delete -n <name>` |
-| Save TD as draft | `atx custom def save-draft -n <name> --description "<desc>" --sd <dir>` |
-| Publish TD | `atx custom def publish -n <name> --description "<desc>" --sd <dir>` |
+| List transformation definitions | `atx custom def list --json` |
+| Download transformation definition | `atx custom def get -n <name>` (optional: `--tv <version>`, `--td <directory>`) |
+| Delete transformation definition | `atx custom def delete -n <name>` |
+| Save as draft | `atx custom def save-draft -n <name> --description "<desc>" --sd <dir>` |
+| Publish transformation definition | `atx custom def publish -n <name> --description "<desc>" --sd <dir>` |
 | List knowledge items | `atx custom def list-ki -n <name>` |
 | View knowledge item | `atx custom def get-ki -n <name> --id <id>` |
 | Enable/disable KI | `atx custom def update-ki-status -n <name> --id <id> --status ENABLED or DISABLED` |
@@ -40,7 +44,7 @@ Example: `atx custom def exec -n my-td -p /source/repo -g 'additionalPlanContext
 | Delete KI | `atx custom def delete-ki -n <name> --id <id>` |
 | Update CLI | `atx update` |
 | Check for CLI updates only | `atx update --check` |
-| Tag a TD | `atx custom def tag --arn <arn> --tags '{"key":"value"}'` |
+| Tag a transformation definition | `atx custom def tag --arn <arn> --tags '{"key":"value"}'` |
 
 ## Environment Variables
 
@@ -63,9 +67,9 @@ Minimum: `transform-custom:*` on `Resource: "*"`.
 | `transform-custom:ExecuteTransformation` | Execute transforms |
 | `transform-custom:ListTransformationPackageMetadata` | List transforms (`atx custom def list --json`) |
 | `transform-custom:DeleteTransformationPackage` | Delete transforms |
-| `transform-custom:CompleteTransformationPackageUpload` | Upload TDs |
+| `transform-custom:CompleteTransformationPackageUpload` | Upload transformation definitions |
 | `transform-custom:CreateTransformationPackageUrl` | Create upload URLs |
-| `transform-custom:GetTransformationPackageUrl` | Download TDs |
+| `transform-custom:GetTransformationPackageUrl` | Download transformation definitions |
 | `transform-custom:ListKnowledgeItems` | List knowledge items |
 | `transform-custom:GetKnowledgeItem` | View knowledge item details |
 | `transform-custom:DeleteKnowledgeItem` | Delete knowledge items |
@@ -102,6 +106,7 @@ This produces two policies:
 | `atx-deployment-policy.json` | CloudFormation, ECR, IAM roles, Batch, VPC, KMS key creation | One-time CDK deploy/destroy |
 
 After generating, create and attach the runtime policy:
+
 ```bash
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 CALLER_ARN=$(aws sts get-caller-identity --query Arn --output text)
@@ -124,7 +129,7 @@ elif echo "$CALLER_ARN" | grep -Eq ":assumed-role/|:role/"; then
 fi
 ```
 
-The runtime policy covers: `transform-custom:*` for ATX CLI operations (TD discovery, execution),
+The runtime policy covers: `transform-custom:*` for AWS Transform CLI operations (transformation definition discovery, execution),
 `lambda:InvokeFunction` on all `atx-*` functions,
 `s3:PutObject`/`s3:GetObject` on source and output buckets, `kms:Encrypt`/`kms:Decrypt`/`kms:GenerateDataKey`
 on the ATX encryption key, `secretsmanager:CreateSecret`/`PutSecretValue`/`DeleteSecret` on `atx/*` secrets,

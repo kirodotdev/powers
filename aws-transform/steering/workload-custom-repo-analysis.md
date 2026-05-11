@@ -1,28 +1,28 @@
-# Repo Analysis & TD Matching
+# Repo Analysis & Transformation Definition Matching
 
 **Local mode only.** Repo analysis inspects files on the local filesystem — it
 cannot run inside remote containers. For remote mode, skip this step and let the
-user specify which TDs to apply. If the user selected remote mode, do NOT attempt
+user specify which transformation definitions to apply. If the user selected remote mode, do NOT attempt
 to run the detection commands below.
 
-Inspect repositories and match them against available Transformation Definitions.
+Inspect repositories and match them against available transformation definitions.
 
-## TD Discovery (Required First Step)
+## Transformation Definition Discovery (Required First Step)
 
 ```bash
 atx custom def list          # Human-readable
 atx custom def list --json   # Programmatic parsing
 ```
 
-Never hardcode TD names. Only match repos against TDs that appear in this output.
+Never hardcode transformation definition names. Only match repos against transformation definitions that appear in this output.
 If `atx` is not installed, install it first — do not fall back to guessed names.
 
-## Known AWS-Managed TDs (Reference Only)
+## Known AWS-Managed Transformation Definitions (Reference Only)
 
 This table is a guide for signal detection, NOT a substitute for `atx custom def list --json`.
-TD names change over time. Always use actual names from the live output.
+Names change over time. Always use actual names from the live output.
 
-| TD Name (may change) | Description | Key Config |
+| Name (may change) | Description | Key Config |
 |---------|-------------|------------|
 | `AWS/java-version-upgrade` | Upgrade Java/JDK version (any source → any target) | Target JDK version (e.g., 17, 21) |
 | `AWS/python-version-upgrade` | Upgrade Python version (3.8/3.9 → 3.11/3.12/3.13) | Target Python version |
@@ -53,6 +53,7 @@ Service routing: COBOL/mainframe → use AWS Transform for Mainframe. .NET Frame
 ## Detection Commands
 
 ### Python
+
 ```bash
 cat <repo>/.python-version 2>/dev/null
 cat <repo>/pyproject.toml 2>/dev/null | head -30
@@ -61,6 +62,7 @@ cat <repo>/requirements.txt 2>/dev/null | head -10
 ```
 
 ### Java
+
 ```bash
 cat <repo>/pom.xml 2>/dev/null | head -60       # Look for <java.version>, <maven.compiler.source>
 cat <repo>/build.gradle 2>/dev/null | head -40   # Look for sourceCompatibility
@@ -68,6 +70,7 @@ cat <repo>/.java-version 2>/dev/null
 ```
 
 ### Node.js
+
 ```bash
 cat <repo>/package.json 2>/dev/null              # Look for engines.node
 cat <repo>/.nvmrc 2>/dev/null
@@ -98,7 +101,7 @@ cat <repo>/package.json 2>/dev/null | grep '"aws-sdk"'
 grep -rlE "x86_64|amd64|x86-64" <repo> --include="*.yml" --include="*.yaml" --include="Dockerfile" 2>/dev/null | head -3
 ```
 
-Currently Java-only. Match against Graviton migration TD if available.
+Currently Java-only. Match against Graviton migration transformation definition if available.
 
 ## Match Report Format
 
@@ -107,26 +110,26 @@ Transformation Match Report
 =============================
 Repository: <name> (<path>)
   Language: <lang> <version>
-  Matching TDs:
-    - <td-name> — <description>
+  Matching transformation definitions:
+    - <name> — <description>
 
-  Other available TDs (may also apply):
-    - <custom-td> — <description>
+  Other available transformation definitions (may also apply):
+    - <custom-name> — <description>
 
 Summary: N repos analyzed, M have matches (T total jobs)
 ```
 
 Group by repository. Show detected version. Include repos with no matches.
-List custom TDs (non-`AWS/` prefix) under "Other available TDs".
+List custom transformation definitions (non-`AWS/` prefix) under "Other available transformation definitions".
 
 ## Edge Cases
 
 | Case | Handling |
 |------|----------|
-| Repo already up-to-date | List upgrade TD but note current version |
-| Monorepo (multiple languages) | List all matching TDs — each is a separate job |
+| Repo already up-to-date | List upgrade transformation definition but note current version |
+| Monorepo (multiple languages) | List all matching transformation definitions — each is a separate job |
 | Mixed local + remote repos | Clone git URL repos locally for inspection, inspect local paths directly |
-| Custom TDs in account | Show under "Other available TDs" per repo |
+| Custom transformation definitions in account | Show under "Other available transformation definitions" per repo |
 | Git clone fails | Report error, continue with remaining repos |
 
 ## Cleanup

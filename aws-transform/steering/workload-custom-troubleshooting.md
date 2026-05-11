@@ -6,10 +6,10 @@
 |-------|------------|
 | `atx` not found | Install: `curl -fsSL https://transform-cli.awsstatic.com/install.sh` piped to `bash` |
 | AWS credentials error or expiry | Run `aws sts get-caller-identity`. Check `AWS_PROFILE` or access key env vars |
-| Permission denied | Local mode: need `transform-custom:*` — see Prerequisites → IAM Permissions in POWER.md. Remote mode: generate and attach policies via `npx ts-node generate-caller-policy.ts` — see remote-execution.md |
+| Permission denied | Local mode: need `transform-custom:*` — see Prerequisites → IAM Permissions in workload-custom.md. Remote mode: generate and attach policies via `npx ts-node generate-caller-policy.ts` — see workload-custom-remote-execution.md |
 | Network error | Resolve region: `REGION=${AWS_REGION:-${AWS_DEFAULT_REGION:-$(aws configure get region 2>/dev/null)}}; REGION=${REGION:-us-east-1}`. Check access to `transform-custom.${REGION}.api.aws` |
 | Build fails during transform | Verify build command works locally first. Try interactive mode for debugging |
-| Transform not found | Run `atx custom def list --json` to check available TDs |
+| Transform not found | Run `atx custom def list --json` to check available transformation definitions |
 | Configuration fails with commas | Do not use commas inside `additionalPlanContext` values — they break the CLI parser. Rephrase to avoid commas |
 | Conversation expired | Conversations expire after 30 days. Start a new one |
 | Windows not supported | Tell user to use Windows Subsystem for Linux (WSL) |
@@ -24,10 +24,12 @@ If a git clone fails in the remote container (job status FAILED, logs show
 authentication or 403 errors), work through these steps with the user:
 
 **1. Is the PAT/key stored?**
+
 ```bash
 aws secretsmanager describe-secret --secret-id "atx/github-token" --region "$REGION" 2>/dev/null && echo "EXISTS" || echo "MISSING"
 aws secretsmanager describe-secret --secret-id "atx/ssh-key" --region "$REGION" 2>/dev/null && echo "EXISTS" || echo "MISSING"
 ```
+
 If missing, guide the user through setup — see Step 1 in POWER.md.
 
 **2. Does the PAT have the right scope?**
@@ -38,6 +40,7 @@ each repo explicitly listed."
 
 Resolution: the user updates their PAT on GitHub to include the new repo, then
 updates the stored secret:
+
 ```bash
 aws secretsmanager put-secret-value --secret-id "atx/github-token" --region "$REGION" --secret-string "<updated-token>"
 ```
@@ -45,11 +48,13 @@ aws secretsmanager put-secret-value --secret-id "atx/github-token" --region "$RE
 **3. Has the PAT expired?**
 GitHub PATs can have expiration dates. Ask: "When did you create this PAT? It may
 have expired." Resolution: create a new PAT on GitHub, then update the secret:
+
 ```bash
 aws secretsmanager put-secret-value --secret-id "atx/github-token" --region "$REGION" --secret-string "<new-token>"
 ```
 
 **4. Is it the right credential type for the URL?**
+
 - HTTPS URLs (`https://github.com/...`) need `atx/github-token` (PAT)
 - SSH URLs (`git@github.com:...`) need `atx/ssh-key` (SSH private key)
 If the user provided SSH URLs but only has a PAT stored (or vice versa), guide
@@ -79,6 +84,7 @@ Network errors may indicate VPN/firewall issues with AWS endpoints.
 ## Deployment Failures
 
 CDK deployment handles most issues automatically. Common recovery:
+
 ```bash
 ATX_INFRA_DIR="$HOME/.aws/atx/custom/remote-infra"
 cd "$ATX_INFRA_DIR" && ./teardown.sh
@@ -102,12 +108,10 @@ Diagnose in this order:
 | `transform-cli.awsstatic.com` | CLI installation and updates |
 | `transform-custom.${REGION}.api.aws` | Transformation service API |
 
-
 ## Pre-built Container Image
 
 The default pre-built image URI is `public.ecr.aws/d9h8z6l7/aws-transform:latest`.
 This is configured via `prebuiltImageUri` in `cdk.json`.
-
 
 ## Remote Infrastructure Repo Issues
 
