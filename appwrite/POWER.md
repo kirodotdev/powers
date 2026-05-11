@@ -2,8 +2,9 @@
 name: "appwrite"
 displayName: "Appwrite Backend Platform"
 description: "Build backend services with Appwrite - databases, authentication, storage, functions, and messaging for web and mobile apps"
-keywords: ["appwrite", "backend", "database", "auth", "authentication", "storage", "functions", "serverless", "baas", "api", "users", "teams", "messaging"]
+keywords: ["appwrite", "backend", "database", "auth", "authentication", "storage", "functions", "serverless", "baas", "api", "users", "sites", "messaging"]
 author: "Appwrite"
+version: "2.0.0"
 ---
 
 # Onboarding
@@ -15,15 +16,13 @@ Before using Appwrite MCP, ensure you have completed the following steps.
 Check that the required tools are installed:
 
 **For API Server:**
-- **uv**: Required to run the Appwrite API MCP server
+- **uv**: Required to run the Appwrite API MCP server (version 0.4.1+)
   - Verify with: `uv --version`
   - Install if missing: Follow instructions at https://docs.astral.sh/uv/getting-started/installation/
   - **CRITICAL**: If uv is not installed, DO NOT proceed with API server setup
 
 **For Docs Server:**
-- **Node.js and npm**: Required for the documentation MCP server
-  - Verify with: `node --version` and `npm --version`
-  - Install if missing: Download from https://nodejs.org/
+- **No prerequisites required** - HTTP-based server, works out of the box
 
 ## Step 2: Configure Appwrite Credentials
 
@@ -48,14 +47,20 @@ Set these environment variables on your system or add them to your MCP configura
 - `APPWRITE_API_KEY` - Your API key (keep secure!)
 - `APPWRITE_ENDPOINT` - Your endpoint URL (e.g., `https://nyc.cloud.appwrite.io/v1`)
 
-## Step 3: Choose MCP Servers
+## Step 3: Understand MCP Server 2.0 Architecture
 
 This power provides two MCP servers:
 
-- **appwrite-api**: Interact with Appwrite services (databases, users, storage, functions, etc.)
+- **appwrite-api**: Interact with Appwrite services using the new 2-tool architecture
 - **appwrite-docs**: Query Appwrite documentation for guidance and examples
 
-You can enable one or both depending on your needs. The API server is essential for building applications, while the docs server helps with learning and troubleshooting.
+**What's New in MCP Server 2.0:**
+- **Zero Configuration**: No more service flags (`--users`, `--storage`, etc.) - all services are automatically available
+- **Compact Architecture**: Only 2 tools exposed to the model (`appwrite_search_tools` and `appwrite_call_tool`)
+- **Reduced Context Usage**: Full Appwrite tool catalog stays internal and is searched at runtime
+- **Automatic Service Discovery**: All supported Appwrite services are automatically registered
+
+You can enable one or both servers depending on your needs. The API server is essential for building applications, while the docs server helps with learning and troubleshooting.
 
 ## Step 4: Add Development Hooks (Optional)
 
@@ -109,90 +114,72 @@ Appwrite is an open-source backend-as-a-service platform that provides authentic
 
 ### appwrite-api
 
-**Package:** `mcp-server-appwrite` (via uvx)
+**Package:** `mcp-server-appwrite` (version 0.4.1+, via uvx)
 **Connection:** Python-based MCP server
 **Authentication:** API key with project ID and endpoint
+**Architecture:** MCP Server 2.0 with compact two-tool design
 
-**Command-line Arguments:**
+**Revolutionary Two-Tool Architecture:**
 
-By default, only Database tools are enabled. Use these flags to enable additional APIs:
+Instead of exposing dozens of tools directly to the model, MCP Server 2.0 uses only **two MCP tools**:
 
-- `--tables-db` - TablesDB API (relational database operations)
-- `--users` - Users API (user management and authentication)
-- `--teams` - Teams API (team and membership management)
-- `--storage` - Storage API (file upload, download, management)
-- `--functions` - Functions API (serverless function deployment)
-- `--messaging` - Messaging API (email, SMS, push notifications)
-- `--locale` - Locale API (country, language, currency data)
-- `--avatars` - Avatars API (generate avatars and QR codes)
-- `--sites` - Sites API (deploy static sites and SSR apps)
-- `--databases` - Legacy Databases API
-- `--all` - Enable all Appwrite APIs
+- `appwrite_search_tools` - Searches the full Appwrite tool catalog based on natural language intent
+- `appwrite_call_tool` - Executes a specific Appwrite operation by name
 
-**Important:** Only enable the APIs you need. Each enabled API adds tools to the LLM context, reducing available context window. Start with databases and add others as needed.
+**Key Benefits:**
+- **Zero Configuration**: No service flags needed - all Appwrite services work automatically
+- **Minimal Context Usage**: Full tool catalog stays internal, freeing up context for your code
+- **Automatic Discovery**: All services (databases, users, storage, functions, messaging, sites, teams) are available by default
+- **Smart Search**: AI searches for the right tool based on your intent
+- **Validation on Startup**: Credentials and scopes are validated when the server starts, not on first tool call
 
-**Available Tools (varies by enabled APIs):**
+**No More Service Flags!**
 
-**Databases API** (enabled by default):
-- `mcp_appwrite_api_databases_create` - Create a new database
-- `mcp_appwrite_api_databases_list` - List all databases
-- `mcp_appwrite_api_databases_get` - Get database details
-- `mcp_appwrite_api_databases_update` - Update database properties
-- `mcp_appwrite_api_databases_delete` - Delete a database
-- `mcp_appwrite_api_databases_create_collection` - Create a collection
-- `mcp_appwrite_api_databases_list_collections` - List collections
-- `mcp_appwrite_api_databases_get_collection` - Get collection details
-- `mcp_appwrite_api_databases_update_collection` - Update collection
-- `mcp_appwrite_api_databases_delete_collection` - Delete collection
-- `mcp_appwrite_api_databases_create_document` - Create a document
-- `mcp_appwrite_api_databases_list_documents` - Query documents
-- `mcp_appwrite_api_databases_get_document` - Get document by ID
-- `mcp_appwrite_api_databases_update_document` - Update document
-- `mcp_appwrite_api_databases_delete_document` - Delete document
-- Plus attribute, index, and transaction management tools
+Previous versions required flags like `--users`, `--storage`, `--functions`, etc. These are **completely removed** in version 2.0. Simply run:
 
-**Users API** (with `--users` flag):
-- `mcp_appwrite_api_users_create` - Create a new user
-- `mcp_appwrite_api_users_list` - List all users
-- `mcp_appwrite_api_users_get` - Get user details
-- `mcp_appwrite_api_users_update_email` - Update user email
-- `mcp_appwrite_api_users_update_password` - Update user password
-- `mcp_appwrite_api_users_delete` - Delete a user
-- Plus session, preferences, and MFA management tools
+```json
+{
+  "command": "uvx",
+  "args": ["mcp-server-appwrite"]
+}
+```
 
-**Storage API** (with `--storage` flag):
-- `mcp_appwrite_api_storage_create_bucket` - Create storage bucket
-- `mcp_appwrite_api_storage_list_buckets` - List all buckets
-- `mcp_appwrite_api_storage_create_file` - Upload a file
-- `mcp_appwrite_api_storage_list_files` - List files in bucket
-- `mcp_appwrite_api_storage_get_file` - Get file metadata
-- `mcp_appwrite_api_storage_get_file_download` - Download file
-- `mcp_appwrite_api_storage_get_file_preview` - Get image preview
-- `mcp_appwrite_api_storage_delete_file` - Delete a file
+All services are automatically available without any configuration.
 
-**Functions API** (with `--functions` flag):
-- `mcp_appwrite_api_functions_create` - Create a function
-- `mcp_appwrite_api_functions_list` - List all functions
-- `mcp_appwrite_api_functions_create_deployment` - Deploy function code
-- `mcp_appwrite_api_functions_create_execution` - Execute a function
-- `mcp_appwrite_api_functions_list_executions` - List function executions
-- Plus variable and runtime management tools
+**Available Tools (via search and call pattern):**
 
-**Messaging API** (with `--messaging` flag):
-- `mcp_appwrite_api_messaging_create_email` - Send email message
-- `mcp_appwrite_api_messaging_create_sms` - Send SMS message
-- `mcp_appwrite_api_messaging_create_push` - Send push notification
-- `mcp_appwrite_api_messaging_create_topic` - Create messaging topic
-- `mcp_appwrite_api_messaging_create_subscriber` - Add subscriber
-- Plus provider and target management tools
+The server provides access to all Appwrite services through the two-tool architecture:
 
-**Sites API** (with `--sites` flag):
-- `mcp_appwrite_api_sites_create` - Create a new site
-- `mcp_appwrite_api_sites_list` - List all sites
-- `mcp_appwrite_api_sites_create_deployment` - Deploy site code
-- `mcp_appwrite_api_sites_list_deployments` - List deployments
-- `mcp_appwrite_api_sites_update_site_deployment` - Activate deployment
-- Plus variable and framework management tools
+**Core Services** (automatically available):
+- **Databases**: Collections, documents, queries, indexes, attributes, transactions
+- **Users**: User management, sessions, preferences, MFA, OAuth
+- **Storage**: Buckets, file operations, image transformations, previews
+- **Functions**: Serverless deployment, executions, variables, multiple runtimes
+- **Messaging**: Email, SMS, push notifications, topics, subscribers
+- **Sites**: Static sites, SSR applications, deployments, frameworks
+- **Teams**: Team management, memberships, roles, invitations
+- **Locale**: Country, language, currency, timezone data
+- **Avatars**: Generate avatars, QR codes, favicons
+
+**How It Works:**
+
+1. **Search**: AI uses `appwrite_search_tools` with natural language (e.g., "create a user", "list databases")
+2. **Discover**: Server searches internal catalog and returns matching tool definitions
+3. **Execute**: AI calls `appwrite_call_tool` with the specific tool name and parameters
+4. **Result**: Server executes the operation and returns the result
+
+**Example Flow:**
+```
+User: "Create a new database called 'production'"
+↓
+AI: appwrite_search_tools(query="create database")
+↓
+Server: Returns tool definition for "databases_create"
+↓
+AI: appwrite_call_tool(tool_name="databases_create", arguments={...})
+↓
+Server: Executes and returns database creation result
+```
 
 ### appwrite-docs
 
@@ -202,337 +189,178 @@ By default, only Database tools are enabled. Use these flags to enable additiona
 
 **Available Tools:**
 
-- `search_documentation` - Search Appwrite documentation
-- `get_documentation_page` - Get specific documentation page
-- `list_documentation_sections` - List available doc sections
+- `search_documentation` - Search Appwrite documentation with natural language
+- `get_documentation_page` - Get specific documentation page content
+- `list_documentation_sections` - List available documentation sections
 - `get_api_reference` - Get API reference for specific endpoint
-- `get_code_examples` - Get code examples for specific feature
+- `get_code_examples` - Get code examples for specific features
+
+**Perfect for:**
+- Learning Appwrite APIs and best practices
+- Finding code examples and implementation patterns
+- Troubleshooting errors and issues
+- Understanding service capabilities
+- Getting up-to-date documentation
 
 ## Tool Usage Examples
 
-### Database Operations
+### Using the Two-Tool Architecture
 
-**Create a database:**
+**Example 1: Create a Database**
+
 ```javascript
-mcp_appwrite_api_databases_create({
-  "database_id": "main",
-  "name": "Main Database",
-  "enabled": true
+// Step 1: Search for the right tool
+appwrite_search_tools({
+  "query": "create a new database"
+})
+
+// Returns: Tool definition for "databases_create"
+
+// Step 2: Call the tool
+appwrite_call_tool({
+  "tool_name": "databases_create",
+  "arguments": {
+    "database_id": "main",
+    "name": "Main Database",
+    "enabled": true
+  }
 })
 ```
 
-**Create a collection:**
+**Example 2: Create a User**
+
 ```javascript
-mcp_appwrite_api_databases_create_collection({
-  "database_id": "main",
-  "collection_id": "users",
-  "name": "Users",
-  "permissions": ["read(\"any\")"],
-  "document_security": true
+// Search
+appwrite_search_tools({
+  "query": "create user with email and password"
+})
+
+// Call
+appwrite_call_tool({
+  "tool_name": "users_create",
+  "arguments": {
+    "user_id": "unique()",
+    "email": "user@example.com",
+    "password": "SecurePass123!",
+    "name": "John Doe"
+  }
 })
 ```
 
-**Add attributes to collection:**
+**Example 3: Upload a File**
+
 ```javascript
-// String attribute
-mcp_appwrite_api_databases_create_string_attribute({
-  "database_id": "main",
-  "collection_id": "users",
-  "key": "name",
-  "size": 255,
-  "required": true
+// Search
+appwrite_search_tools({
+  "query": "upload file to storage bucket"
 })
 
-// Email attribute
-mcp_appwrite_api_databases_create_email_attribute({
-  "database_id": "main",
-  "collection_id": "users",
-  "key": "email",
-  "required": true
-})
-
-// Boolean attribute
-mcp_appwrite_api_databases_create_boolean_attribute({
-  "database_id": "main",
-  "collection_id": "users",
-  "key": "is_active",
-  "required": true,
-  "default": true
+// Call
+appwrite_call_tool({
+  "tool_name": "storage_create_file",
+  "arguments": {
+    "bucket_id": "avatars",
+    "file_id": "unique()",
+    "file": "/path/to/avatar.jpg",
+    "permissions": ["read(\"any\")"]
+  }
 })
 ```
 
-**Create a document:**
-```javascript
-mcp_appwrite_api_databases_create_document({
-  "database_id": "main",
-  "collection_id": "users",
-  "document_id": "unique()",
-  "data": {
-    "name": "John Doe",
-    "email": "john@example.com",
-    "is_active": true
-  },
-  "permissions": ["read(\"user:USER_ID\")"]
-})
-```
+### Natural Language Queries
 
-**Query documents:**
-```javascript
-mcp_appwrite_api_databases_list_documents({
-  "database_id": "main",
-  "collection_id": "users",
-  "queries": [
-    "equal(\"is_active\", true)",
-    "orderDesc(\"$createdAt\")",
-    "limit(10)"
-  ]
-})
-```
+The search tool understands natural language, so you can ask in various ways:
 
-### User Management
+- "How do I create a collection?"
+- "List all users in my project"
+- "Upload an image to storage"
+- "Deploy a serverless function"
+- "Send an email notification"
 
-**Create a user:**
-```javascript
-mcp_appwrite_api_users_create({
-  "user_id": "unique()",
-  "email": "user@example.com",
-  "password": "SecurePass123!",
-  "name": "Jane Smith"
-})
-```
-
-**List users:**
-```javascript
-mcp_appwrite_api_users_list({
-  "queries": ["limit(25)"],
-  "search": "john"
-})
-```
-
-**Update user email:**
-```javascript
-mcp_appwrite_api_users_update_email({
-  "user_id": "USER_ID",
-  "email": "newemail@example.com"
-})
-```
-
-### Storage Operations
-
-**Create a storage bucket:**
-```javascript
-mcp_appwrite_api_storage_create_bucket({
-  "bucket_id": "avatars",
-  "name": "User Avatars",
-  "permissions": ["read(\"any\")"],
-  "file_security": true,
-  "enabled": true,
-  "maximum_file_size": 5000000, // 5MB
-  "allowed_file_extensions": ["jpg", "jpeg", "png", "gif"]
-})
-```
-
-**Upload a file:**
-```javascript
-mcp_appwrite_api_storage_create_file({
-  "bucket_id": "avatars",
-  "file_id": "unique()",
-  "file": "/path/to/avatar.jpg",
-  "permissions": ["read(\"any\")"]
-})
-```
-
-### Documentation Queries
-
-**Search documentation:**
-```javascript
-search_documentation({
-  "query": "real-time subscriptions",
-  "limit": 5
-})
-```
-
-**Get API reference:**
-```javascript
-get_api_reference({
-  "endpoint": "/databases/{databaseId}/collections/{collectionId}/documents",
-  "method": "POST"
-})
-```
+The AI will automatically search for the right tool and execute it.
 
 ## Common Workflows
 
 ### Workflow 1: Complete Database Setup
 
 ```javascript
+// The AI will automatically search and call the right tools
+
 // Step 1: Create database
-const db = await mcp_appwrite_api_databases_create({
-  "database_id": "main",
-  "name": "Main Database",
-  "enabled": true
-})
+"Create a database called 'main'"
+// AI searches for and calls: databases_create
 
 // Step 2: Create collection
-const collection = await mcp_appwrite_api_databases_create_collection({
-  "database_id": "main",
-  "collection_id": "posts",
-  "name": "Blog Posts",
-  "permissions": ["read(\"any\")"],
-  "document_security": true
-})
+"Create a collection called 'posts' in the main database with public read access"
+// AI searches for and calls: databases_create_collection
 
 // Step 3: Add attributes
-await mcp_appwrite_api_databases_create_string_attribute({
-  "database_id": "main",
-  "collection_id": "posts",
-  "key": "title",
-  "size": 255,
-  "required": true
-})
+"Add a string attribute 'title' (max 255 chars, required) to the posts collection"
+"Add a string attribute 'content' (max 10000 chars, required) to the posts collection"
+"Add a datetime attribute 'published_at' (optional) to the posts collection"
+// AI searches for and calls: databases_create_string_attribute (x2), databases_create_datetime_attribute
 
-await mcp_appwrite_api_databases_create_string_attribute({
-  "database_id": "main",
-  "collection_id": "posts",
-  "key": "content",
-  "size": 10000,
-  "required": true
-})
-
-await mcp_appwrite_api_databases_create_datetime_attribute({
-  "database_id": "main",
-  "collection_id": "posts",
-  "key": "published_at",
-  "required": false
-})
-
-// Step 4: Create index for queries
-await mcp_appwrite_api_databases_create_index({
-  "database_id": "main",
-  "collection_id": "posts",
-  "key": "title_index",
-  "type": "key",
-  "attributes": ["title"]
-})
+// Step 4: Create index
+"Create an index on the title field for the posts collection"
+// AI searches for and calls: databases_create_index
 
 // Step 5: Create first document
-await mcp_appwrite_api_databases_create_document({
-  "database_id": "main",
-  "collection_id": "posts",
-  "document_id": "unique()",
-  "data": {
-    "title": "Getting Started with Appwrite",
-    "content": "Appwrite is an amazing backend platform...",
-    "published_at": "2024-02-05T10:00:00.000Z"
-  }
-})
+"Create a post with title 'Getting Started with Appwrite' and content '...'"
+// AI searches for and calls: databases_create_document
 ```
 
 ### Workflow 2: User Authentication Setup
 
 ```javascript
-// Step 1: Create admin user
-const admin = await mcp_appwrite_api_users_create({
-  "user_id": "unique()",
-  "email": "admin@example.com",
-  "password": "SecureAdminPass123!",
-  "name": "Admin User"
-})
+// Natural language workflow
 
-// Step 2: Create team for organization
-const team = await mcp_appwrite_api_teams_create({
-  "team_id": "unique()",
-  "name": "Engineering Team"
-})
+"Create an admin user with email admin@example.com"
+// AI: searches for users_create, executes with proper parameters
 
-// Step 3: Add user to team
-await mcp_appwrite_api_teams_create_membership({
-  "team_id": team.id,
-  "email": "admin@example.com",
-  "roles": ["owner"],
-  "url": "https://example.com/join-team"
-})
+"Create a team called 'Engineering Team'"
+// AI: searches for teams_create, executes
 
-// Step 4: Set user preferences
-await mcp_appwrite_api_users_update_prefs({
-  "user_id": admin.id,
-  "prefs": {
-    "theme": "dark",
-    "notifications": true
-  }
-})
+"Add the admin user to the Engineering Team as owner"
+// AI: searches for teams_create_membership, executes
+
+"Set user preferences for dark theme and email notifications"
+// AI: searches for users_update_prefs, executes
 ```
 
 ### Workflow 3: File Upload and Management
 
 ```javascript
-// Step 1: Create storage bucket
-const bucket = await mcp_appwrite_api_storage_create_bucket({
-  "bucket_id": "documents",
-  "name": "User Documents",
-  "permissions": ["read(\"any\")"],
-  "file_security": true,
-  "enabled": true,
-  "maximum_file_size": 10000000, // 10MB
-  "allowed_file_extensions": ["pdf", "doc", "docx", "txt"]
-})
+// Conversational approach
 
-// Step 2: Upload file
-const file = await mcp_appwrite_api_storage_create_file({
-  "bucket_id": "documents",
-  "file_id": "unique()",
-  "file": "/path/to/document.pdf",
-  "permissions": ["read(\"user:USER_ID\")"]
-})
+"Create a storage bucket for user documents with 10MB limit, allowing PDF and DOCX files"
+// AI: searches for storage_create_bucket, configures properly
 
-// Step 3: Get file download URL
-const download = await mcp_appwrite_api_storage_get_file_download({
-  "bucket_id": "documents",
-  "file_id": file.id
-})
+"Upload document.pdf to the documents bucket"
+// AI: searches for storage_create_file, handles upload
 
-// Step 4: List all files
-const files = await mcp_appwrite_api_storage_list_files({
-  "bucket_id": "documents",
-  "queries": ["limit(25)"]
-})
+"Get the download URL for the uploaded file"
+// AI: searches for storage_get_file_download, returns URL
+
+"List all files in the documents bucket"
+// AI: searches for storage_list_files, returns list
 ```
 
 ### Workflow 4: Serverless Function Deployment
 
 ```javascript
-// Step 1: Create function
-const func = await mcp_appwrite_api_functions_create({
-  "function_id": "unique()",
-  "name": "Process Payment",
-  "runtime": "node-18.0",
-  "execute": ["any"],
-  "events": [],
-  "schedule": "",
-  "timeout": 15
-})
+// Simple natural language commands
 
-// Step 2: Create deployment
-const deployment = await mcp_appwrite_api_functions_create_deployment({
-  "function_id": func.id,
-  "code": "/path/to/function.tar.gz",
-  "activate": true,
-  "entrypoint": "index.js"
-})
+"Create a function called 'Process Payment' using Node.js 18 runtime"
+// AI: searches for functions_create, sets up function
 
-// Step 3: Set environment variables
-await mcp_appwrite_api_functions_create_variable({
-  "function_id": func.id,
-  "key": "STRIPE_API_KEY",
-  "value": "sk_test_...",
-  "secret": true
-})
+"Deploy the function code from /path/to/function.tar.gz"
+// AI: searches for functions_create_deployment, handles deployment
 
-// Step 4: Execute function
-const execution = await mcp_appwrite_api_functions_create_execution({
-  "function_id": func.id,
-  "body": JSON.stringify({ amount: 1000, currency: "usd" }),
-  "xasync": false
-})
+"Set environment variable STRIPE_API_KEY for the function"
+// AI: searches for functions_create_variable, adds variable
+
+"Execute the function with payment data"
+// AI: searches for functions_create_execution, runs function
 ```
 
 ## Best Practices
@@ -682,7 +510,7 @@ const execution = await mcp_appwrite_api_functions_create_execution({
 
 **MCP Configuration:**
 
-For API server (minimal - databases only):
+**Minimal Configuration (MCP Server 2.0):**
 ```json
 {
   "mcpServers": {
@@ -699,33 +527,19 @@ For API server (minimal - databases only):
 }
 ```
 
-For API server (with additional services):
+**With Documentation Server:**
 ```json
 {
   "mcpServers": {
     "appwrite-api": {
       "command": "uvx",
-      "args": [
-        "mcp-server-appwrite",
-        "--users",
-        "--storage",
-        "--functions",
-        "--sites"
-      ],
+      "args": ["mcp-server-appwrite"],
       "env": {
         "APPWRITE_PROJECT_ID": "${APPWRITE_PROJECT_ID}",
         "APPWRITE_API_KEY": "${APPWRITE_API_KEY}",
         "APPWRITE_ENDPOINT": "${APPWRITE_ENDPOINT}"
       }
-    }
-  }
-}
-```
-
-For documentation server:
-```json
-{
-  "mcpServers": {
+    },
     "appwrite-docs": {
       "url": "https://mcp-for-docs.appwrite.io",
       "type": "http"
@@ -734,29 +548,38 @@ For documentation server:
 }
 ```
 
-**Permissions:** API key should have appropriate scopes for intended operations. Use least privilege principle - only grant necessary permissions.
+**Important Notes:**
+- **No service flags needed** - All services are automatically available
+- **Remove old flags** - If upgrading from v1.x, remove `--users`, `--storage`, `--functions`, etc.
+- **Validation on startup** - Server validates credentials when it starts, not on first tool call
+- **Using uvx** - Automatically fetches the latest version (0.4.1+)
 
 ## Tips
 
-1. **Start with databases** - Most apps need data storage first
-2. **Use document security** - Enable for collections with user-specific data
-3. **Create indexes early** - Add indexes before large datasets
-4. **Test permissions** - Verify access control works as expected
-5. **Use query helpers** - Leverage Appwrite's query builder
-6. **Monitor usage** - Check Appwrite console for metrics
-7. **Enable real-time** - Use subscriptions for live updates
-8. **Batch operations** - Use transactions for related changes
-9. **Cache strategically** - Reduce API calls with smart caching
-10. **Read the docs** - Use the docs MCP server for guidance
-11. **Use TypeScript** - Type safety prevents many errors
-12. **Version your schema** - Track database structure changes
-13. **Test locally** - Use Appwrite CLI for local development
-14. **Backup regularly** - Export data periodically
-15. **Monitor logs** - Check function and API logs for issues
+1. **Use natural language** - The search tool understands conversational queries
+2. **All services available** - No need to enable specific services, everything works out of the box
+3. **Minimal context usage** - MCP 2.0 architecture uses less context, leaving more room for your code
+4. **Start with databases** - Most apps need data storage first
+5. **Use document security** - Enable for collections with user-specific data
+6. **Create indexes early** - Add indexes before large datasets
+7. **Test permissions** - Verify access control works as expected
+8. **Monitor usage** - Check Appwrite console for metrics
+9. **Enable real-time** - Use subscriptions for live updates
+10. **Batch operations** - Use transactions for related changes
+11. **Cache strategically** - Reduce API calls with smart caching
+12. **Read the docs** - Use the docs MCP server for guidance
+13. **Use TypeScript** - Type safety prevents many errors
+14. **Version your schema** - Track database structure changes
+15. **Backup regularly** - Export data periodically
+16. **Monitor logs** - Check function and API logs for issues
+17. **Upgrade from v1.x** - Remove all service flags from your configuration
 
 ## Resources
 
 - [Appwrite Documentation](https://appwrite.io/docs)
+- [MCP Server 2.0 Announcement](https://appwrite.io/blog/post/announcing-appwrite-mcp-server-2)
+- [MCP Server GitHub Repository](https://github.com/appwrite/mcp-for-api)
+- [MCP Server on PyPI](https://pypi.org/project/mcp-server-appwrite/)
 - [API Reference](https://appwrite.io/docs/references)
 - [Quick Starts](https://appwrite.io/docs/quick-starts)
 - [Database Guide](https://appwrite.io/docs/products/databases)
@@ -770,6 +593,8 @@ For documentation server:
 ---
 
 **Package:** `mcp-server-appwrite` (Python via uvx)  
+**Version:** 0.4.1+  
 **Source:** Official Appwrite  
-**License:** BSD-3-Clause  
-**Connection:** Python MCP server with API key authentication
+**License:** MIT  
+**Connection:** Python MCP server with API key authentication  
+**Architecture:** MCP Server 2.0 with two-tool design

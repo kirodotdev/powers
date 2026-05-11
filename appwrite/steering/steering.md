@@ -1,6 +1,83 @@
 # Appwrite Best Practices
 
-This guide provides best practices for building applications with Appwrite.
+This guide provides best practices for building applications with Appwrite, including guidance for using MCP Server 2.0.
+
+## MCP Server 2.0 Usage
+
+### Natural Language Queries
+
+**Use conversational language to interact with Appwrite:**
+
+```javascript
+// ✅ Good: Natural language queries
+"Create a database called 'production' with a 'users' collection"
+"Add a user with email john@example.com and password SecurePass123"
+"Upload profile.jpg to the avatars bucket"
+"List all documents in the posts collection where status is published"
+
+// The AI will automatically:
+// 1. Search for the right tool using appwrite_search_tools
+// 2. Execute the operation using appwrite_call_tool
+// 3. Return the result
+```
+
+### Understanding the Two-Tool Architecture
+
+**How MCP 2.0 works:**
+
+1. **Search Phase**: AI uses `appwrite_search_tools` with your natural language query
+2. **Discovery Phase**: Server searches internal catalog and returns matching tool definitions
+3. **Execution Phase**: AI calls `appwrite_call_tool` with the specific tool name and parameters
+4. **Result Phase**: Server executes and returns the result
+
+```javascript
+// Example flow:
+User: "Create a new user"
+↓
+AI: appwrite_search_tools({ query: "create user" })
+↓
+Server: Returns tool definition for "users_create"
+↓
+AI: appwrite_call_tool({ 
+  tool_name: "users_create",
+  arguments: { email: "...", password: "..." }
+})
+↓
+Server: Executes and returns user creation result
+```
+
+### Migration from v1.x
+
+**Remove all service flags from your configuration:**
+
+```json
+// ❌ Bad: Old v1.x configuration
+{
+  "args": [
+    "mcp-server-appwrite",
+    "--users",
+    "--storage",
+    "--functions",
+    "--messaging"
+  ]
+}
+
+// ✅ Good: New v2.0 configuration
+{
+  "args": ["mcp-server-appwrite"]
+}
+```
+
+**All services are now automatically available:**
+- Databases
+- Users
+- Storage
+- Functions
+- Messaging
+- Sites
+- Teams
+- Locale
+- Avatars
 
 ## Database Design
 
