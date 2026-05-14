@@ -187,7 +187,8 @@ Start with chat for instant answers. Escalate to investigation only when the pro
 4. If complex root cause needed:
    aws___call_aws("aws devops-agent create-backlog-task ...") → escalate to deep research (5-8 min)
    Poll get-backlog-task + list-journal-records → stream progress
-   list-recommendations → get-recommendation → generate remediation code
+   aws___call_aws("aws devops-agent update-backlog-task --task-status PENDING_START ...") → trigger mitigation (2-5 min)
+   Poll get-backlog-task until COMPLETED again. Then call list-executions to find the newest execution_id, and list-journal-records --execution-id EXEC_ID --record-type mitigation_summary_md to get the mitigation plan
 ```
 
 ---
@@ -248,10 +249,9 @@ For incidents requiring deep root cause analysis:
 2. aws___call_aws(cli_command="aws devops-agent create-backlog-task --agent-space-id SPACE_ID --task-type INVESTIGATION --title 'Describe the issue' --priority HIGH --description 'Include local context here' --region us-east-1") → taskId   (executionId becomes available from get-backlog-task once IN_PROGRESS)
 3. Poll every 30-45s: aws___call_aws(cli_command="aws devops-agent get-backlog-task --agent-space-id SPACE_ID --task-id TASK_ID --region us-east-1") until status changes from PENDING_START to IN_PROGRESS
 4. Stream every 30-45s: aws___call_aws(cli_command="aws devops-agent list-journal-records --agent-space-id SPACE_ID --execution-id EXEC_ID --region us-east-1")
-5. Once COMPLETED: aws___call_aws(cli_command="aws devops-agent list-recommendations --agent-space-id SPACE_ID --task-id TASK_ID --region us-east-1") → get-recommendation → generate remediation code
-6. If list-recommendations returns empty, trigger mitigation in place:
-   aws___call_aws(cli_command="aws devops-agent update-backlog-task --agent-space-id SPACE_ID --task-id TASK_ID --task-status PENDING_START --region us-east-1")
-   Re-poll get-backlog-task until COMPLETED again (2-5 min), then re-call list-recommendations.
+5. Once COMPLETED: trigger mitigation (2-5 min): aws___call_aws(cli_command="aws devops-agent update-backlog-task --agent-space-id SPACE_ID --task-id TASK_ID --task-status PENDING_START --region us-east-1")
+6. Poll get-backlog-task every 30-45s until COMPLETED again, then: aws___call_aws(cli_command="aws devops-agent list-executions --agent-space-id SPACE_ID --task-id TASK_ID --region us-east-1") → find newest execution_id
+7. Retrieve mitigation: aws___call_aws(cli_command="aws devops-agent list-journal-records --agent-space-id SPACE_ID --execution-id EXEC_ID --record-type mitigation_summary_md --region us-east-1")
 
 > **executionId format caveat**: `create-backlog-task` returns executionIds in `exe-ops1-UUID` format. The `aws___call_aws` CLI path handles this transparently, but `call_boto3(SendMessage)` expects a pure UUID. **Use `call_boto3` for chat sessions** (where `create-chat` returns a pure UUID) and **`aws___call_aws` CLI for investigation operations** (`list-journal-records`, `get-backlog-task`). This is a known service-side format inconsistency.
 ```
@@ -364,7 +364,7 @@ You:
 5. If deeper root cause needed:
    aws___call_aws("aws devops-agent create-backlog-task --agent-space-id SPACE_ID --task-type INVESTIGATION --title 'ECS 503 errors on <service>' --priority HIGH --description '<local context>' --region us-east-1")
    Poll get-backlog-task + list-journal-records → stream progress with emojis
-   On complete: list-recommendations → get-recommendation → show fix
+   On complete: update-backlog-task --task-status PENDING_START → trigger mitigation (2-5 min) → poll until COMPLETED → list-executions to find newest execution_id → list-journal-records --execution-id EXEC_ID --record-type mitigation_summary_md
 6. If recommendation has IaC: generate the fix code locally
 ```
 
