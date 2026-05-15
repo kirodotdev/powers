@@ -20,13 +20,6 @@ Documentation is available at https://kiro.dev/docs/powers/
 
 ---
 
-### aws-devops-agent
-**AWS DevOps Agent** - AI agent for AWS operational intelligence. Investigate incidents, optimize costs, review architecture, map topology, chat with the agent, and get remediation — all enhanced with your local workspace context.
-
-**MCP Servers:** aws-mcp
-
----
-
 ### aws-healthomics
 
 **Create and Manage Bioinformatics Workflows with AWS HealthOmics** - create, migrate, run, debug and identify optimization opportunities for bioinformatics workflows in AWS HealthOmics.
@@ -46,13 +39,6 @@ Documentation is available at https://kiro.dev/docs/powers/
 **Build serverless applications with AWS SAM** - Build, test, and deploy serverless applications using AWS Serverless Application Model (SAM) with local development workflow and MCP tooling.
 
 **MCP Servers:** awslabs.aws-serverless-mcp-server, fetch
-
----
-
-### aws-transform
-**Agents modernizing the world's infrastructure and software**, backed by years of AWS expertise. AWS Transform is a full modernization factory — connecting assessment through execution in a single experience, so the manual handoffs and lost context that commonly stall large-scale migrations and ongoing tech debt reduction no longer slow you down. This power brings AWS Transform directly into Kiro. AWS Transform custom is the first supported capability, with more playbooks on the way. Find out more at [aws.amazon.com/transform](https://aws.amazon.com/transform/)
-
-**MCP Servers:** None
 
 ---
 

@@ -65,14 +65,6 @@ This power provides access to several specialized tools:
 
 ---
 
-## Steering Files
-
-This power has the following steering files for detailed workflow guidance:
-
-- **karpenter.md** — Guides detection and migration of Karpenter configurations (NodePool, EC2NodeClass) to use Graviton ARM64 instances. Covers gradual rollout with taints/tolerations, instance family mappings, and post-migration cleanup.
-
----
-
 ## License & Legal
 
 ### Power License
@@ -112,7 +104,7 @@ By using this power, you acknowledge that:
 
 ## Power Metadata
 
-**Version**: 1.1  
+**Version**: 1.0  
 **Author**: AWS  
 **Supported Languages**: C++, Python, Go, JavaScript, Java  
 **Container Runtime**: Docker required  

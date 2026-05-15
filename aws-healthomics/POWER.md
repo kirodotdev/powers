@@ -14,19 +14,16 @@ When you want to create, migrate, run, debug and identify optimization opportuni
 
 Whenever you are asked to perform a task related to any of the following scenarios - ensure you load and read the appropriate markdown file mentioned
 
-- Creating a workflow from a remote Git repository URL (GitHub, GitLab, Bitbucket) -> use `./steering/git-integration.md` (takes precedence over workflow-development.md)
-- Creating a new WDL, Nextflow or CWL workflow from local files -> use `./steering/workflow-development.md`
-- Running a deployed HealthOmics workflow -> use `./steering/running-a-workflow.md`
-- Submitting, monitoring, or managing batch runs (multiple samples/runs at once) -> use `./steering/batch-runs.md`
-- Onboarding an existing WDL workflow ensuring compatibility with HealthOmics -> use `./steering/migration-guide-for-wdl.md`
-- Onboarding an existing Nextflow workflow ensuring compatibility with HealthOmics -> use `./steering/migration-guide-for-nextflow.md`
-- Modifying, updating, or fixing an existing HealthOmics workflow -> use `./steering/workflow-versioning.md`
-- Diagnosing workflow creation issues -> use `./steering/troubleshooting.md`
-- Diagnosing run failures -> use `./steering/troubleshooting.md`
-- Using public containers with HealthOmics via ECR Pullthrough Caches -> use `./steering/ecr-pull-through-cache.md`
-- Setting up VPC infrastructure for HealthOmics workflows (subnets, NAT Gateway, security groups, endpoints) -> use `./steering/vpc-setup.md`
-- Managing HealthOmics VPC configurations (creating, listing, getting, or deleting configurations) -> use `./steering/healthomics-configuration.md`
-- Running workflows with VPC connectivity, public internet access, cross-region access, or access to private VPC resources -> use `./steering/vpc-connected-workflow-runs.md`
+- Creating a workflow from a remote Git repository URL (GitHub, GitLab, Bitbucket) -> use `./steering_files/git-integration.md` (takes precedence over workflow-development.md)
+- Creating a new WDL, Nextflow or CWL workflow from local files -> use `./steering_files/workflow-development.md`
+- Running a deployed HealthOmics workflow -> use `./steering_files/running-a-workflow.md`
+- Submitting, monitoring, or managing batch runs (multiple samples/runs at once) -> use `./steering_files/batch-runs.md`
+- Onboarding an existing WDL workflow ensuring compatibility with HealthOmics -> use `.\steering_files/migration-guide-for-wdl.md`
+- Onboarding an existing Nextflow workflow ensuring compatibility with HealthOmics -> use `./steering_files/migration-guide-for-nextflow.md`
+- Modifying, updating, or fixing an existing HealthOmics workflow -> use `./steering_files/workflow-versioning.md`
+- Diagnosing workflow creation issues -> use `./steering_files/troubleshooting.md`
+- Diagnosing run failures -> use `./steering_files/troubleshooting.md`
+- Using public containers with HealthOmics via ECR Pullthrough Caches -> use `./steering_files/ecr-pull-through-cache.md`
 
 
 # Onboarding

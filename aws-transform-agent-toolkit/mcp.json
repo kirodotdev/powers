@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "aws-transform-agent-toolkit": {
-      "command": "uvx",
-      "args": ["--from", "agent-builder-mcp-aws-transform", "agent-builder-mcp"]
-    }
-  }
-}
