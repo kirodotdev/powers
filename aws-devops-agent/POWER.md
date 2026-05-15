@@ -605,5 +605,5 @@ See [AWS DevOps Agent Security](https://docs.aws.amazon.com/devopsagent/latest/u
 - **Documentation**: [AWS DevOps Agent User Guide](https://docs.aws.amazon.com/devopsagent/latest/userguide/)
 - **Setup**: [AWS MCP Server Getting Started](https://docs.aws.amazon.com/agent-toolkit/latest/userguide/getting-started-aws-mcp-server.html)
 - **Support**: [AWS Support Center](https://console.aws.amazon.com/support/)
-- **License**: Subject to the [AWS Customer Agreement](https://aws.amazon.com/agreement/) and applicable service terms
+- **License**: Apache-2.0
 - **Privacy**: [AWS Privacy Notice](https://aws.amazon.com/privacy/)
