@@ -295,7 +295,7 @@ Discover what the agent knows using conversational chat:
 ```
 1. aws___call_aws("aws devops-agent create-chat --agent-space-id SPACE_ID --user-id USER_ID --user-type IAM --region us-east-1") → executionId
 2. aws___run_script → call_boto3(SendMessage, params={agentSpaceId, executionId, userId, content="List all runbooks. For each, provide the title, description, and AWS services it covers."})
-3. aws___run_script → call_boto3(SendMessage, params={..., content="What types of incidents can you analyze?"})
+3. aws___run_script → call_boto3(SendMessage, params={agentSpaceId, executionId, userId, content="What types of incidents can you analyze?"})
 ```
 
 ---
@@ -341,7 +341,7 @@ CDK Stack: lib/my-service-stack.ts — ECS Fargate with ALB
 
 [Question]
 Analyze cost optimization opportunities for this ECS service."""
-})
+)
 ```
 
 ---
@@ -401,7 +401,7 @@ You:
 1. aws___call_aws("aws devops-agent create-chat --agent-space-id SPACE_ID --user-id USER_ID --user-type IAM --region us-east-1") → executionId
 2. aws___run_script → call_boto3(SendMessage, params={agentSpaceId, executionId, userId, content="List all runbooks and knowledge items you have access to. For each, provide the title and AWS services it covers."})
 3. For deeper exploration:
-   aws___run_script → call_boto3(SendMessage, params={..., content="Detail runbook for <specific-service>"})
+   aws___run_script → call_boto3(SendMessage, params={agentSpaceId, executionId, userId, content="Detail runbook for <specific-service>"})
 ```
 
 ---
@@ -453,11 +453,9 @@ aws configure      # IAM access keys (chat may require SSO identity)
 Attach these managed policies before first use:
 
 ```bash
-# For your IAM user (calling DevOps Agent APIs via MCP)
 aws iam attach-user-policy --user-name YOUR_USER \
   --policy-arn arn:aws:iam::aws:policy/AIDevOpsAgentFullAccess
 
-# For the agent's service role (DevOps Agent accessing your AWS resources)
 aws iam attach-role-policy --role-name YOUR_AGENT_ROLE \
   --policy-arn arn:aws:iam::aws:policy/AIDevOpsAgentAccessPolicy
 ```

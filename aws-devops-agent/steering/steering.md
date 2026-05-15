@@ -54,8 +54,8 @@ Best for: cost optimization, architecture review, topology mapping, knowledge di
 - ❌ Do NOT ask "should I investigate or chat?" — auto-route based on keywords
 - ❌ Do NOT forget `--task-type INVESTIGATION` when creating backlog tasks (required)
 - ❌ Do NOT call `list-recommendations` before investigation status=COMPLETED (empty results)
-- ❌ Do NOT assume `list-recommendations` will have results after COMPLETED — recommendations may be empty until mitigation is explicitly triggered via `update-backlog-task --task-status PENDING_START`
 - ❌ Do NOT omit `--user-id` and `--user-type` from `create-chat` or `userId` from `SendMessage` — both are required for chat sessions
+- ❌ Do NOT assume `list-recommendations` will have results after COMPLETED — recommendations may be empty until mitigation is explicitly triggered via `update-backlog-task --task-status PENDING_START`
 - ❌ Do NOT pass ARNs as `userId` — use simple usernames matching `^[a-zA-Z0-9_.-]+$`
 - ❌ Do NOT poll faster than every 30 seconds (wastes API quota)
 - ❌ Do NOT silently poll investigations — stream journal findings to user with emoji progress
