@@ -1,0 +1,1005 @@
+---
+name: "databricks"
+displayName: "Databricks AI Dev Kit"
+description: "Comprehensive Databricks development toolkit with 44 MCP tools (180+ operations) and expert guidance for building data pipelines, ML workflows, dashboards, jobs, and applications on the Databricks Data Intelligence Platform."
+keywords: ["databricks", "spark", "delta", "mlflow", "unity catalog", "pipelines", "jobs", "sql", "data engineering", "machine learning"]
+author: "AWS"
+---
+
+# Databricks AI Dev Kit Power
+
+## Overview
+
+The Databricks AI Dev Kit Power provides comprehensive access to the Databricks Lakehouse platform through 44 MCP tools (180+ operations) and expert steering files for every Databricks capability — pipelines, jobs, dashboards, ML, governance, and apps.
+
+**Key capabilities:**
+- **SQL & Compute**: Execute SQL on warehouses, run Python/Scala on clusters, manage compute lifecycle
+- **Pipelines & Jobs**: Build Spark Declarative Pipelines (streaming tables, CDC, SCD Type 2, Auto Loader) and orchestrate multi-task DAGs
+- **Unity Catalog**: Manage tables, volumes, grants, tags, storage credentials, system tables, and metric views
+- **AI/BI Dashboards**: Create interactive visualizations, KPIs, and analytics dashboards
+- **Genie Spaces**: Natural-language data exploration over governed datasets
+- **Agent Bricks**: Build Knowledge Assistants (RAG) and Multi-Agent Supervisors
+- **Vector Search**: Semantic search and RAG with managed indexes
+- **Model Serving**: Deploy ML models and AI agents to scalable endpoints
+- **MLflow**: Track experiments, evaluate models, instrument tracing, query metrics
+- **Lakebase**: Provisioned and autoscale managed PostgreSQL for OLTP workloads
+- **Databricks Apps**: Full-stack web applications on the Lakehouse
+- **Asset Bundles**: Infrastructure-as-code for Databricks resources
+
+**Authentication**: Requires a Databricks workspace and either an OAuth-authenticated CLI profile, an existing `~/.databrickscfg` profile, or a Personal Access Token (PAT).
+
+## Available Steering Files
+
+This Power's steering files are downloaded from the [ai-dev-kit repository](https://github.com/databricks-solutions/ai-dev-kit/tree/main/databricks-skills) during onboarding and copied into the Power's `steering/` directory. Skills load on-demand based on your task.
+
+### Skill Catalog (33+ skills)
+
+| Skill | Domain | Description |
+|-------|--------|-------------|
+| databricks-spark-declarative-pipelines | Data Engineering | Streaming tables, CDC, SCD Type 2, Auto Loader |
+| databricks-spark-structured-streaming | Data Engineering | Kafka, stateful ops, stream joins |
+| databricks-jobs | Data Engineering | Scheduled workflows, multi-task DAGs, serverless |
+| databricks-zerobus-ingest | Data Engineering | Zero-copy ingestion |
+| databricks-iceberg | Data Engineering | Iceberg tables, UniForm, interop |
+| databricks-aibi-dashboards | Analytics | Interactive visualizations, KPIs, analytics |
+| databricks-dbsql | Analytics | SQL best practices, materialized views |
+| databricks-genie | Analytics | Natural language data exploration |
+| databricks-metric-views | Analytics | Reusable business metrics |
+| databricks-unity-catalog | Governance | Tables, volumes, governance, system tables |
+| databricks-agent-bricks | AI/ML | Knowledge Assistants, Supervisor Agents |
+| databricks-vector-search | AI/ML | Semantic search and RAG applications |
+| databricks-model-serving | AI/ML | Deploy ML models and AI agents |
+| databricks-mlflow-evaluation | AI/ML | Model evaluation, scoring, traces |
+| databricks-ai-functions | AI/ML | AI functions, forecasting, document processing |
+| databricks-synthetic-data-gen | AI/ML | Synthetic data generation |
+| databricks-app-python | App Development | Full-stack web applications |
+| databricks-app-apx | App Development | App frontend/backend patterns |
+| databricks-lakebase-provisioned | App Development | Managed PostgreSQL (provisioned) |
+| databricks-lakebase-autoscale | App Development | Managed PostgreSQL (autoscale) |
+| databricks-bundles | Platform | Databricks Asset Bundles |
+| databricks-config | Platform | Workspace configuration |
+| databricks-python-sdk | Platform | Python SDK patterns and examples |
+| databricks-unstructured-pdf-generation | Platform | PDF generation and upload |
+| databricks-docs | Platform | Documentation search |
+| mlflow-onboarding | MLflow | MLflow getting started |
+| instrumenting-with-mlflow-tracing | MLflow | MLflow tracing instrumentation |
+| querying-mlflow-metrics | MLflow | Querying MLflow metrics |
+| retrieving-mlflow-traces | MLflow | Retrieving MLflow traces |
+| searching-mlflow-docs | MLflow | Searching MLflow documentation |
+| analyze-mlflow-trace | MLflow | Analyzing MLflow traces |
+| analyze-mlflow-chat-session | MLflow | Analyzing MLflow chat sessions |
+| agent-evaluation | MLflow | Agent evaluation patterns |
+| spark-python-data-source | Data Engineering | Custom Spark data sources |
+
+### Skill Loading
+
+This Power installs **all 34+ skills** (`--skills-profile all`). Skills are markdown files that load on demand based on the task at hand — having the full set present incurs no runtime cost, and it avoids re-running the installer when work crosses domains (e.g., an ML engineer who occasionally builds a dashboard). Persona-specific subsets are not used.
+
+## Available MCP Servers
+
+### databricks
+**Package:** `databricks-solutions/ai-dev-kit` (`databricks-mcp-server`)
+**Connection:** Local Python process (`uv` venv) configured via `~/.kiro/settings/mcp.json`
+
+44 tools spanning 180+ operations. The most frequently used are itemized below; see the full category index further down.
+
+#### SQL & Compute
+
+1. **execute_sql** — Run a SQL statement on a SQL warehouse
+   - Required: `statement` (string), `warehouse_id` (string)
+   - Optional: `catalog`, `schema`, `parameters`, `wait_timeout`
+   - Returns: Result rows, schema, statement state
+
+2. **execute_sql_multi** — Run multiple SQL statements in sequence
+   - Required: `statements` (string[]), `warehouse_id` (string)
+   - Returns: Results per statement
+
+3. **execute_code** — Execute Python/Scala/R/SQL on an interactive cluster
+   - Required: `cluster_id` (string), `language` (string), `code` (string)
+   - Returns: Execution output
+
+4. **manage_cluster** — Create / get / list / start / restart / terminate / edit clusters
+   - Required: `action` (string)
+   - Optional: cluster spec fields per action
+   - Returns: Cluster object or list
+
+5. **manage_sql_warehouse** — Create / get / list / start / stop / edit / delete SQL warehouses
+   - Required: `action` (string)
+   - Optional: warehouse spec fields per action
+   - Returns: Warehouse object or list
+
+6. **manage_warehouse** — Companion warehouse helper for SQL workflows
+   - Required: `action` (string)
+   - Returns: Warehouse state
+
+7. **list_compute** — List available compute resources (clusters + warehouses)
+   - Optional: `filter_type`
+   - Returns: Compute summary
+
+8. **get_table_stats_and_schema** — Inspect table schema, row counts, partitioning
+   - Required: `table_name` (fully-qualified, e.g. `catalog.schema.table`)
+   - Returns: Schema, statistics, partition info
+
+#### Jobs & Pipelines
+
+9. **manage_jobs** — Create / get / list / update / delete jobs
+   - Required: `action` (string)
+   - Optional: job spec (`tasks`, `schedule`, `parameters`, `email_notifications`)
+   - Returns: Job object or list
+
+10. **manage_job_runs** — Run / wait / cancel / get-output for job runs
+    - Required: `action` (string), `job_id` or `run_id`
+    - Returns: Run state, output, logs
+
+11. **manage_pipeline** — Create / get / list / update / delete Spark Declarative Pipelines (DLT)
+    - Required: `action` (string)
+    - Optional: pipeline spec, libraries, target schema
+    - Returns: Pipeline object
+
+12. **manage_pipeline_run** — Start / stop / get-update for pipeline runs
+    - Required: `action` (string), `pipeline_id`
+    - Returns: Run/update state
+
+#### Unity Catalog
+
+13. **manage_uc_objects** — Create / get / list / update / delete catalogs, schemas, tables, volumes, functions
+    - Required: `action` (string), `object_type` (string)
+    - Optional: object spec
+    - Returns: UC object or list
+
+14. **manage_uc_grants** — Grant / revoke / list privileges on UC objects
+    - Required: `action` (string), `securable_type`, `full_name`
+    - Returns: Permission assignments
+
+15. **manage_uc_storage** — Manage external locations and storage credentials
+    - Required: `action` (string)
+    - Returns: Storage credential / external location
+
+16. **manage_uc_tags** — Apply / remove tags on UC objects
+    - Required: `action` (string), `object`, `tags`
+    - Returns: Tag assignments
+
+17. **manage_uc_connections** — Manage federated catalog connections
+    - Required: `action` (string)
+    - Returns: Connection object
+
+18. **manage_uc_sharing** — Manage Delta Sharing shares and recipients
+    - Required: `action` (string)
+    - Returns: Share / recipient
+
+19. **manage_uc_monitors** — Manage Lakehouse Monitoring profiles
+    - Required: `action` (string), `table_name`
+    - Returns: Monitor state
+
+20. **manage_uc_security_policies** — Manage row-level / column-level security policies
+    - Required: `action` (string)
+    - Returns: Policy object
+
+21. **manage_metric_views** — Create / list / update reusable business metrics
+    - Required: `action` (string)
+    - Returns: Metric view definition
+
+#### Dashboards, Genie & Agent Bricks
+
+22. **manage_dashboard** — Create / get / list / delete / publish AI/BI dashboards
+    - Required: `action` (string)
+    - Optional: dashboard JSON, draft/publish flags
+    - Returns: Dashboard object
+
+23. **manage_genie** — Create / list / configure Genie Spaces
+    - Required: `action` (string)
+    - Returns: Genie Space object
+
+24. **ask_genie** — Ask a question against a Genie Space
+    - Required: `space_id`, `question`
+    - Returns: Generated SQL, result rows, explanation
+
+25. **manage_ka** — Create / list / update Knowledge Assistants (RAG agents)
+    - Required: `action` (string)
+    - Returns: Knowledge Assistant object
+
+26. **manage_mas** — Create / list / update Multi-Agent Supervisors
+    - Required: `action` (string)
+    - Returns: Multi-Agent Supervisor object
+
+#### Model Serving & Vector Search
+
+27. **manage_serving_endpoint** — Get / list / query serving endpoints
+    - Required: `action` (string)
+    - Optional: `endpoint_name`, `inputs` (for query)
+    - Returns: Endpoint object or model output
+
+28. **manage_vs_endpoint** — Create / list / delete vector search endpoints
+    - Required: `action` (string)
+    - Returns: VS endpoint object
+
+29. **manage_vs_index** — Create / list / sync / delete vector search indexes
+    - Required: `action` (string)
+    - Returns: VS index object
+
+30. **manage_vs_data** — Upsert / delete documents in a direct-access VS index
+    - Required: `action` (string), `index_name`, `data`
+    - Returns: Operation status
+
+31. **query_vs_index** — Similarity search against a VS index
+    - Required: `index_name`, `query_text` or `query_vector`
+    - Optional: `num_results`, `filters`
+    - Returns: Top-k matched documents
+
+#### Lakebase, Apps & Files
+
+32. **manage_lakebase_database** — Create / get / list / delete Lakebase databases
+    - Required: `action` (string)
+    - Returns: Lakebase database object
+
+33. **manage_lakebase_branch** — Manage Lakebase branches
+    - Required: `action` (string)
+    - Returns: Branch state
+
+34. **manage_lakebase_sync** — Configure Lakebase ↔ UC sync
+    - Required: `action` (string)
+    - Returns: Sync configuration
+
+35. **generate_lakebase_credential** — Issue short-lived Lakebase credentials
+    - Required: `database_name`
+    - Returns: Credential
+
+36. **manage_app** — Create / get / list / delete / deploy Databricks Apps
+    - Required: `action` (string)
+    - Returns: App object
+
+37. **manage_workspace_files** — Read / write / list / delete workspace files
+    - Required: `action` (string), `path`
+    - Returns: File contents or status
+
+38. **manage_volume_files** — Read / write / list / delete volume files
+    - Required: `action` (string), `path`
+    - Returns: File contents or status
+
+39. **get_volume_folder_details** — Inspect a UC volume folder
+    - Required: `volume_path`
+    - Returns: Folder listing with metadata
+
+#### Workspace, Tracking & Utilities
+
+40. **manage_workspace** — Workspace-level operations (notebooks, folders, permissions)
+    - Required: `action` (string)
+    - Returns: Workspace object
+
+41. **get_current_user** — Identify the authenticated principal
+    - No parameters required
+    - Returns: User profile, workspace, entitlements
+
+42. **generate_and_upload_pdf** — Render HTML to PDF and upload to a volume
+    - Required: `html`, `volume_path`
+    - Returns: Uploaded file path
+
+43. **list_tracked_resources** — List resources created/tracked by this MCP session
+    - Optional: `resource_type`
+    - Returns: Tracked resources
+
+44. **delete_tracked_resource** — Delete a previously tracked resource
+    - Required: `resource_type`, `resource_id`
+    - Returns: Deletion status
+
+### Full Tool Index
+
+| Category | Tool count | Operations |
+|----------|-----------|------------|
+| SQL & Compute | 8 | execute_sql, execute_sql_multi, execute_code, manage_cluster, manage_sql_warehouse, manage_warehouse, list_compute, get_table_stats_and_schema |
+| Jobs & Pipelines | 4 | manage_jobs, manage_job_runs, manage_pipeline, manage_pipeline_run |
+| Unity Catalog | 9 | manage_uc_objects, manage_uc_grants, manage_uc_storage, manage_uc_tags, manage_uc_connections, manage_uc_sharing, manage_uc_monitors, manage_uc_security_policies, manage_metric_views |
+| Dashboards / Genie / Agents | 5 | manage_dashboard, manage_genie, ask_genie, manage_ka, manage_mas |
+| Model Serving / Vector Search | 5 | manage_serving_endpoint, manage_vs_endpoint, manage_vs_index, manage_vs_data, query_vs_index |
+| Lakebase / Apps / Files | 8 | manage_lakebase_database, manage_lakebase_branch, manage_lakebase_sync, generate_lakebase_credential, manage_app, manage_workspace_files, manage_volume_files, get_volume_folder_details |
+| Workspace / Utilities | 5 | manage_workspace, get_current_user, generate_and_upload_pdf, list_tracked_resources, delete_tracked_resource |
+
+## Tool Usage Examples
+
+### Executing SQL
+
+**Run a query on a warehouse:**
+```javascript
+usePower("databricks", "databricks", "execute_sql", {
+  "statement": "SELECT current_catalog(), current_schema()",
+  "warehouse_id": "abc123def456"
+})
+// Returns: Single-row result with current catalog and schema
+```
+
+**Inspect a table:**
+```javascript
+usePower("databricks", "databricks", "get_table_stats_and_schema", {
+  "table_name": "main.sales.orders"
+})
+// Returns: Columns, types, row count, partition info
+```
+
+### Managing Jobs
+
+**Create a job:**
+```javascript
+usePower("databricks", "databricks", "manage_jobs", {
+  "action": "create",
+  "name": "nightly_orders_etl",
+  "tasks": [{
+    "task_key": "transform",
+    "notebook_task": { "notebook_path": "/Workspace/etl/transform_orders" },
+    "job_cluster_key": "main"
+  }],
+  "schedule": { "quartz_cron_expression": "0 0 2 * * ?", "timezone_id": "UTC" }
+})
+// Returns: job_id of the created job
+```
+
+**Run and wait:**
+```javascript
+usePower("databricks", "databricks", "manage_job_runs", {
+  "action": "run_now_and_wait",
+  "job_id": 123456789
+})
+// Returns: Run state and task outputs
+```
+
+### Spark Declarative Pipelines
+
+**Create a streaming pipeline:**
+```javascript
+usePower("databricks", "databricks", "manage_pipeline", {
+  "action": "create",
+  "name": "bronze_to_silver_orders",
+  "target": "main.silver",
+  "libraries": [{ "notebook": { "path": "/Workspace/dlt/orders_silver" } }],
+  "continuous": true
+})
+// Returns: pipeline_id
+```
+
+### Unity Catalog
+
+**Create a managed table:**
+```javascript
+usePower("databricks", "databricks", "manage_uc_objects", {
+  "action": "create",
+  "object_type": "table",
+  "full_name": "main.sandbox.customer",
+  "columns": [
+    { "name": "id", "type_text": "BIGINT" },
+    { "name": "email", "type_text": "STRING" }
+  ]
+})
+// Returns: Table object with metadata
+```
+
+**Grant SELECT to a group:**
+```javascript
+usePower("databricks", "databricks", "manage_uc_grants", {
+  "action": "grant",
+  "securable_type": "table",
+  "full_name": "main.sales.orders",
+  "principal": "analysts",
+  "privileges": ["SELECT"]
+})
+// Returns: Updated permission assignments
+```
+
+### Genie & Knowledge Assistants
+
+**Ask Genie a natural-language question:**
+```javascript
+usePower("databricks", "databricks", "ask_genie", {
+  "space_id": "01ef...",
+  "question": "What were the top 5 products by revenue last month?"
+})
+// Returns: Generated SQL, result rows, narrative explanation
+```
+
+### Vector Search
+
+**Similarity search over a managed index:**
+```javascript
+usePower("databricks", "databricks", "query_vs_index", {
+  "index_name": "main.search.docs_idx",
+  "query_text": "How do I configure Auto Loader for Parquet?",
+  "num_results": 5
+})
+// Returns: Top-5 matched documents with scores
+```
+
+### Model Serving
+
+**Query an endpoint:**
+```javascript
+usePower("databricks", "databricks", "manage_serving_endpoint", {
+  "action": "query",
+  "endpoint_name": "claims-classifier",
+  "inputs": { "dataframe_records": [{ "claim_text": "..." }] }
+})
+// Returns: Model predictions
+```
+
+## Combining Tools (Workflows)
+
+### Workflow 1: Build a Streaming ETL with Job Orchestration
+
+```javascript
+// Step 1: Create the bronze→silver pipeline
+const pipeline = usePower("databricks", "databricks", "manage_pipeline", {
+  "action": "create",
+  "name": "orders_silver",
+  "target": "main.silver",
+  "libraries": [{ "notebook": { "path": "/Workspace/dlt/orders_silver" } }]
+})
+
+// Step 2: Wrap the pipeline in a scheduled job
+const job = usePower("databricks", "databricks", "manage_jobs", {
+  "action": "create",
+  "name": "orders_silver_orchestrator",
+  "tasks": [{
+    "task_key": "run_dlt",
+    "pipeline_task": { "pipeline_id": pipeline.pipeline_id }
+  }],
+  "schedule": { "quartz_cron_expression": "0 0 * * * ?", "timezone_id": "UTC" }
+})
+
+// Step 3: Trigger an initial run and wait
+const run = usePower("databricks", "databricks", "manage_job_runs", {
+  "action": "run_now_and_wait",
+  "job_id": job.job_id
+})
+
+// Step 4: Verify rows landed in silver
+const stats = usePower("databricks", "databricks", "get_table_stats_and_schema", {
+  "table_name": "main.silver.orders"
+})
+```
+
+### Workflow 2: Govern a New Table and Publish a Dashboard
+
+```javascript
+// Step 1: Create the table
+usePower("databricks", "databricks", "manage_uc_objects", {
+  "action": "create",
+  "object_type": "table",
+  "full_name": "main.analytics.daily_revenue",
+  "columns": [
+    { "name": "day", "type_text": "DATE" },
+    { "name": "revenue", "type_text": "DECIMAL(18,2)" }
+  ]
+})
+
+// Step 2: Grant access
+usePower("databricks", "databricks", "manage_uc_grants", {
+  "action": "grant",
+  "securable_type": "table",
+  "full_name": "main.analytics.daily_revenue",
+  "principal": "analysts",
+  "privileges": ["SELECT"]
+})
+
+// Step 3: Tag for discovery
+usePower("databricks", "databricks", "manage_uc_tags", {
+  "action": "set",
+  "object": { "type": "table", "full_name": "main.analytics.daily_revenue" },
+  "tags": { "domain": "finance", "tier": "gold" }
+})
+
+// Step 4: Publish a dashboard
+usePower("databricks", "databricks", "manage_dashboard", {
+  "action": "create",
+  "name": "Daily Revenue",
+  "warehouse_id": "abc123def456",
+  "dataset_query": "SELECT * FROM main.analytics.daily_revenue ORDER BY day DESC"
+})
+```
+
+### Workflow 3: Build a RAG Knowledge Assistant
+
+```javascript
+// Step 1: Create a vector search endpoint
+usePower("databricks", "databricks", "manage_vs_endpoint", {
+  "action": "create",
+  "name": "kb-endpoint"
+})
+
+// Step 2: Create an index over governed docs
+usePower("databricks", "databricks", "manage_vs_index", {
+  "action": "create",
+  "endpoint_name": "kb-endpoint",
+  "index_name": "main.kb.docs_idx",
+  "source_table": "main.kb.docs",
+  "primary_key": "doc_id",
+  "embedding_source_column": "content"
+})
+
+// Step 3: Wire up the Knowledge Assistant
+const ka = usePower("databricks", "databricks", "manage_ka", {
+  "action": "create",
+  "name": "internal-kb-assistant",
+  "vector_index": "main.kb.docs_idx"
+})
+
+// Step 4: Query Genie or the assistant directly
+usePower("databricks", "databricks", "query_vs_index", {
+  "index_name": "main.kb.docs_idx",
+  "query_text": "What is our incident escalation policy?",
+  "num_results": 5
+})
+```
+
+## SQL & DBSQL Syntax Guide
+
+The MCP server runs SQL through Databricks SQL warehouses (Photon-accelerated ANSI SQL with Delta and Unity Catalog extensions).
+
+### Core Patterns
+
+**Three-part naming (always use it):**
+```sql
+SELECT * FROM <catalog>.<schema>.<table>
+```
+
+**Time travel:**
+```sql
+SELECT * FROM main.sales.orders VERSION AS OF 42;
+SELECT * FROM main.sales.orders TIMESTAMP AS OF '2026-05-01';
+```
+
+**MERGE for upserts:**
+```sql
+MERGE INTO target t USING source s ON t.id = s.id
+WHEN MATCHED THEN UPDATE SET *
+WHEN NOT MATCHED THEN INSERT *;
+```
+
+**Materialized views (Delta Live / DBSQL):**
+```sql
+CREATE MATERIALIZED VIEW main.gold.orders_daily AS
+SELECT order_date, COUNT(*) AS n FROM main.silver.orders GROUP BY order_date;
+```
+
+**Streaming tables (DLT):**
+```sql
+CREATE OR REFRESH STREAMING TABLE bronze_orders
+AS SELECT * FROM cloud_files('/Volumes/main/raw/orders', 'json');
+```
+
+### Critical Rules
+
+1. **Always fully qualify** with `catalog.schema.table` — UC enforces three-part naming
+2. **Use parameter markers** for user input: `:param_name` (passed in `parameters` arg)
+3. **Set a `wait_timeout`** for long queries (e.g., `"30s"`); poll with subsequent calls if needed
+4. **Prefer warehouses over clusters** for SQL — cheaper, faster cold start, Photon-enabled
+5. **Use `OPTIMIZE` and `VACUUM`** on Delta tables for performance/storage hygiene
+6. **Check warehouse state** before executing — start with `list_compute` if unsure
+
+## Best Practices
+
+### ✅ Do
+
+- **Start with `get_current_user`** to confirm workspace, profile, and entitlements before doing real work
+- **Use SQL warehouses for SQL** — they're cheaper, auto-suspend, and Photon-accelerated
+- **Use Unity Catalog three-part names** everywhere (`catalog.schema.object`)
+- **Tag and grant on creation** — wire up `manage_uc_tags` and `manage_uc_grants` immediately after `manage_uc_objects`
+- **Track resources** — use `list_tracked_resources` to audit what this session created; clean up with `delete_tracked_resource`
+- **Pin pipelines and jobs** to specific cluster policies for cost control
+- **Validate schemas** with `get_table_stats_and_schema` before writing transformations
+- **Prefer DLT (manage_pipeline)** over hand-rolled jobs for streaming and CDC
+- **Wait on runs** explicitly (`run_now_and_wait`) when downstream steps depend on output
+- **Load skill files on demand** — don't pre-load all 33 skills; the on-demand pattern is faster
+
+### ❌ Don't
+
+- **Don't run SQL on interactive clusters** when a warehouse will do — cost spikes and cold-start delays
+- **Don't omit catalog/schema** — relying on session defaults breaks portability
+- **Don't hardcode warehouse IDs or job IDs** — fetch them with `list_compute` and `manage_jobs` (action: list)
+- **Don't grant `ALL_PRIVILEGES`** when `SELECT` or `MODIFY` is enough
+- **Don't create resources without tagging** — UC tags are the only durable discovery mechanism
+- **Don't skip `wait_timeout`** on `execute_sql` — the default may not suit long-running statements
+- **Don't disable workspace safeguards** (deletion protection, cluster policies) without explicit need
+- **Don't store PATs in source code** — use `~/.databrickscfg` profiles or environment variables
+
+## Troubleshooting
+
+### Error: "The MCP server is disabled"
+**Cause:** `mcp.json` has `"disabled": true` (default state ships disabled for safety).
+**Solution:**
+1. Complete the onboarding steps (see Configuration)
+2. Set `"disabled": false` in `~/.kiro/settings/mcp.json` under the Power's `mcpServers.databricks` entry
+3. Reload Kiro to reconnect the server
+
+### Error: "Authentication failed" / "401 Unauthorized"
+**Cause:** Profile in `~/.databrickscfg` is missing, expired, or doesn't match `DATABRICKS_CONFIG_PROFILE`.
+**Solution:**
+1. Run `databricks auth login --profile <name>` to refresh OAuth
+2. Or update `mcp.json` to use explicit `DATABRICKS_HOST` + `DATABRICKS_TOKEN` env vars
+3. Verify with `get_current_user` — it should return a valid user
+
+### Error: "Warehouse not running" / "Cluster not running"
+**Cause:** Compute is stopped; `execute_sql` / `execute_code` requires a running compute.
+**Solution:**
+1. Use `manage_sql_warehouse` (action: start) or `manage_cluster` (action: start)
+2. Or rely on serverless warehouses — they auto-start on first query
+3. Re-run the original tool call
+
+### Error: "Permission denied on UC object"
+**Cause:** The authenticated user lacks the required UC privilege.
+**Solution:**
+1. Use `manage_uc_grants` (action: list) to inspect current grants
+2. Have a metastore admin grant the missing privilege
+3. Confirm `USE CATALOG` and `USE SCHEMA` are also granted (often forgotten)
+
+### Error: "Pipeline failed with EXPECTATION_VIOLATED"
+**Cause:** A DLT expectation rejected rows.
+**Solution:**
+1. Inspect pipeline events with `manage_pipeline_run` (action: get_update)
+2. Loosen `EXPECT` constraints or move to `EXPECT ... ON VIOLATION DROP ROW` if the data is genuinely dirty
+3. Check upstream sources for schema drift
+
+### Error: "Installer ran but `~/.ai-dev-kit/.venv/bin/python` is missing"
+**Cause:** Installer non-zero exit can be misleading; sometimes the genuine failure is a missing prerequisite.
+**Solution:**
+1. Verify `uv` and `git` are installed and on `PATH`
+2. Re-run with `--force` and watch for the line that mentions `uv venv` failing
+3. Check disk space in `$HOME`
+
+## Configuration
+
+### Prerequisites
+
+- **uv** — Python package manager ([install](https://docs.astral.sh/uv/getting-started/installation/))
+- **git** — Version control
+- **Databricks workspace** — AWS, Azure, or GCP
+- **Databricks CLI** (optional, for OAuth login) — [install](https://docs.databricks.com/en/dev-tools/cli/install.html)
+
+### Step 1: Run the Official Installer
+
+```bash
+bash <(curl -sL https://raw.githubusercontent.com/databricks-solutions/ai-dev-kit/main/install.sh) --tools kiro --global --silent
+```
+
+> The installer may exit non-zero even on success. Verify with:
+> ```bash
+> ls ~/.ai-dev-kit/.venv/bin/python && ls ~/.ai-dev-kit/repo/databricks-mcp-server/run_server.py && ls ~/.kiro/skills/ | head -5
+> ```
+
+**Installer flags:**
+- `--tools kiro` — Configure for Kiro only
+- `--global` — Install skills to `~/.kiro/skills/` and MCP config to `~/.kiro/settings/mcp.json`
+- `--silent` — Non-interactive (defaults: all skills, DEFAULT profile)
+- `--profile PROFILE_NAME` — Use a specific Databricks CLI profile
+- `--force` — Reinstall even if up to date
+- `--skills-only` — Skip MCP server setup
+
+### Step 2: Copy Skills to the Power's Steering Directory
+
+```bash
+POWER_STEERING="$HOME/.kiro/powers/installed/databricks/steering"
+rm -rf "$POWER_STEERING"
+mkdir -p "$POWER_STEERING"
+cp -r "$HOME/.kiro/skills/"* "$POWER_STEERING/" 2>/dev/null || true
+rm -rf "$HOME/.kiro/skills/databricks-"* "$HOME/.kiro/skills/mlflow-"* "$HOME/.kiro/skills/spark-"* "$HOME/.kiro/skills/agent-"* "$HOME/.kiro/skills/analyze-"* "$HOME/.kiro/skills/instrumenting-"* "$HOME/.kiro/skills/querying-"* "$HOME/.kiro/skills/retrieving-"* "$HOME/.kiro/skills/searching-"*
+```
+
+This scopes skills to the Power (loaded only when the Power is active) and removes duplicates from the global skills namespace. Click **Update** on the Databricks Power in Kiro afterward to refresh the steering files list.
+
+### Step 3: Configure Authentication
+
+The Power ships with a baseline `mcp.json` that uses an env-var reference for the profile name and is **disabled by default** for safety. Pick one of the three options below and apply the matching "after" configuration.
+
+#### Baseline (as shipped — before any configuration)
+
+This is the file you'll find at `~/.kiro/powers/installed/databricks/mcp.json` immediately after installation. The `${DATABRICKS_CONFIG_PROFILE}` reference is resolved from your shell environment when Kiro launches the server.
+
+```json
+{
+  "mcpServers": {
+    "databricks": {
+      "command": "~/.ai-dev-kit/.venv/bin/python",
+      "args": ["~/.ai-dev-kit/repo/databricks-mcp-server/run_server.py"],
+      "env": {
+        "DATABRICKS_CONFIG_PROFILE": "${DATABRICKS_CONFIG_PROFILE}"
+      },
+      "disabled": true
+    }
+  }
+}
+```
+
+> All four options below modify the **runtime** MCP config at `~/.kiro/settings/mcp.json` (under `powers.mcpServers.power-databricks-databricks`), not the bundled file above. Kiro mirrors the bundled config there during Power activation.
+>
+> **Where credentials are read from:** the MCP server reads its environment from the `env` block of `mcp.json` at the moment Kiro launches it. Pick the option whose env block matches the credentials you have, then edit `mcp.json` directly.
+
+**Quick reference (Databricks-recommended order):**
+
+| Option | Method | Best for | Token lifetime | Status |
+|--------|--------|----------|----------------|--------|
+| A | OAuth U2M (CLI login) | Interactive use by a human | 1 h, auto-refreshed | Recommended |
+| B | OAuth M2M (service principal) | Headless / CI/CD / production agents | 1 h access token; secret up to 730 days | Recommended |
+| C | Existing `~/.databrickscfg` profile | You already have a working profile | Depends on the underlying auth in the profile | Recommended |
+| D | Personal Access Token (PAT) | Tools that don't support OAuth | Up to 730 days; auto-revoked after 90 days unused | **Legacy** — Databricks recommends OAuth instead |
+
+Reference: [PAT (legacy)](https://docs.databricks.com/aws/en/dev-tools/auth/pat) · [OAuth U2M](https://docs.databricks.com/aws/en/dev-tools/auth/oauth-u2m) · [OAuth M2M](https://docs.databricks.com/aws/en/dev-tools/auth/oauth-m2m)
+
+---
+
+#### Option A — OAuth U2M via Databricks CLI (recommended for interactive use)
+
+OAuth user-to-machine: the Databricks CLI opens a browser, you authenticate as yourself, and credentials land in `~/.databrickscfg`. Each access token is valid for one hour and is auto-refreshed by the Databricks SDK. This is the safest interactive flow because there's no long-lived secret to leak.
+
+```bash
+databricks auth login --host https://<your-workspace>.cloud.databricks.com --profile DEFAULT
+```
+
+This writes a profile to `~/.databrickscfg` like:
+```ini
+[DEFAULT]
+host       = https://<your-workspace>.cloud.databricks.com
+auth_type  = databricks-cli
+```
+
+Then export the profile name in your shell so the `${DATABRICKS_CONFIG_PROFILE}` reference in `mcp.json` resolves correctly when Kiro launches the MCP server:
+
+```bash
+export DATABRICKS_CONFIG_PROFILE=DEFAULT
+```
+
+**Before** (`~/.kiro/settings/mcp.json` — Power entry as shipped):
+```json
+{
+  "mcpServers": {
+    "databricks": {
+      "command": "~/.ai-dev-kit/.venv/bin/python",
+      "args": ["~/.ai-dev-kit/repo/databricks-mcp-server/run_server.py"],
+      "env": {
+        "DATABRICKS_CONFIG_PROFILE": "${DATABRICKS_CONFIG_PROFILE}"
+      },
+      "disabled": true
+    }
+  }
+}
+```
+
+**After** (Option A applied):
+```json
+{
+  "mcpServers": {
+    "databricks": {
+      "command": "~/.ai-dev-kit/.venv/bin/python",
+      "args": ["~/.ai-dev-kit/repo/databricks-mcp-server/run_server.py"],
+      "env": {
+        "DATABRICKS_CONFIG_PROFILE": "${DATABRICKS_CONFIG_PROFILE}"
+      },
+      "disabled": false
+    }
+  }
+}
+```
+
+The only edit is `"disabled": true` → `"disabled": false`. The env reference and shell variable do the rest.
+
+---
+
+#### Option B — OAuth M2M with Service Principal (recommended for headless / CI/CD)
+
+OAuth machine-to-machine: a Databricks service principal authenticates with `client_id` + `client_secret` and the SDK auto-issues 1-hour access tokens with no browser flow. Use this for production agents, scheduled jobs, and shared environments. Per Databricks docs, this is intended for *"unattended processes, such as automated CLI commands or REST API calls made from scripts or applications."*
+
+**Prerequisites:**
+1. **Create a service principal** in the Databricks account console (Identity and access → Service principals)
+2. **Grant workspace entitlements and permissions** so the SP can do what you need
+3. **Generate an OAuth secret** — Settings → Identity and access → Service principals → select SP → Secrets tab → Generate secret. Set lifetime up to 730 days (max). Copy `client_id` and `client_secret` immediately — the secret is shown only once. A service principal can have up to 5 active OAuth secrets.
+
+Export the three environment variables in your shell so the `${VAR}` references in `mcp.json` resolve when Kiro launches the MCP server:
+
+```bash
+export DATABRICKS_HOST="https://<your-workspace>.cloud.databricks.com"
+export DATABRICKS_CLIENT_ID="<service-principal-application-id>"
+export DATABRICKS_CLIENT_SECRET="<oauth-secret>"
+```
+
+**Before** (as shipped):
+```json
+{
+  "mcpServers": {
+    "databricks": {
+      "command": "~/.ai-dev-kit/.venv/bin/python",
+      "args": ["~/.ai-dev-kit/repo/databricks-mcp-server/run_server.py"],
+      "env": {
+        "DATABRICKS_CONFIG_PROFILE": "${DATABRICKS_CONFIG_PROFILE}"
+      },
+      "disabled": true
+    }
+  }
+}
+```
+
+**After** (Option B applied — replace profile env with host + client credentials):
+```json
+{
+  "mcpServers": {
+    "databricks": {
+      "command": "~/.ai-dev-kit/.venv/bin/python",
+      "args": ["~/.ai-dev-kit/repo/databricks-mcp-server/run_server.py"],
+      "env": {
+        "DATABRICKS_HOST": "${DATABRICKS_HOST}",
+        "DATABRICKS_CLIENT_ID": "${DATABRICKS_CLIENT_ID}",
+        "DATABRICKS_CLIENT_SECRET": "${DATABRICKS_CLIENT_SECRET}"
+      },
+      "disabled": false
+    }
+  }
+}
+```
+
+> **Never hardcode `client_secret`** in the JSON file. Reference it through `${DATABRICKS_CLIENT_SECRET}` and source it from a secret manager (HashiCorp Vault, AWS Secrets Manager, OS keychain) or environment-injection mechanism appropriate to your runtime.
+>
+> ai-dev-kit's MCP server README only documents PAT and profile auth, but the underlying Databricks SDK's unified-auth chain detects M2M credentials automatically — no MCP-server-side change required beyond the env block above.
+
+---
+
+#### Option C — Existing `~/.databrickscfg` Profile
+
+If you already have a working profile (e.g., `prod-aws`) in `~/.databrickscfg` — set up earlier via `databricks auth login`, manual editing, or a configuration-management tool — just point the env reference at it. The underlying auth method (OAuth U2M, OAuth M2M, or PAT) is whatever the profile already uses.
+
+```bash
+export DATABRICKS_CONFIG_PROFILE=prod-aws
+```
+
+**Before** (as shipped):
+```json
+{
+  "mcpServers": {
+    "databricks": {
+      "command": "~/.ai-dev-kit/.venv/bin/python",
+      "args": ["~/.ai-dev-kit/repo/databricks-mcp-server/run_server.py"],
+      "env": {
+        "DATABRICKS_CONFIG_PROFILE": "${DATABRICKS_CONFIG_PROFILE}"
+      },
+      "disabled": true
+    }
+  }
+}
+```
+
+**After** (Option C applied — same env reference, just enable the server):
+```json
+{
+  "mcpServers": {
+    "databricks": {
+      "command": "~/.ai-dev-kit/.venv/bin/python",
+      "args": ["~/.ai-dev-kit/repo/databricks-mcp-server/run_server.py"],
+      "env": {
+        "DATABRICKS_CONFIG_PROFILE": "${DATABRICKS_CONFIG_PROFILE}"
+      },
+      "disabled": false
+    }
+  }
+}
+```
+
+> Per Databricks docs, *"Values in `.databrickscfg` take precedence over environment variables"* — so if your profile has a `host` set, that takes precedence over `DATABRICKS_HOST`.
+
+---
+
+#### Option D — Personal Access Token (legacy)
+
+> **Databricks officially marks PAT as legacy.** From the docs: *"Where possible, Databricks recommends using OAuth instead of PATs for user account authentication because OAuth provides stronger security."* Use this only if Options A–C aren't available — for example, an automated tool that doesn't support OAuth and where you can't use a service principal.
+
+PATs are simple bearer tokens. **Constraints worth knowing:**
+- Lifetime up to ~730 days (set at creation)
+- *"Databricks automatically revokes PATs that haven't been used for 90 days"*
+- Up to 600 PATs per workspace
+- *"You can't use personal access tokens to automate Databricks account-level functionality"*
+
+**Generate a PAT in the workspace UI:**
+1. Top bar → username → Settings → Developer
+2. Next to **Access tokens**, click **Manage** → **Generate new token**
+3. Add a comment, set lifetime in days, optionally restrict scopes
+4. Click **Generate** and copy the token immediately (it is shown only once)
+
+Export the host and token in your shell so the `${VAR}` references in `mcp.json` resolve when Kiro launches the MCP server:
+
+```bash
+export DATABRICKS_HOST="https://<your-workspace>.cloud.databricks.com"
+export DATABRICKS_TOKEN="dapi..."
+```
+
+**Before** (as shipped):
+```json
+{
+  "mcpServers": {
+    "databricks": {
+      "command": "~/.ai-dev-kit/.venv/bin/python",
+      "args": ["~/.ai-dev-kit/repo/databricks-mcp-server/run_server.py"],
+      "env": {
+        "DATABRICKS_CONFIG_PROFILE": "${DATABRICKS_CONFIG_PROFILE}"
+      },
+      "disabled": true
+    }
+  }
+}
+```
+
+**After** (Option D applied — replace profile env with host + token):
+```json
+{
+  "mcpServers": {
+    "databricks": {
+      "command": "~/.ai-dev-kit/.venv/bin/python",
+      "args": ["~/.ai-dev-kit/repo/databricks-mcp-server/run_server.py"],
+      "env": {
+        "DATABRICKS_HOST": "${DATABRICKS_HOST}",
+        "DATABRICKS_TOKEN": "${DATABRICKS_TOKEN}"
+      },
+      "disabled": false
+    }
+  }
+}
+```
+
+> **Never hardcode a PAT in the JSON file.** Always reference it through `${DATABRICKS_TOKEN}` and keep the secret in your shell environment, a secret manager, or your OS keychain.
+
+### Step 4: Verify the Connection
+
+After saving, Kiro auto-reconnects the MCP server. Verify by calling:
+
+```javascript
+usePower("databricks", "databricks", "get_current_user", {})
+// Returns: { user_name: "...", workspace_url: "...", entitlements: [...] }
+```
+
+A successful response confirms auth, env-var resolution, and server enablement are all wired correctly.
+
+### Updating Skills
+
+```bash
+bash <(curl -sL https://raw.githubusercontent.com/databricks-solutions/ai-dev-kit/main/install.sh) --tools kiro --global --skills-only --force --silent
+```
+Then re-run Step 2.
+
+## Tips
+
+1. **Start with `get_current_user`** to verify your identity, workspace, and entitlements
+2. **Use `list_compute` first** when you don't know warehouse/cluster IDs — never hardcode them
+3. **Prefer `ask_genie` for ad-hoc questions** — it generates SQL and explanations in one shot
+4. **Lean on the steering files** — each skill encodes idiomatic patterns and gotchas for its domain
+5. **Use Asset Bundles (`databricks-bundles` skill)** for production-grade resource definitions over imperative tool calls
+6. **Combine `manage_uc_objects` + `manage_uc_grants` + `manage_uc_tags`** in every table-creation flow
+7. **Wait explicitly on long-running runs** with `run_now_and_wait` rather than polling
+8. **Track and clean up** sandbox resources with `list_tracked_resources` / `delete_tracked_resource`
+9. **Use `get_table_stats_and_schema`** before authoring transformations — schema-on-read surprises are common
+10. **Keep `disabled: true` until onboarding is complete** — flip it only after auth is verified
+
+## License, Trademarks, and Support
+
+### Power packaging
+
+This Power's manifest (`POWER.md`, `mcp.json`, `steering/`) is published by community contributors (see Contributors below) under the same license terms as the [kirodotdev/powers](https://github.com/kirodotdev/powers) catalog.
+
+### Upstream Databricks AI Dev Kit
+
+The MCP server and skills installed by this Power are sourced from the [databricks-solutions/ai-dev-kit](https://github.com/databricks-solutions/ai-dev-kit) repository and are subject to the [Databricks License](https://databricks.com/db-license-source). See ai-dev-kit's [LICENSE.md](https://github.com/databricks-solutions/ai-dev-kit/blob/main/LICENSE.md) and [NOTICE.txt](https://github.com/databricks-solutions/ai-dev-kit/blob/main/NOTICE.txt) for full terms and third-party attribution. Users accept those terms when they run the installer.
+
+### Trademarks
+
+"Databricks", "Databricks AI Dev Kit", "Unity Catalog", "Delta Lake", "Mosaic AI", "Agent Bricks", "Genie", "Lakebase", and other Databricks product names referenced in this Power are trademarks of Databricks, Inc., used here for descriptive purposes to identify the upstream product this Power integrates with. This Power is not authored, endorsed, or maintained by Databricks, Inc.; it is a community-published integration that calls Databricks's public installer.
+
+"Amazon Web Services", "AWS", and "Kiro" are trademarks of Amazon.com, Inc. or its affiliates.
+
+### Contributors
+
+- [@antonyprasad-db](https://github.com/antonyprasad-db) — Senior Specialist Solutions Architect, Databricks (AWS Partnership). Built the underlying **Databricks AI Dev Kit** (the MCP server, skills, and unified installer) at [databricks-solutions/ai-dev-kit](https://github.com/databricks-solutions/ai-dev-kit), including the Kiro IDE installer support in [PR #511](https://github.com/databricks-solutions/ai-dev-kit/pull/511) that this Power depends on. Built the **v2 optimization of this Power** in [this fork](https://github.com/antonyprasad-db/databricks/tree/v2-aws-authored-power) — reframed authorship to AWS-published, added the Trademarks subsection, and prepared the catalog entry for submission to [kirodotdev/powers](https://github.com/kirodotdev/powers).
+- [@venkatavaradhanv](https://github.com/venkatavaradhanv) — Solutions Architect, AWS. Created the original wrapper Power around the Databricks AI Dev Kit at [venkatavaradhanv/databricks](https://github.com/venkatavaradhanv/databricks), packaging the catalog-ready `POWER.md`, the parametrized `mcp.json`, and the four-option auth documentation (OAuth U2M / OAuth M2M / existing profile / PAT).
+
+### Support
+
+- **Power packaging / installation issues** — [github.com/venkatavaradhanv/databricks/issues](https://github.com/venkatavaradhanv/databricks/issues)
+- **MCP server, skills, or installer issues** — [github.com/databricks-solutions/ai-dev-kit/issues](https://github.com/databricks-solutions/ai-dev-kit/issues)
+- **Databricks platform support** — [help.databricks.com](https://help.databricks.com)
+- **Privacy** — [databricks.com/legal/privacynotice](https://www.databricks.com/legal/privacynotice)
+
+---
+
+**Package:** `databricks-solutions/ai-dev-kit` (`databricks-mcp-server`)
+**Source:** [github.com/databricks-solutions/ai-dev-kit](https://github.com/databricks-solutions/ai-dev-kit)
+**License:** [Databricks License](https://databricks.com/db-license-source)
+**Connection:** Local Python process via `~/.kiro/settings/mcp.json`
