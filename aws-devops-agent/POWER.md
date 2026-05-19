@@ -331,12 +331,15 @@ aws___call_aws(cli_command="aws devops-agent create-backlog-task --agent-space-i
 ```
 
 **For chat** — pack into `content` parameter:
-```
-call_boto3(SendMessage, params={
-    agentSpaceId: SPACE_ID,
-    executionId: EXEC_ID,
-    userId: USER_ID,
-    content: """[Local Context]
+```python
+await call_boto3(
+    service_name='devops-agent',
+    operation_name='SendMessage',
+    params={
+        'agentSpaceId': SPACE_ID,
+        'executionId': EXEC_ID,
+        'userId': USER_ID,
+        'content': """[Local Context]
 Service: MyService (from package.json)
 Last commits: abc1234 fix: increase timeout · def5678 feat: add /api/v2
 CDK Stack: lib/my-service-stack.ts — ECS Fargate with ALB
@@ -552,7 +555,7 @@ During incident response, polling every 30-45s generates 6+ approval prompts per
 
 ### Recommended `autoApprove` list
 
-These tools are inherently safe regardless of arguments — they only read documentation, list regions, or poll status:
+These tools are inherently safe regardless of arguments — they **cannot modify any AWS resource or DevOps Agent state**. They only read documentation, list supported regions, suggest CLI commands, or return pre-signed URLs for existing artifacts. Even if called with arbitrary arguments, the worst outcome is a 404 or empty response:
 
 ```json
 {
