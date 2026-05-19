@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "databricks": {
+      "command": "~/.ai-dev-kit/.venv/bin/python",
+      "args": ["~/.ai-dev-kit/repo/databricks-mcp-server/run_server.py"],
+      "env": {
+        "DATABRICKS_CONFIG_PROFILE": "DEFAULT",
+        "_comment_1": "Authentication: The MCP server reads credentials from ~/.databrickscfg using the profile above.",
+        "_comment_2": "Option A: Run 'databricks auth login --profile DEFAULT' (requires Databricks CLI).",
+        "_comment_3": "Option B: Replace DATABRICKS_CONFIG_PROFILE with DATABRICKS_HOST and DATABRICKS_TOKEN for PAT auth.",
+        "_comment_4": "Remove all _comment fields before enabling."
+      },
+      "disabled": true
+    }
+  }
+}
