@@ -119,7 +119,7 @@ Call these via `aws___call_aws` with service `devops-agent` (except `SendMessage
 |-----------|-----------|---------|
 | `CreateChat` | `agentSpaceId, userId, userType` (`IAM`\|`IDC`\|`IDP`) | Create a new chat session → returns `executionId`. **userId and userType are required** |
 | `ListChats` | `agentSpaceId, userId?, maxResults?` | List recent chat sessions |
-| `SendMessage` | `agentSpaceId, executionId, content, userId, context?` | Send a message and stream the response. **Requires `aws___run_script`** — returns EventStream. userId is required for chat sessions (may be optional for investigation executionIds). **Note**: use `call_boto3` only with chat executionIds (pure UUID from `create-chat`); investigation executionIds (`exe-ops1-*`) require the CLI path |
+| `SendMessage` | `agentSpaceId, executionId, content, userId, context?` | Send a message and stream the response. **Requires `aws___run_script`** — returns EventStream. **userId is always required.** Use `call_boto3` only with chat executionIds (pure UUID from `create-chat`); investigation executionIds (`exe-ops1-*`) require the CLI path (`list-journal-records`) |
 
 ### Account & Resource Management
 | Operation | Parameters | Purpose |
@@ -418,7 +418,7 @@ You:
 - **Track investigation IDs**: Keep the `taskId` and `executionId` from each investigation to poll progress and retrieve results
 - **Resume analysis**: Use `ListBacklogTasks` to find previous investigations. Check their status and recommendations
 - **One investigation per incident**: Don't create duplicate investigations. Use `ListBacklogTasks` with status filter to check for existing ones
-- **Send follow-up on investigation**: You can use `SendMessage` with an investigation's `executionId` to ask follow-up questions about its findings
+- **Send follow-up on investigation**: Use `list-journal-records` to read investigation findings. Do NOT use `SendMessage` with investigation executionIds — chat and investigation are separate workflows
 
 ---
 
@@ -451,7 +451,7 @@ aws configure sso  # SSO users
 aws configure      # IAM access keys (chat may require SSO identity)
 ```
 
-> **Note**: `CreateChat` requires user identity resolution through the Operator App (IDC or IAM auth). If using plain IAM credentials and `CreateChat` fails with "User identity could not be resolved", you can still use `SendMessage` on investigation executionIds from `CreateBacklogTask`.
+> **Note**: All chat operations (`CreateChat` and `SendMessage`) require user identity resolution. If `CreateChat` fails with "User identity could not be resolved", `SendMessage` will fail the same way — use the investigation workflow (`create-backlog-task` + `list-journal-records`) instead.
 
 ### 1b. Required IAM Permissions
 
@@ -507,7 +507,7 @@ Restart Kiro → `/mcp` to check connection → `/tools` to see `aws___call_aws`
 
 1. **SSO (recommended)**: Run `aws sso login`, then use `--user-type IDC` on `create-chat`
 2. **IAM with explicit userId**: Pass `--user-id YOUR_USERNAME --user-type IAM` on `create-chat` and `userId=YOUR_USERNAME` on `SendMessage`. The `--user-id` value must match `^[a-zA-Z0-9_.-]+$` (any string, e.g. your Unix username)
-3. **Investigation fallback**: Use `SendMessage` on investigation executionIds (from `CreateBacklogTask`) which may work without explicit userId
+3. **Investigation fallback**: If chat identity resolution fails entirely, use the investigation workflow (`create-backlog-task` + `list-journal-records`) which does not require user identity
 
 **"AccessDeniedException"**
 → Missing IAM permissions. Attach these to your IAM user/role:
