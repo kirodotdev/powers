@@ -65,7 +65,7 @@ Best for: cost optimization, architecture review, topology mapping, knowledge di
 
 ## Error Recovery
 - **ExpiredTokenException** → Tell user: "Run `aws sso login` to refresh AWS credentials"
-- **User identity could not be resolved** → Pass `--user-id YOUR_USERNAME --user-type IAM` on `create-chat` and `userId=YOUR_USERNAME` on `SendMessage`. Use `--user-type IDC` for SSO. Fallback: `SendMessage` on investigation executionIds may work without userId
+- **User identity could not be resolved** → Pass `--user-id YOUR_USERNAME --user-type IAM` on `create-chat` and `userId=YOUR_USERNAME` on `SendMessage`. Use `--user-type IDC` for SSO. If identity resolution still fails, chat is unavailable — use the investigation workflow instead
 - **ResourceNotFoundException** → AgentSpace may be deleted, re-run `list-agent-spaces`
 - **ThrottlingException** → Wait 5 seconds and retry once
 - **ValidationException** on userId → alphanumeric, `.`, `-`, `_` only — no ARNs
