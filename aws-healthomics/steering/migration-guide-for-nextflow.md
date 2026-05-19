@@ -82,18 +82,38 @@ You MUST complete the following steps
 
 ### Phase 4: Output Path Standardization
 
-**Objective**: Update all publishDir directives for HealthOmics compatibility.
+**Objective**: Update all output publishing for HealthOmics compatibility, covering both legacy `publishDir` directives and the Nextflow 25.10+ `output { }` block / `publish:` pattern.
 
-**Key Rule**: All outputs MUST be under `/mnt/workflow/pubdir/`.
+**Key Rules**:
+- Legacy `publishDir`: ALL task output paths MUST use the absolute path `/mnt/workflow/pubdir/`.
+- Nextflow 25.10+ `output { }` block: You MUST use ONLY relative paths in the `path` directive (e.g., `path '.'` or `path 'subdir'`). You MUST NOT use absolute paths in the `output { }` block. HealthOmics manages the output directory.
+- Workflow-level content (non-task outputs like provenance reports, DAGs) MUST be written to `/mnt/workflow/output/`.
 
 **Steps**:
-1. Find all `publishDir` declarations in modules, subworkflows, and configs.
-2. Replace `${params.outdir}` with `/mnt/workflow/pubdir`.
-3. Preserve all other `publishDir` options (mode, pattern, saveAs).
+1. Identify which output pattern the workflow uses:
+   - **Legacy**: `publishDir` directives in processes and config files
+   - **Nextflow 25.10+**: Top-level `output { }` block with `publish:` section in the workflow
+   - A workflow may use both — audit **ALL** patterns
+2. For **legacy `publishDir`** directives:
+   - Find all `publishDir` declarations in modules, subworkflows, and configs.
+   - Replace `${params.outdir}` with `/mnt/workflow/pubdir/`.
+   - IF `params.outdir` is used for both task outputs (`publishDir`) and non-task outputs (workflow-level content), hardcode `publishDir` paths to `/mnt/workflow/pubdir/` so `params.outdir` can be set to `/mnt/workflow/output/` for workflow-level content.
+   - Preserve all other `publishDir` options (mode, pattern, saveAs).
+3. For **Nextflow 25.10+ `output { }` block**:
+   - Remove **ALL** absolute paths from `path` directives — use ONLY relative paths.
+   - HealthOmics manages the output directory; the `path` directive specifies a subdirectory within it.
+   - If `path` uses a closure, return a relative path (e.g., `path { id, files -> "fastqc/${id}" }`).
+   - Preserve other output directives: `index`, `mode`, `enabled`, `overwrite`, `contentType`, `tags`.
+   - Verify that `publish:` names in the workflow match `output { }` target names.
+4. For **workflow-level content** (provenance reports, pipeline DAGs, etc.):
+   - Write to `/mnt/workflow/output/` (e.g., via `params.outdir = "/mnt/workflow/output/"`).
+   - HealthOmics exports files from this directory to the `output/` prefix in the run's S3 output location.
 
 **Done WHEN**:
-- All `publishDir` paths use `/mnt/workflow/pubdir/` prefix.
-- No references to ${params.outdir} in publishDir directives — all use the literal /mnt/workflow/pubdir path or a subdirectory.
+- All legacy `publishDir` paths use `/mnt/workflow/pubdir/` prefix.
+- **ALL** Nextflow 25.10+ output block `path` directives use relative paths (no absolute paths).
+- Workflow-level content (provenance reports, DAGs) writes to `/mnt/workflow/output/`.
+- No references to ${params.outdir} in publishDir directives — all use the literal /mnt/workflow/pubdir/ path or a subdirectory.
 - Relative path structure preserved.
 
 ### Phase 5: Configuration and Testing
@@ -165,6 +185,45 @@ publishDir "${params.outdir}/preprocessing/mapped", mode: params.publish_dir_mod
 publishDir "/mnt/workflow/pubdir/preprocessing/mapped", mode: params.publish_dir_mode
 ```
 
+### Nextflow 25.10+ Output Block (New)
+```groovy
+// Workflow publish section maps names to channels
+workflow {
+    main:
+    output_file = myTask('hello')
+
+    publish:
+    results = output_file
+}
+
+// Minimal — HealthOmics manages the output directory
+output {
+    results {
+        path '.'
+    }
+}
+
+// With subdirectories
+workflow {
+    main:
+    fastqc_ch = FASTQC(read_pairs_ch)
+    bam_ch = ALIGN(read_pairs_ch)
+
+    publish:
+    fastqc_logs = fastqc_ch
+    bam_files   = bam_ch
+}
+
+output {
+    fastqc_logs {
+        path 'fastqc'
+    }
+    bam_files {
+        path 'aligned'
+    }
+}
+```
+
 ### S3 Reference (Before/After)
 ```groovy
 // Before
@@ -184,6 +243,8 @@ params.fasta = "s3://<bucket>/references/Homo_sapiens/GATK/GRCh38/Sequence/Whole
 ## References
 
 - [AWS HealthOmics Documentation](https://docs.aws.amazon.com/omics/)
+- [AWS HealthOmics Nextflow Specifics](https://docs.aws.amazon.com/omics/latest/dev/workflow-definition-nextflow.html)
 - [nf-core documentation](https://nf-co.re)
 - [Nextflow on AWS HealthOmics](https://www.nextflow.io/docs/latest/aws.html#aws-omics)
+- [Nextflow Workflow Outputs](https://www.nextflow.io/docs/latest/workflow.html#workflow-outputs)
 - [ECR Documentation](https://docs.aws.amazon.com/ecr/)

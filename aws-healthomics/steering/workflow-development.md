@@ -44,6 +44,8 @@ This SOP defines how you, the agent, create and deploy genomics workflows for AW
 ### Outputs
 - Final workflow outputs MUST be declared. Intermediate task outputs will NOT be retained by HealthOmics.
 - WHEN using Nextflow `publishDir`, the path MUST be a subdirectory of `/mnt/workflow/pubdir`.
+- WHEN using Nextflow 25.10+ `output { }` block, you MUST use ONLY relative paths in the `path` directive (HealthOmics manages the output directory).
+- Workflow-level content (provenance reports, DAGs) MUST be written to `/mnt/workflow/output/`.
 
 ### Containers
 - All workflow tasks run in containers. Containers MUST contain all software used in the script/command.
