@@ -25,6 +25,7 @@ Fall back to terminal commands when the user explicitly wants local scripts, CI 
   AWS_DEFAULT_REGION=us-east-1
   ```
 - **ALWAYS** verify LocalStack is running before executing commands: `localstack status` or `curl http://localhost:4566/_localstack/health`.
+- **Test against LocalStack before AWS**: Catch configuration errors, IAM issues, and logic bugs locally before running up cloud costs.
 
 ## Environment Configuration
 
