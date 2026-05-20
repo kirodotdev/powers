@@ -1,0 +1,22 @@
+{
+  "mcpServers": {
+    "mcp-agentic": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@stdiobus/mcp-agentic"
+      ],
+      "env": {
+        "NODE_ENV": "production",
+        "LOG_LEVEL": "info"
+      },
+      "disabled": false,
+      "autoApprove": [
+        "bridge_health",
+        "agents_discover",
+        "sessions_status"
+      ],
+      "disabledTools": []
+    }
+  }
+}

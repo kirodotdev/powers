@@ -98,6 +98,13 @@ Documentation is available at https://kiro.dev/docs/powers/
 
 ---
 
+### mcp-agentic
+**MCP Agentic** - Connect MCP clients to ACP-compatible agents through a local MCP bridge built on stdio Bus with embedded runtime. Supports in-process agents, external worker processes, session management, and one-shot delegation.
+
+**MCP Servers:** mcp-agentic
+
+---
+
 ### postman
 **API Testing with Postman** - Automate API testing and collection management with Postman - create workspaces, collections, environments, and run tests programmatically.
 
