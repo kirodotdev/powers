@@ -63,6 +63,13 @@ Documentation is available at https://kiro.dev/docs/powers/
 
 ---
 
+### context-keeper
+**Session Context Persistence** - Preserves session context across chat windows — automatically captures summaries when sessions end, restores them when new sessions begin, and maintains a persistent project memory file for long-term knowledge.
+
+**MCP Servers:** None (Knowledge Base Power)
+
+---
+
 ### cloudwatch-application-signals
 **Amazon CloudWatch Application Signals** - Monitor service health, analyze SLO compliance, and perform root cause analysis with distributed tracing and audit capabilities.
 
