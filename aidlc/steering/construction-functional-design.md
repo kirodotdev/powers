@@ -50,6 +50,7 @@ Design detailed business logic for the unit, technology-agnostic and focused pur
 - **Integration Points** - Ask about external system interactions, APIs, and data exchange
 - **Error Handling** - Ask about error scenarios, validation failures, and exception handling
 - **Business Scenarios** - Ask about edge cases, alternative flows, and complex business situations
+- **Frontend Components** (if applicable) - Ask about UI component structure, user interactions, state management, and form handling
 
 ### Step 4: Store Plan
 - Save as `aidlc-docs/construction/plans/{unit-name}-functional-design-plan.md`
@@ -67,6 +68,12 @@ Design detailed business logic for the unit, technology-agnostic and focused pur
 - Create `aidlc-docs/construction/{unit-name}/functional-design/business-logic-model.md`
 - Create `aidlc-docs/construction/{unit-name}/functional-design/business-rules.md`
 - Create `aidlc-docs/construction/{unit-name}/functional-design/domain-entities.md`
+- If unit includes frontend/UI: Create `aidlc-docs/construction/{unit-name}/functional-design/frontend-components.md`
+    - Component hierarchy and structure
+    - Props and state definitions for each component
+    - User interaction flows
+    - Form validation rules
+    - API integration points (which backend endpoints each component uses)
 
 ### Step 7: Present Completion Message
 - Present completion message in this structure:

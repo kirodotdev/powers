@@ -112,5 +112,5 @@ Before creating diagrams:
 
 ## Alternative
 
-For complex diagrams, use Mermaid (see `content-validation.md`)
+For complex diagrams, use Mermaid (see `common-content-validation.md`)
 

@@ -10,13 +10,13 @@
 - 🟡 **OPERATIONS PHASE** - Deployment & Monitoring (future expansion)
 
 **Stage**: An individual workflow activity within a phase
-- Examples: Context Assessment stage, Requirements Assessment stage, Code Planning stage
+- Examples: Context Assessment stage, Requirements Assessment stage, Code Generation stage
 - Each stage has specific prerequisites, steps, and outputs
 - Stages can be ALWAYS-EXECUTE or CONDITIONAL
 
 **Usage Examples**:
 - ✅ "The CONSTRUCTION phase contains 7 stages"
-- ✅ "The Code Planning stage is always executed"
+- ✅ "The Code Generation stage is always executed"
 - ✅ "We're in the INCEPTION phase, executing the Requirements Assessment stage"
 - ❌ "The Requirements Assessment phase" (should be "stage")
 - ❌ "The CONSTRUCTION stage" (should be "phase")
@@ -35,7 +35,7 @@
 - User Stories (CONDITIONAL)
 - Workflow Planning (ALWAYS)
 - Application Design (CONDITIONAL)
-- Design - Units Planning/Generation (CONDITIONAL)
+- Units Generation (CONDITIONAL)
 
 **Outputs**: Requirements, user stories, architectural decisions, unit definitions
 
@@ -49,8 +49,7 @@
 - NFR Requirements (CONDITIONAL, per-unit)
 - NFR Design (CONDITIONAL, per-unit)
 - Infrastructure Design (CONDITIONAL, per-unit)
-- Code Planning (ALWAYS)
-- Code Generation (ALWAYS)
+- Code Generation (ALWAYS) — includes Part 1: Planning and Part 2: Generation
 - Build and Test (ALWAYS)
 
 **Outputs**: Design artifacts, NFR implementations, code, tests
@@ -73,15 +72,14 @@
 - **Workspace Detection**: Initial analysis of workspace state and project type
 - **Requirements Analysis**: Gathering requirements (depth varies based on complexity)
 - **Workflow Planning**: Creating execution plan for which phases to run
-- **Code Planning**: Creating detailed implementation plans for code generation
-- **Code Generation**: Generating actual code based on plans and prior artifacts
+- **Code Generation**: Single stage with two parts — Part 1 (Planning) creates detailed implementation plans, Part 2 (Generation) generates actual code based on plans and prior artifacts
 - **Build and Test**: Building all units and executing comprehensive testing
 
 ### Conditional Stages
 - **Reverse Engineering**: Analyzing existing codebase (brownfield projects only)
 - **User Stories**: Creating user stories and personas (includes Story Planning and Story Generation)
 - **Application Design**: Designing application components, methods, business rules, and services
-- **Design**: Designing system components (includes Units Planning, Units Generation, per-unit design)
+- **Units Generation**: Decomposing the system into units of work (includes internal planning and generation sub-steps, plus per-unit design)
 - **Functional Design**: Technology-agnostic business logic design (per-unit)
 - **NFR Requirements**: Determining NFRs and selecting tech stack (per-unit)
 - **NFR Design**: Incorporating NFR patterns and logical components (per-unit)
@@ -122,7 +120,7 @@ A reusable building block within a service or module. Components are classes, fu
 ### When to Use Each Term
 
 **Unit of Work**:
-- During Units Planning and Units Generation phases
+- During the Units Generation stage
 - When discussing system decomposition
 - In planning documents and discussions
 - Example: "How should we decompose this into units of work?"
@@ -151,12 +149,12 @@ A reusable building block within a service or module. Components are classes, fu
 - **Planning**: Creating a plan with questions and checkboxes for execution
 - **Generation**: Executing the plan to create artifacts
 
-Examples:
-- Story Planning → Story Generation
-- Units Planning → Units Generation
-- Unit Design Planning → Unit Design Generation
-- NFR Planning → NFR Generation
-- Code Planning → Code Generation
+Examples (these are internal sub-steps within a single stage, not separate stages):
+- Story Planning → Story Generation (within User Stories stage)
+- Units Planning → Units Generation (within Units Generation stage)
+- Unit Design Planning → Unit Design Generation (within per-unit design)
+- NFR Planning → NFR Generation (within NFR Requirements stage)
+- Code Generation Part 1 (Planning) → Code Generation Part 2 (Generation)
 
 ### Depth Levels
 - **Minimal**: Quick, focused execution for simple changes

@@ -52,12 +52,43 @@ The AI model intelligently assesses what stages are needed based on:
 ## MANDATORY: Rule Details Loading
 **CRITICAL**: When performing any phase, you MUST read and use relevant content from steering files within this power.
 
+For developers running aidlc-workflows outside the power context, the following alternative paths are checked in order, using the first one that exists:
+- `.aidlc/aidlc-rules/aws-aidlc-rule-details/` (typical with AI-assisted setup)
+- `.aidlc-rule-details/` (typical with Cursor, Cline, Claude Code, GitHub Copilot, OpenAI Codex)
+- `.kiro/aws-aidlc-rule-details/` (typical with Kiro IDE and CLI)
+- `.amazonq/aws-aidlc-rule-details/` (typical with Amazon Q Developer)
+
+When loaded as a power (this power's typical execution mode), all references below resolve to files in this power's `steering/` directory. All subsequent rule detail file references (e.g., `common-process-overview.md`, `inception-workspace-detection.md`) are relative to whichever rule details directory was resolved.
+
 **Common Rules**: ALWAYS load common rules at workflow start:
 - Load `common-process-overview.md` for workflow overview
 - Load `common-session-continuity.md` for session resumption guidance
 - Load `common-content-validation.md` for content validation requirements
 - Load `common-question-format-guide.md` for question formatting rules
 - Reference these throughout the workflow execution
+
+## MANDATORY: Extensions Loading (Context-Optimized)
+**CRITICAL**: At workflow start, scan for extension files (`extensions-*.opt-in.md` in this power's `steering/` directory, or `extensions/*/*` subdirectories in non-power deployments). Load ONLY lightweight opt-in files — NOT full rule files. Full rule files are loaded on-demand after the user opts in.
+
+**Loading process**:
+1. List all `extensions-*.opt-in.md` files in `steering/` (or `extensions/` subdirectories in non-power deployments)
+2. Load ONLY `*.opt-in.md` files — these contain the extension's opt-in prompt. The corresponding rules file is derived by convention: strip the `.opt-in.md` suffix and append `.md` (e.g., `extensions-security-baseline.opt-in.md` → `extensions-security-baseline.md`)
+3. Do NOT load full rule files (e.g., `extensions-security-baseline.md`) at this stage
+
+**Deferred Rule Loading**:
+- During Requirements Analysis, opt-in prompts from the loaded `*.opt-in.md` files are presented to the user
+- When the user opts IN for an extension, load the corresponding rules file (derived by naming convention) at that point
+- When the user opts OUT, the full rules file is never loaded — saving context
+- Extensions without a matching `*.opt-in.md` file are always enforced — load their rule files immediately at workflow start
+
+**Enforcement** (applies only to loaded/enabled extensions):
+- Extension rules are hard constraints, not optional guidance
+- At each stage, the model intelligently evaluates which extension rules are applicable based on the stage's purpose, the artifacts being produced, and the context of the work — enforce only those rules that are relevant
+- Rules that are not applicable to the current stage should be marked as N/A in the compliance summary (this is not a blocking finding)
+- Non-compliance with any applicable enabled extension rule is a **blocking finding** — do NOT present stage completion until resolved
+- When presenting stage completion, include a summary of extension rule compliance (compliant/non-compliant/N/A per rule, with brief rationale for N/A determinations)
+
+**Conditional Enforcement**: Extensions may be conditionally enabled/disabled. See `inception-requirements-analysis.md` for the opt-in mechanism. Before enforcing any extension at ANY stage, check its `Enabled` status in `aidlc-docs/aidlc-state.md` under `## Extension Configuration`. Skip disabled extensions and log the skip in audit.md. Default to enforced if no configuration exists.
 
 ## MANDATORY: Content Validation
 **CRITICAL**: Before creating ANY file, you MUST validate content according to `common-content-validation.md` rules:
@@ -116,7 +147,7 @@ The AI model intelligently assesses what stages are needed based on:
    - Check for existing reverse engineering artifacts
 4. Determine next phase: Reverse Engineering (if brownfield and no artifacts) OR Requirements Analysis
 5. **MANDATORY**: Log findings in audit.md
-6. Present completion message to user (see workspace-detection.md for message formats)
+6. Present completion message to user (see inception-workspace-detection.md for message formats)
 7. Automatically proceed to next phase
 
 ## Reverse Engineering (CONDITIONAL - Brownfield Only)
@@ -134,7 +165,7 @@ The AI model intelligently assesses what stages are needed based on:
 2. Load all steps from `inception-reverse-engineering.md`
 3. Execute reverse engineering:
    - Analyze all packages and components
-   - Generate a busienss overview of the whole system covering the business transactions
+   - Generate a business overview of the whole system covering the business transactions
    - Generate architecture documentation
    - Generate code structure documentation
    - Generate API documentation
@@ -143,7 +174,7 @@ The AI model intelligently assesses what stages are needed based on:
    - Generate technology stack documentation
    - Generate dependencies documentation
 
-4. **Wait for Explicit Approval**: Present detailed completion message (see reverse-engineering.md for message format) - DO NOT PROCEED until user confirms
+4. **Wait for Explicit Approval**: Present detailed completion message (see inception-reverse-engineering.md for message format) - DO NOT PROCEED until user confirms
 5. **MANDATORY**: Log user's response in audit.md with complete raw input
 
 ## Requirements Analysis (ALWAYS EXECUTE - Adaptive Depth)
@@ -164,7 +195,7 @@ The AI model intelligently assesses what stages are needed based on:
    - Ask clarifying questions (if needed)
    - Generate requirements document
 4. Execute at appropriate depth (minimal/standard/comprehensive)
-5. **Wait for Explicit Approval**: Follow approval format from requirements-analysis.md detailed steps - DO NOT PROCEED until user confirms
+5. **Wait for Explicit Approval**: Follow approval format from inception-requirements-analysis.md detailed steps - DO NOT PROCEED until user confirms
 6. **MANDATORY**: Log user's response in audit.md with complete raw input
 
 ## User Stories (CONDITIONAL)
@@ -227,13 +258,13 @@ The AI model intelligently assesses what stages are needed based on:
 **Execution**:
 1. **MANDATORY**: Log any user input during this phase in audit.md
 2. Load all steps from `inception-user-stories.md`
-3. **MANDATORY**: Perform intelligent assessment (Step 1 in user-stories.md) to validate user stories are needed
+3. **MANDATORY**: Perform intelligent assessment (Step 1 in inception-user-stories.md) to validate user stories are needed
 4. Load reverse engineering artifacts (if brownfield)
 5. If Requirements exist, reference them when creating stories
 6. Execute at appropriate depth (minimal/standard/comprehensive)
 7. **PART 1 - Planning**: Create story plan with questions, wait for user answers, analyze for ambiguities, get approval
 8. **PART 2 - Generation**: Execute approved plan to generate stories and personas
-9. **Wait for Explicit Approval**: Follow approval format from user-stories.md detailed steps - DO NOT PROCEED until user confirms
+9. **Wait for Explicit Approval**: Follow approval format from inception-user-stories.md detailed steps - DO NOT PROCEED until user confirms
 10. **MANDATORY**: Log user's response in audit.md with complete raw input
 
 ## Workflow Planning (ALWAYS EXECUTE)
@@ -251,8 +282,8 @@ The AI model intelligently assesses what stages are needed based on:
    - Determine depth level for each phase
    - Create multi-package change sequence (if brownfield)
    - Generate workflow visualization (VALIDATE Mermaid syntax before writing)
-6. **MANDATORY**: Validate all content before file creation per content-validation.md rules
-7. **Wait for Explicit Approval**: Present recommendations using language from workflow-planning.md Step 9, emphasizing user control to override recommendations - DO NOT PROCEED until user confirms
+6. **MANDATORY**: Validate all content before file creation per common-content-validation.md rules
+7. **Wait for Explicit Approval**: Present recommendations using language from inception-workflow-planning.md Step 9, emphasizing user control to override recommendations - DO NOT PROCEED until user confirms
 8. **MANDATORY**: Log user's response in audit.md with complete raw input
 
 ## Application Design (CONDITIONAL)
@@ -273,7 +304,7 @@ The AI model intelligently assesses what stages are needed based on:
 2. Load all steps from `inception-application-design.md`
 3. Load reverse engineering artifacts (if brownfield)
 4. Execute at appropriate depth (minimal/standard/comprehensive)
-5. **Wait for Explicit Approval**: Present detailed completion message (see application-design.md for message format) - DO NOT PROCEED until user confirms
+5. **Wait for Explicit Approval**: Present detailed completion message (see inception-application-design.md for message format) - DO NOT PROCEED until user confirms
 6. **MANDATORY**: Log user's response in audit.md with complete raw input
 
 ## Units Generation (CONDITIONAL)
@@ -293,7 +324,7 @@ The AI model intelligently assesses what stages are needed based on:
 2. Load all steps from `inception-units-generation.md`
 3. Load reverse engineering artifacts (if brownfield)
 4. Execute at appropriate depth (minimal/standard/comprehensive)
-5. **Wait for Explicit Approval**: Present detailed completion message (see units-generation.md for message format) - DO NOT PROCEED until user confirms
+5. **Wait for Explicit Approval**: Present detailed completion message (see inception-units-generation.md for message format) - DO NOT PROCEED until user confirms
 6. **MANDATORY**: Log user's response in audit.md with complete raw input
 
 ---
@@ -336,7 +367,7 @@ The AI model intelligently assesses what stages are needed based on:
 1. **MANDATORY**: Log any user input during this stage in audit.md
 2. Load all steps from `construction-functional-design.md`
 3. Execute functional design for this unit
-4. **MANDATORY**: Present standardized 2-option completion message as defined in functional-design.md - DO NOT use emergent 3-option behavior
+4. **MANDATORY**: Present standardized 2-option completion message as defined in construction-functional-design.md - DO NOT use emergent 3-option behavior
 5. **Wait for Explicit Approval**: User must choose between "Request Changes" or "Continue to Next Stage" - DO NOT PROCEED until user confirms
 6. **MANDATORY**: Log user's response in audit.md with complete raw input
 
@@ -356,7 +387,7 @@ The AI model intelligently assesses what stages are needed based on:
 1. **MANDATORY**: Log any user input during this stage in audit.md
 2. Load all steps from `construction-nfr-requirements.md`
 3. Execute NFR assessment for this unit
-4. **MANDATORY**: Present standardized 2-option completion message as defined in nfr-requirements.md - DO NOT use emergent behavior
+4. **MANDATORY**: Present standardized 2-option completion message as defined in construction-nfr-requirements.md - DO NOT use emergent behavior
 5. **Wait for Explicit Approval**: User must choose between "Request Changes" or "Continue to Next Stage" - DO NOT PROCEED until user confirms
 6. **MANDATORY**: Log user's response in audit.md with complete raw input
 
@@ -368,13 +399,13 @@ The AI model intelligently assesses what stages are needed based on:
 
 **Skip IF**:
 - No NFR requirements
-- NFR Requirements Assessment was skipped
+- NFR Requirements was skipped
 
 **Execution**:
 1. **MANDATORY**: Log any user input during this stage in audit.md
 2. Load all steps from `construction-nfr-design.md`
 3. Execute NFR design for this unit
-4. **MANDATORY**: Present standardized 2-option completion message as defined in nfr-design.md - DO NOT use emergent behavior
+4. **MANDATORY**: Present standardized 2-option completion message as defined in construction-nfr-design.md - DO NOT use emergent behavior
 5. **Wait for Explicit Approval**: User must choose between "Request Changes" or "Continue to Next Stage" - DO NOT PROCEED until user confirms
 6. **MANDATORY**: Log user's response in audit.md with complete raw input
 
@@ -393,7 +424,7 @@ The AI model intelligently assesses what stages are needed based on:
 1. **MANDATORY**: Log any user input during this stage in audit.md
 2. Load all steps from `construction-infrastructure-design.md`
 3. Execute infrastructure design for this unit
-4. **MANDATORY**: Present standardized 2-option completion message as defined in infrastructure-design.md - DO NOT use emergent behavior
+4. **MANDATORY**: Present standardized 2-option completion message as defined in construction-infrastructure-design.md - DO NOT use emergent behavior
 5. **Wait for Explicit Approval**: User must choose between "Request Changes" or "Continue to Next Stage" - DO NOT PROCEED until user confirms
 6. **MANDATORY**: Log user's response in audit.md with complete raw input
 
@@ -410,7 +441,7 @@ The AI model intelligently assesses what stages are needed based on:
 2. Load all steps from `construction-code-generation.md`
 3. **PART 1 - Planning**: Create code generation plan with checkboxes, get user approval
 4. **PART 2 - Generation**: Execute approved plan to generate code for this unit
-5. **MANDATORY**: Present standardized 2-option completion message as defined in code-generation.md - DO NOT use emergent behavior
+5. **MANDATORY**: Present standardized 2-option completion message as defined in construction-code-generation.md - DO NOT use emergent behavior
 6. **Wait for Explicit Approval**: User must choose between "Request Changes" or "Continue to Next Stage" - DO NOT PROCEED until user confirms
 7. **MANDATORY**: Log user's response in audit.md with complete raw input
 
@@ -467,7 +498,7 @@ The Operations stage will eventually include:
   - **CRITICAL**: Never summarize or paraphrase user input in audit log
   - **CRITICAL**: Log every interaction, not just approvals
 - **Quality Focus**: Complex changes get full treatment, simple changes stay efficient
-- **Content Validation**: Always validate content before file creation per content-validation.md rules
+- **Content Validation**: Always validate content before file creation per common-content-validation.md rules
 - **NO EMERGENT BEHAVIOR**: Construction phases MUST use standardized 2-option completion messages as defined in their respective rule files. DO NOT create 3-option menus or other emergent navigation patterns.
 
 ## MANDATORY: Plan-Level Checkbox Enforcement
@@ -489,7 +520,7 @@ The Operations stage will eventually include:
 - **MANDATORY**: Log every approval prompt with timestamp before asking the user
 - **MANDATORY**: Record every user response with timestamp after receiving it
 - **CRITICAL**: ALWAYS append changes to EDIT audit.md file, NEVER use tools and commands that completely overwrite its contents
-- **CRITICAL**: Using file writing tools and commands that overwrite contents of the entire audit.md and cause duplication
+- **CRITICAL**: NEVER use file writing tools and commands that overwrite the entire contents of audit.md, as this causes duplication
 - Use ISO 8601 format for timestamps (YYYY-MM-DDTHH:MM:SSZ)
 - Include stage context for each entry
 
@@ -520,7 +551,7 @@ The Operations stage will eventually include:
 
 ```text
 <WORKSPACE-ROOT>/                   # ⚠️ APPLICATION CODE HERE
-├── [project-specific structure]    # Varies by project (see code-generation.md)
+├── [project-specific structure]    # Varies by project (see construction-code-generation.md)
 │
 ├── aidlc-docs/                     # 📄 DOCUMENTATION ONLY
 │   ├── inception/                  # 🔵 INCEPTION PHASE
@@ -546,4 +577,4 @@ The Operations stage will eventually include:
 **CRITICAL RULE**:
 - Application code: Workspace root (NEVER in aidlc-docs/)
 - Documentation: aidlc-docs/ only
-- Project structure: See code-generation.md for patterns by project type
+- Project structure: See construction-code-generation.md for patterns by project type
