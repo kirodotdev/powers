@@ -657,6 +657,11 @@ AS SELECT * FROM cloud_files('/Volumes/main/raw/orders', 'json');
 2. Re-run with `--force` and watch for the line that mentions `uv venv` failing
 3. Check disk space in `$HOME`
 
+### Warning: "SKILL.md not for skill: …databricks-app-apx/SKILL.md"
+**Cause:** The upstream `databricks-solutions/apx` repository ships `SKILL.md` with a frontmatter `name:` field (`apx`) that doesn't match the directory name (`databricks-app-apx`) the installer creates. Kiro flags the mismatch but loads the skill anyway.
+**Impact:** None — the skill is functional, just registered under a different internal name. The warning is cosmetic.
+**Solution:** No action needed. Patching the local file isn't durable (the next skill update overwrites it). The proper fix is upstream: file an issue at https://github.com/databricks-solutions/apx requesting the frontmatter `name:` field be aligned with the distributed directory name.
+
 ## Configuration
 
 ### Prerequisites
@@ -1016,6 +1021,91 @@ This is the file you'll find at `~/.kiro/powers/installed/databricks/mcp.json` i
 > All four options below modify the **runtime** MCP config at `~/.kiro/settings/mcp.json` (under `powers.mcpServers.power-databricks-databricks`), not the bundled file above. Kiro mirrors the bundled config there during Power activation.
 >
 > **Where credentials are read from:** the MCP server reads its environment from the `env` block of `mcp.json` at the moment Kiro launches it. Pick the option whose env block matches the credentials you have, then edit `mcp.json` directly.
+
+#### Recommended setup before you pick an option: a multi-environment `~/.databrickscfg`
+
+The cleanest long-term setup is to keep **all** your Databricks credentials in one place: `~/.databrickscfg`. Every Databricks tool on your machine — the CLI, Terraform provider, VS Code extension, local notebooks, this Power — reads the same file, so you set it up once and get a consistent identity everywhere. Switching environments becomes a one-line shell change (`export DATABRICKS_CONFIG_PROFILE=u2m-prod`) instead of editing `mcp.json` every time.
+
+Use a naming convention that encodes both the environment **and** the auth method, so it's obvious what each profile does at a glance: `<auth>-<env>` (e.g., `u2m-dev`, `m2m-dev`, `pat-dev`, then the same for `qa` and `prod`).
+
+**Step-by-step:**
+
+1. **Create your U2M profiles first** with `databricks auth login` — one per environment. The CLI writes the `[u2m-*]` blocks for you:
+   ```bash
+   databricks auth login --host https://<dev-workspace>.cloud.databricks.com  --profile u2m-dev
+   databricks auth login --host https://<qa-workspace>.cloud.databricks.com   --profile u2m-qa
+   databricks auth login --host https://<prod-workspace>.cloud.databricks.com --profile u2m-prod
+   ```
+
+2. **Add M2M and PAT profiles by hand** if you need them. Open `~/.databrickscfg` in an editor and append blocks. The CLI does not write these for you.
+
+3. **Lock the file down** so secrets aren't world-readable:
+   ```bash
+   chmod 600 ~/.databrickscfg
+   ```
+
+**Reference template** — fill in only the environments and auth methods you actually use:
+
+```ini
+# ~/.databrickscfg
+# Naming: <auth>-<env>
+# Auth methods: u2m (interactive), m2m (service principal), pat (legacy)
+
+[u2m-dev]
+host       = https://<dev-workspace>.cloud.databricks.com
+auth_type  = databricks-cli
+
+[u2m-qa]
+host       = https://<qa-workspace>.cloud.databricks.com
+auth_type  = databricks-cli
+
+[u2m-prod]
+host       = https://<prod-workspace>.cloud.databricks.com
+auth_type  = databricks-cli
+
+[m2m-dev]
+host          = https://<dev-workspace>.cloud.databricks.com
+client_id     = <dev-service-principal-application-id>
+client_secret = <dev-oauth-secret>
+
+[m2m-qa]
+host          = https://<qa-workspace>.cloud.databricks.com
+client_id     = <qa-service-principal-application-id>
+client_secret = <qa-oauth-secret>
+
+[m2m-prod]
+host          = https://<prod-workspace>.cloud.databricks.com
+client_id     = <prod-service-principal-application-id>
+client_secret = <prod-oauth-secret>
+
+[pat-dev]
+host  = https://<dev-workspace>.cloud.databricks.com
+token = dapi...
+
+[pat-qa]
+host  = https://<qa-workspace>.cloud.databricks.com
+token = dapi...
+
+[pat-prod]
+host  = https://<prod-workspace>.cloud.databricks.com
+token = dapi...
+```
+
+**Switching environments at runtime:**
+
+```bash
+export DATABRICKS_CONFIG_PROFILE=u2m-dev    # work in dev
+# Kiro restart / MCP server reconnect
+
+export DATABRICKS_CONFIG_PROFILE=u2m-prod   # switch to prod
+# Kiro restart / MCP server reconnect
+```
+
+The Power's `mcp.json` env block stays exactly what ships by default — `{"DATABRICKS_CONFIG_PROFILE": "${DATABRICKS_CONFIG_PROFILE}"}` — and Option C (Existing profile) handles all three auth methods because the Databricks SDK reads the profile and picks the matching flow. Once `~/.databrickscfg` is set up, you rarely need to switch options.
+
+**When you don't need this:**
+- You only ever work against one Databricks workspace with one auth method → a single `[DEFAULT]` profile (or the env-var options below) is fine.
+- You don't have permission to install/run `databricks auth login` and don't want to hand-write profiles → skip to Options B or D and use shell env vars directly.
 
 **Quick reference (Databricks-recommended order):**
 
