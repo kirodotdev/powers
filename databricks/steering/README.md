@@ -25,7 +25,7 @@ The installer downloads skills from the [ai-dev-kit repository](https://github.c
 | databricks-vector-search | Semantic search and RAG applications |
 | databricks-model-serving | Deploy ML models and AI agents |
 | databricks-mlflow-evaluation | Model evaluation, scoring, traces |
-| databricks-app-python | Full-stack web applications |
+| databricks-apps-python | Full-stack web applications |
 | databricks-lakebase-provisioned | Managed PostgreSQL (provisioned) |
 | databricks-lakebase-autoscale | Managed PostgreSQL (autoscale) |
 | databricks-metric-views | Reusable business metrics |
@@ -37,6 +37,7 @@ The installer downloads skills from the [ai-dev-kit repository](https://github.c
 | databricks-python-sdk | Python SDK patterns and examples |
 | databricks-synthetic-data-gen | Synthetic data generation |
 | databricks-zerobus-ingest | Zero-copy ingestion |
+| databricks-execution-compute | Code execution + cluster / warehouse lifecycle |
 | databricks-ai-functions | AI functions, forecasting, document processing |
 | databricks-app-apx | App frontend/backend patterns |
 | databricks-unstructured-pdf-generation | PDF generation and upload |

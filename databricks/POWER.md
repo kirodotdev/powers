@@ -46,7 +46,7 @@ The Databricks AI Dev Kit Power provides comprehensive access to the Databricks 
 
 This Power's steering files are downloaded from the [ai-dev-kit repository](https://github.com/databricks-solutions/ai-dev-kit/tree/main/databricks-skills) during onboarding and copied into the Power's `steering/` directory. Skills load on-demand based on your task.
 
-### Skill Catalog (33+ skills)
+### Skill Catalog (34+ skills)
 
 | Skill | Domain | Description |
 |-------|--------|-------------|
@@ -54,6 +54,7 @@ This Power's steering files are downloaded from the [ai-dev-kit repository](http
 | databricks-spark-structured-streaming | Data Engineering | Kafka, stateful ops, stream joins |
 | databricks-jobs | Data Engineering | Scheduled workflows, multi-task DAGs, serverless |
 | databricks-zerobus-ingest | Data Engineering | Zero-copy ingestion |
+| databricks-execution-compute | Data Engineering | Code execution + cluster / warehouse lifecycle |
 | databricks-iceberg | Data Engineering | Iceberg tables, UniForm, interop |
 | databricks-aibi-dashboards | Analytics | Interactive visualizations, KPIs, analytics |
 | databricks-dbsql | Analytics | SQL best practices, materialized views |
@@ -66,7 +67,7 @@ This Power's steering files are downloaded from the [ai-dev-kit repository](http
 | databricks-mlflow-evaluation | AI/ML | Model evaluation, scoring, traces |
 | databricks-ai-functions | AI/ML | AI functions, forecasting, document processing |
 | databricks-synthetic-data-gen | AI/ML | Synthetic data generation |
-| databricks-app-python | App Development | Full-stack web applications |
+| databricks-apps-python | App Development | Full-stack web applications |
 | databricks-app-apx | App Development | App frontend/backend patterns |
 | databricks-lakebase-provisioned | App Development | Managed PostgreSQL (provisioned) |
 | databricks-lakebase-autoscale | App Development | Managed PostgreSQL (autoscale) |
