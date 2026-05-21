@@ -670,6 +670,21 @@ AS SELECT * FROM cloud_files('/Volumes/main/raw/orders', 'json');
 - **git** — Version control
 - **Databricks workspace** — AWS, Azure, or GCP
 - **Databricks CLI** (optional, for OAuth login) — [install](https://docs.databricks.com/en/dev-tools/cli/install.html)
+- **jq** (recommended) — Steps 2.5 / 2.6 / 2.7 below use `jq` for idempotent `mcp.json` edits. Each step also includes a non-`jq` fallback, but installing `jq` (`brew install jq` on macOS, `apt install jq` on Linux) makes the onboarding flow fully scriptable.
+
+### Install at a glance
+
+The flow has three install-bug workarounds (Steps 2.5 / 2.6 / 2.7) that look optional but aren't — every fresh Kiro install of this Power hits at least one of them today. Skim this checklist before starting so the ordering is clear:
+
+| Step | What it does | Why it's there |
+|------|--------------|----------------|
+| 1 | Snapshot `~/.kiro/skills`, then run the official installer | Snapshot lets Step 2 know exactly which skills the installer added |
+| 2 | Diff the post-install state, write a `.skill-manifest.txt`, move skills into the Power's `steering/` directory | Manifest-driven move beats glob-based cleanup — safe with upstream additions and other tools |
+| 2.5 | Add the top-level `mcpServers` key to `~/.kiro/settings/mcp.json` if missing | Kiro's schema requires it; fresh installs error out without this |
+| 2.6 | Remove the standalone `mcpServers.databricks` entry the installer writes | Otherwise Kiro launches two copies of the same MCP server |
+| 2.7 | Expand `~` to `$HOME` in the Power's `command` and `args` paths | Node's `spawn()` doesn't expand `~` — server fails with `ENOENT` if you skip this |
+| 3 | Configure authentication (Options A → D; Option A = OAuth U2M recommended for interactive) | Power ships `disabled: true` until you pick a method |
+| 4 | Smoke-test the connection with `get_current_user` | Verifies auth + env-var resolution + server enablement in one call |
 
 ### Step 1: Run the Official Installer (with pre-snapshot)
 
