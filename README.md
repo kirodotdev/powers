@@ -70,6 +70,13 @@ Documentation is available at https://kiro.dev/docs/powers/
 
 ---
 
+### databricks
+**Databricks AI Dev Kit** - Comprehensive Databricks development toolkit with 44 MCP tools (180+ operations) and expert guidance for building data pipelines, ML workflows, dashboards, jobs, and applications on the Databricks platform across AWS, Azure, and GCP.
+
+**MCP Servers:** databricks (ai-dev-kit local MCP server)
+
+---
+
 ### datadog
 **Datadog Observability** - Query logs, metrics, traces, RUM events, incidents, and monitors from Datadog for production debugging and performance analysis.
 
