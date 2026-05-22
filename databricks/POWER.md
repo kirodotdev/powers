@@ -3,7 +3,7 @@ name: "databricks"
 displayName: "Databricks AI Dev Kit"
 description: "Comprehensive Databricks development toolkit with 44 MCP tools (180+ operations) and expert guidance for building data pipelines, ML workflows, dashboards, jobs, and applications on Databricks platform."
 keywords: ["databricks", "spark", "delta", "mlflow", "unity catalog", "pipelines", "jobs", "sql", "data engineering", "machine learning"]
-author: "AWS"
+author: "Databricks"
 ---
 
 # Databricks AI Dev Kit Power
