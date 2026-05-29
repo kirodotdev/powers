@@ -1,5 +1,5 @@
 ---
-name: "gcp-aws-migrate"
+name: "migration-to-aws"
 displayName: "GCP to AWS Migration Advisor"
 description: "Expert guidance for migrating workloads from Google Cloud Platform to AWS. This no-cost tool assesses your current cloud provider's usage, geography, and billing data to estimate and compare AWS services and pricing, and recommends migration or continued use of your current provider. AWS pricing is based on current published pricing and may vary over time. The tool may generate a .migration folder containing comparison and migration execution data, which you may delete upon completion or use to migrate to AWS."
 keywords: ["gcp", "aws", "migration", "cloud migration", "terraform", "re-platform", "cost estimation", "architecture"]
@@ -253,7 +253,7 @@ User can invoke the power again to resume from last completed phase.
 ## Files in This Power
 
 ```
-gcp-aws-migrate/
+migration-to-aws/
 ├── POWER.md                                    ← You are here (orchestrator + state machine)
 ├── mcp.json                                    # MCP server configuration
 │
