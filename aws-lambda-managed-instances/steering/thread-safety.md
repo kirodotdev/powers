@@ -7,12 +7,13 @@ LMI runs multiple invocations concurrently in the same execution environment. Th
 When reviewing a function for LMI readiness, check each item:
 
 - [ ] No shared `/tmp` paths (use request ID in filenames, clean up after — shared across ALL runtimes)
+- [ ] Estimate total `/tmp` usage under max concurrency (concurrent requests × per-request file size)
 - [ ] Database connections use pools (initialized outside handler, not per-invocation)
 - [ ] SDK clients outside handler (module-level singletons are fine — they are thread-safe)
 - [ ] Logging includes request ID (for tracing concurrent requests)
 - [ ] **Node.js/Java/.NET only:** No global/static mutable variables (use immutable or request-local state)
 - [ ] **Node.js/Java/.NET only:** Thread-safe libraries only (check DB drivers, HTTP clients, caching libs)
-- [ ] **Node.js/Java/.NET only:** No request state in global scope (use AsyncLocalStorage, contextvars, ThreadLocal)
+- [ ] **Node.js/Java/.NET only:** No request state in global scope (use AsyncLocalStorage for Node.js, ThreadLocal for Java, AsyncLocal for .NET)
 - [ ] **Node.js/Java/.NET only:** No environment variable mutation during requests
 - [ ] **Python only:** Memory budget accounts for per-process multiplication (memory × concurrency)
 

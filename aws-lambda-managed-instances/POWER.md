@@ -24,7 +24,7 @@ If this fails, configure credentials via `aws configure` or set `AWS_PROFILE`.
 
 ### Step 2: Check regional availability
 
-Lambda Managed Instances is available in select regions. Verify availability:
+Currently available: us-east-1, us-east-2, us-west-2, ap-northeast-1, eu-west-1. Expanding to all commercial regions soon. Verify the latest availability:
 
 - [Lambda Managed Instances documentation](https://docs.aws.amazon.com/lambda/latest/dg/lambda-managed-instances.html)
 
@@ -46,7 +46,7 @@ Lambda Managed Instances is available in select regions. Verify availability:
 | Cold starts | Unacceptable (LMI eliminates for provisioned capacity) | Tolerable or mitigated by SnapStart |
 | Compute | Latest CPUs, specific families, high network bandwidth | Standard Lambda memory/CPU sufficient |
 | Isolation | Dedicated EC2 instances in your account, full VPC control | Shared Firecracker micro-VMs acceptable |
-| Scale-to-zero | Not needed (min 3 instances always run) | Required (pay nothing when idle) |
+| Scale-to-zero | Not needed (execution environments always running) | Required (pay nothing when idle) |
 | Code readiness | Thread-safe (Node.js/Java/.NET) or any Python code | Non-thread-safe code, expensive to change |
 
 ## Workflow
@@ -72,16 +72,16 @@ REQUIRED: Present a cost comparison before recommending LMI. Compare at minimum:
 | Lambda on-demand | Low volume, bursty traffic |
 | LMI on-demand | High volume, steady traffic |
 
-Rule of thumb: LMI becomes cost-competitive at 50-100M+ req/month with steady traffic.
+Rule of thumb: LMI becomes cost-competitive when your Lambda spend exceeds ~$1,000/month with steady traffic.
 
 Use the [LMI Pricing Calculator](https://aws-samples.github.io/sample-aws-lambda-managed-instances/) for accurate comparisons.
 
 ### Step 3: Configure the Deployment
 
-- **Instance families** (400+ types, .large and up): C-series (compute), M-series (general), R-series (memory). ARM (Graviton) for best price-performance.
+- **Instance families** (~450 types): C-series (compute, .xlarge+), M-series (general, .large+), R-series (memory, .large+). ARM (Graviton) for best price-performance.
 - **Memory-to-vCPU ratios**: 2:1 (compute), 4:1 (general, default), 8:1 (memory). Min 2 GB, max 32 GB.
 - **Multi-concurrency defaults/vCPU**: Node.js 64, Java 32, .NET 32, Python 16.
-- **Scaling**: MinExecutionEnvironments (default 3), MaxVCpuCount (required), TargetResourceUtilization.
+- **Scaling**: MinExecutionEnvironments (default 3), MaxVCpuCount (default 400), TargetResourceUtilization.
 
 See `configuration-guide.md` for decision trees and detailed tuning.
 
@@ -98,7 +98,7 @@ See `thread-safety.md` for the review checklist and `migration-patterns.md` for 
 ### Step 5: Set Up Infrastructure
 
 1. Create two IAM roles: execution role (for the function) and operator role (for capacity provider EC2 management)
-2. Configure VPC with subnets across 3+ AZs
+2. Configure VPC with subnets across multiple AZs (recommended 3+ for resiliency)
 3. Create capacity provider with VPC config and scaling limits
 4. Create or update function with capacity provider attachment
 5. Publish a version (triggers instance provisioning)
@@ -121,7 +121,7 @@ See `infrastructure-setup.md` for CLI commands and SAM templates.
 - Use ARM (Graviton) unless x86 dependencies exist
 - Let Lambda choose instance types unless specific hardware needed
 - Set MaxVCpuCount to control cost ceiling
-- Never set MinExecutionEnvironments below 3 (breaks AZ resiliency)
+- Never set MinExecutionEnvironments below 3 in production (reduces multi-AZ coverage); non-prod can use 1
 
 ### Migration
 
@@ -130,11 +130,11 @@ See `infrastructure-setup.md` for CLI commands and SAM templates.
 - Use weighted aliases for gradual traffic shift
 - Include request IDs in all log statements
 - Initialize DB pools and SDK clients outside the handler
+- Estimate total `/tmp` usage under max concurrency
 
 ### Operations
 
 - Set CloudWatch alarms on throttle rate > 1% and CPU > 80%
-- Plan for 14-day instance rotation (automatic)
 - Never manually terminate LMI EC2 instances (delete the capacity provider instead)
 - Always publish a version — unpublished functions cannot run on LMI
 
@@ -143,12 +143,12 @@ See `infrastructure-setup.md` for CLI commands and SAM templates.
 | Resource | Limit |
 |----------|-------|
 | Memory | 2 GB min, 32 GB max |
-| Instances | 3 minimum (AZ resiliency) |
-| Instance lifespan | 14 days (auto-replaced) |
 | Concurrency/vCPU | 64 (Node.js), 32 (Java/.NET), 16 (Python) |
+| Instance lifespan | ~12 hours (auto-replaced by Lambda) |
+| EE lifespan | ~4 hours (auto-replaced by Lambda) |
 | Runtimes | Node.js, Java, .NET, Python |
-| Instance families | C, M, R (.large and up) |
-| Scaling | Absorbs 50% spike; doubles within 5 min |
+| Instance families | C (.xlarge+), M (.large+), R (.large+) |
+| Scaling | Doubles within 5 min without throttles |
 
 ## Resources
 
