@@ -56,6 +56,13 @@ Documentation is available at https://kiro.dev/docs/powers/
 
 ---
 
+### brightdata-scrape
+**Add web scraping to any app with Bright Data** - Detects your project's stack (Python, TypeScript, 9 web frameworks, 8 agent frameworks) and adds production-ready Bright Data web scraping in the right shape — a reusable module, an API route, or an agent tool — backed by Web Unlocker, SERP API, Web Scraper API, and Browser API. Wires the Bright Data MCP server into the project so any AI agent that runs against the project (Claude Code, Cursor, Cline, Kiro itself) gains live web tools.
+
+**MCP Servers:** brightdata
+
+---
+
 ### cloud-architect
 **Build infrastructure on AWS** - Build AWS infrastructure with CDK in Python following AWS Well-Architected framework best practices.
 
