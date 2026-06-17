@@ -4,7 +4,7 @@ displayName: "AWS Transform"
 description: "Migrate, modernize, and upgrade codebases: .NET Framework to .NET 8/10, mainframe COBOL to Java, VMware VMs to EC2, SQL Server/Oracle/MySQL to Aurora, and Java/Python/Node.js version upgrades or AWS SDK migrations. Assess, plan, and execute code transformations from your IDE."
 keywords: ["migrate", "modernize", "mainframe", "cobol", "vmware", "dotnet", ".net framework", "windows", "sql server", "oracle", "mysql", "aurora", "ec2 migration", "rehost", "lift-and-shift", "replatform", "legacy", "code upgrade", "sdk migration", "boto3", "java upgrade", "atx", "continuous modernization", "AWS Transform - continuous modernization"]
 author: "AWS"
-version: "2.1.0"
+version: "2.1.1"
 ---
 
 # AWS Transform Power

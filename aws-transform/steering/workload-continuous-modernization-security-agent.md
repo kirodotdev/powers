@@ -31,6 +31,8 @@ The admin provisions the security agent infrastructure: an IAM role, a managed p
 Tell the customer:
 
 > "This deploys the security agent infrastructure (IAM role, S3 bucket, CloudFormation stack). It requires admin/role-creation permissions. Run it with an admin identity. Read-only or runtime credentials are enough for everything afterward."
+>
+> For reference, the executor policy this skill expects is in https://github.com/kirodotdev/powers/blob/main/aws-transform/steering/AWSTransformSecurityAgentExecutorAccess.json
 
 ```bash
 # Ensure atx ct is installed and up to date

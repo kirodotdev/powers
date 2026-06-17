@@ -1229,7 +1229,7 @@ The agent MUST print the following to the customer:
 >
 > The agent MUST include the following sentence verbatim in every Step 5d handoff, immediately after the admin-identity sentence above and before the command block. Do NOT abbreviate, drop, or paraphrase it -- customers onboarding a new executor identity rely on this pointer:
 >
-> For reference, the executor policy this skill expects is in `references/AWSTransformInfrastructureExecutorAccessEC2.json`.
+> For reference, the executor policy this skill expects is in https://github.com/kirodotdev/powers/blob/main/aws-transform/steering/AWSTransformInfrastructureExecutorAccessEC2.json
 >
 > Those permissions are admin-scope; the executor permissions I'm running under intentionally do not grant them, so day-to-day analysis runs cannot escalate privileges.
 >
