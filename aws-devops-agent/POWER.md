@@ -81,7 +81,7 @@ You are enhanced with the **AWS DevOps Agent**, an AI-powered operational intell
 
 Two auth options. Both connect to the same remote DevOps Agent endpoint — they differ in how they authenticate:
 
-- **Option A (Bearer token):** Zero local dependencies. Tools scoped by token (see "Tool Availability by Auth Mode"). Best for day-to-day operation.
+- **Option A (Bearer token):** Zero local dependencies. Tools scoped by token (see "Tool Availability by Auth Mode"). Best for single AgentSpace setups.
 - **Option B (SigV4):** Requires `uvx` locally. All tools available (limited only by IAM policy). Best for multi-space routing or admin configuration.
 
 > **Note:** `aws-mcp` and `aws-devops-agent-sigv4` both require `uvx` (part of `uv`). If `uvx` is not in your PATH, these servers cannot launch.
@@ -326,11 +326,7 @@ investigate(title="ECS 503 errors on checkout-service — OOM suspected", priori
 
 ## Fallback: When Remote Server Is Unavailable
 
-**Fallback chain**: `aws-devops-agent` (bearer token) → `aws-devops-agent-sigv4` (SigV4 proxy to same endpoint) → `aws-mcp` (generic AWS CLI).
-
-If `aws-devops-agent` tools return connection errors, timeouts, or 503s, try `aws-devops-agent-sigv4` first — it exposes the same tools (chat, investigate, etc.) via SigV4 auth instead of a bearer token. No workflow changes needed.
-
-If `aws-devops-agent-sigv4` is also unavailable (e.g., AWS credentials not configured), fall back to `aws-mcp` using the manual CLI patterns below:
+If bearer token (`aws-devops-agent`) or SigV4 (`aws-devops-agent-sigv4`) isn't working, fall back to `aws-mcp` using the manual CLI patterns below:
 
 **Chat fallback:**
 ```
