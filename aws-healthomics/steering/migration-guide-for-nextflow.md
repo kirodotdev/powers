@@ -47,9 +47,7 @@ AWS HealthOmics requires:
 1. Scan all module files for resource declarations.
 2. Identify processes relying only on labels.
 3. Verify all processes in `conf/base.config` have explicit resources.
-4. Add HealthOmics-specific resource overrides to Nextflow files or the modules configuration file or the top level `nextflow.config`.
-
-DO NOT create a HealthOmics specific profile. HealthOmics DOES NOT current support profiles.
+4. Add HealthOmics-specific resource overrides to Nextflow files or the modules configuration file or the top level `nextflow.config`. Overrides MAY live at the top level or inside a profile — see Phase 5.
 
 **Done WHEN**:
 - All processes have resources via direct declaration or label.
@@ -118,10 +116,21 @@ You MUST complete the following steps
 
 ### Phase 5: Configuration and Testing
 
-**Objective**: Create HealthOmics-specific configuration and validate.
+**Objective**: Create HealthOmics-compatible configuration and validate.
+
+**Profile Support Notes**:
+- HealthOmics supports Nextflow profiles for ALL supported Nextflow versions. Profiles MUST be defined inside the workflow definition zip — HealthOmics does NOT fetch profile definitions from external sources.
+- Profiles are selected at runtime by passing `engineSettings.profile` on `StartRun`. HealthOmics injects `-profile` into the engine. Multiple profiles MAY be specified comma-separated (e.g. `"test,docker"`). See the [Running a Workflow SOP](./running-a-workflow.md) for the StartRun parameters.
+- For Nextflow v26.04+, profiles are applied in command-line order; for earlier versions, in definition order.
+- IF the user does not specify a profile and a `standard` profile is defined, HealthOmics applies `standard` automatically. Otherwise the top-level (default) configuration applies.
+- IF the workflow uses profiles, RECOMMEND pinning `manifest.nextflowVersion` so profile application stays consistent across runs.
+- A nonexistent profile name returns a validation error from HealthOmics.
+- Explicit run parameters override profile-defined parameter values.
 
 **Steps**:
-1. Create comprehensive `conf/healthomics.config`:
+1. Choose a configuration shape based on the workflow and user preference. Top-level `nextflow.config` settings, profile-scoped settings, and a hybrid are all supported. Examples:
+
+   **Option A — top-level config (no profile required at run time)**:
    ```groovy
    params {
        container_registry = '<account>.dkr.ecr.<region>.amazonaws.com/<workflow-name>'
@@ -141,25 +150,63 @@ You MUST complete the following steps
    }
    ```
 
-2. Create `conf/test/test_healthomics.config` with small test dataset.
-
-3. Update `nextflow.config` with profiles:
+   **Option B — profile-based**:
    ```groovy
    profiles {
        healthomics { includeConfig 'conf/healthomics.config' }
        test_healthomics { includeConfig 'conf/test/test_healthomics.config' }
    }
    ```
+   Then run with `engineSettings.profile = "healthomics"`.
 
-4. Execute test plan:
+2. IF using a test profile, create `conf/test/test_healthomics.config` (or equivalent) with a small test dataset.
+
+3. Execute test plan:
    - Stage 1: Validate configuration locally.
-   - Stage 2: Test on HealthOmics with minimal dataset.
-   - Stage 3: Test with full-size dataset.
+   - Stage 2: Test on HealthOmics with a minimal dataset.
+   - Stage 3: Test with a full-size dataset.
    - Stage 4: Resource optimization.
 
 **Done WHEN**:
-- `conf/healthomics.config` complete with correct syntax.
-- Test profile completes successfully on HealthOmics.
+- Configuration shape (top-level, profile, or hybrid) is documented.
+- IF profiles are used, profile definitions are inside the workflow zip and the run uses `engineSettings.profile`.
+- Test run completes successfully on HealthOmics.
+
+### Phase 6: Nextflow Version Compatibility
+
+**Objective**: Reconcile workflow with the Nextflow engine version selected for the run (`manifest.nextflowVersion`).
+
+**Plugin pre-install matrix** — HealthOmics ignores any other plugin versions specified in `nextflow.config` and CANNOT fetch plugins at run time:
+
+| Engine version | Pre-installed plugins |
+| --- | --- |
+| v22.04 | none |
+| v23.10 | `nf-validation@1.1.1`, `nf-schema@2.3.0` |
+| v24.10 | `nf-schema@2.3.0` |
+| v25.10 | `nf-schema@2.6.1`, `nf-core-utils@0.4.0`, `nf-prov@1.7.0`, `nf-fgbio@1.0.1` |
+| v26.04 | `nf-schema@2.7.2`, `nf-core-utils@0.4.0`, `nf-prov@1.7.0`, `nf-fgbio@1.0.1` |
+
+For Nextflow v24+, `nf-schema` replaces the deprecated `nf-validation`.
+
+**Steps**:
+1. Determine the target engine version. Read `manifest.nextflowVersion` if pinned; otherwise ASK the user.
+2. Verify every plugin the workflow uses appears in the matrix above for the chosen version. Remove or replace plugin references that aren't pre-installed.
+3. IF the target version is v26.04, audit the workflow for v26 breaking changes and deprecations:
+   - **Strict (v2) syntax is the default.** v1-only syntax will fail to parse. The user has two options — present BOTH and let them choose:
+     - Migrate the workflow to v2 syntax (see the [Strict syntax reference](https://docs.seqera.io/nextflow/strict-syntax)).
+     - Keep v1 syntax and pass `engineSettings.syntaxVersion = "v1"` on `StartRun`.
+   - Replace `listFiles()` with `listDirectory()` (deprecation warning otherwise).
+   - Remove `nextflow.enable.strict` from config (no longer needed; strict is the default).
+   - Remove `manifest.defaultBranch` from config (not used; HealthOmics has never supported Git-based pipeline checkout).
+4. IF the target version is v25.10 or v26.04, the workflow MAY use the top-level `output { }` block and write workflow-level content (provenance reports, DAGs) to `/mnt/workflow/output/` — see Phase 4.
+5. The following Nextflow v26.04 features are NOT supported on HealthOmics. Remove or avoid them:
+   - **Nextflow Registry module fetching** — HealthOmics workflows run in an isolated network; include modules directly in the workflow zip.
+   - **Static typing (preview)**.
+   - **Auto-load collection params from files** — depends on static typing.
+
+**Done WHEN**:
+- All plugins referenced by the workflow are in the pre-install matrix for the selected engine version.
+- For v26.04 targets: deprecated symbols/configs removed, syntax decision documented, unsupported features absent.
 
 ## Technical Patterns
 
