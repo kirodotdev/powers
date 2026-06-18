@@ -93,7 +93,13 @@ Ensure `prebuiltImageUri` is set in `cdk.json` (it should be set to "public.ecr.
 **Network configuration (MANDATORY):** Before deploying, you MUST collect VPC, subnet,
 and security group IDs from the user and write them into `cdk.json` context. AWS
 Transform does NOT create VPCs, subnets, or NAT gateways — the user provides those.
-If no suitable VPC exists, direct the user to:
+When querying subnets, filter to private subnets only (add filter
+`map-public-ip-on-launch=false`). After selection, verify the subnets' route tables
+do not have a default route to an internet gateway (`0.0.0.0/0 → igw-*`). The CDK
+stack sets `assignPublicIp: DISABLED` on Fargate tasks, so public subnets cannot
+provide outbound connectivity. If public subnets were excluded, inform the user. If
+no private subnets exist, or if an IGW route is detected post-selection, reject and
+direct the user to:
 
 ```
 cd "$ATX_INFRA_DIR" && ./create-vpc.sh
