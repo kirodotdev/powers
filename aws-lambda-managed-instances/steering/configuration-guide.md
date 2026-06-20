@@ -51,6 +51,26 @@ Total capacity = MinExecutionEnvironments × PerExecutionEnvironmentMaxConcurren
 | AllowedInstanceTypes | All | Restrict only for specific hardware needs |
 | ExcludedInstanceTypes | None | Exclude expensive types in dev/test |
 
+## Scheduled Scaling (Predictable Traffic)
+
+For workloads with known traffic patterns (business hours, marketing events, batch windows), use [Amazon EventBridge Scheduler](https://docs.aws.amazon.com/scheduler/latest/UserGuide/managing-targets-universal.html) to adjust a function's `MinExecutionEnvironments` and `MaxExecutionEnvironments` on a one-time or recurring schedule. A schedule (cron or rate expression) targets the Lambda `PutFunctionScalingConfig` API as an EventBridge Scheduler universal target, passing new Min/Max values in the input payload.
+
+**Behavior:**
+
+- Scheduled scaling sets the provisioned floor and ceiling. Actual scaling between Min and Max still responds to CPU utilization and concurrency saturation.
+- If traffic more than doubles within 5 minutes of a scheduled scale-up, you may still see throttles while capacity provisions.
+- Setting both `MinExecutionEnvironments` and `MaxExecutionEnvironments` to 0 deactivates the function version (instances terminate). A deactivated function does NOT auto-recover — schedule a separate action with non-zero values to reactivate it.
+
+**Common patterns:**
+
+| Pattern | Scale-up schedule | Scale-down schedule |
+|---------|-------------------|---------------------|
+| Business hours | Raise Min/Max before work starts | Lower Min/Max after hours |
+| Marketing/launch event | Raise Min ahead of the campaign | Restore baseline after the event |
+| Idle scale-to-zero | Reactivate (non-zero) before demand | Set Min=Max=0 when idle |
+
+See `infrastructure-setup.md` for the EventBridge Scheduler IAM role and `create-schedule` CLI examples.
+
 ## Monitoring Thresholds
 
 - **CPU > 80%**: reduce concurrency or add vCPUs
