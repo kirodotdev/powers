@@ -20,18 +20,28 @@ Connect your AI assistant to 9,000+ apps — Slack, Gmail, Google Calendar, Jira
 - **Personalized tool profiles**: Generate persistent AI instructions tailored to the specific set of actions you have enabled
 - **OAuth authentication**: No API keys required — authenticate once via mcp.zapier.com and per-app OAuth flows
 
+## When to Use This Power
+
+Activate this Power when the user:
+
+- Wants to send messages, create records, or trigger workflows in another app (Slack, Gmail, Jira, Notion, HubSpot, etc.)
+- Asks "what can I do with Zapier", "set up Zapier", or "show me my Zapier tools"
+- Mentions a specific app you don't already have a dedicated MCP server for
+- Wants to enable, disable, or audit the actions exposed by their Zapier MCP server
+- Wants to generate a personalized tools profile from their enabled actions
+
 ## Onboarding
 
 ### Step 1: Connect the Zapier MCP server
 
 After installing this power, connect the Zapier MCP server:
 
-Connection: HTTPS API endpoint at [https://mcp.zapier.com/api/v1/connect](https://mcp.zapier.com/api/v1/connect)
-Authorization: Use OAuth to connect to the Zapier MCP server
+- **Connection:** HTTPS endpoint at `https://mcp.zapier.com/api/v1/connect`
+- **Authorization:** OAuth via mcp.zapier.com (no API key required)
 
 ### Step 2: Detect your server mode
 
-Zapier MCP operates in one of two modes. Check which tools are available:
+Check which tools are available to detect the mode:
 
 - **Agentic mode**: `list_enabled_zapier_actions` is present — actions are managed and executed via meta-tools in chat
 - **Classic mode**: `get_configuration_url` + individual `app_action_name` tools (e.g., `gmail_send_email`) — each configured action is its own MCP tool
@@ -45,10 +55,12 @@ Zapier MCP operates in one of two modes. Check which tools are available:
 
 ## Available Steering Files
 
-- **zapier-setup** — Setup, authentication, mode detection, and full onboarding flow for new and returning users
-- **zapier-status** — Health check, audit, and diagnose modes for monitoring and maintaining the setup
-- **create-my-tools-profile** — Generates a personalized AI tool profile from the user's enabled Zapier actions
-- **zapier-lifecycle** — Tool lifecycle rules, safety model, and error handling that govern all Zapier MCP interactions
+| File | Purpose |
+|---|---|
+| [`steering/zapier-setup.md`](./steering/zapier-setup.md) | First-run setup — authentication, mode detection, and onboarding |
+| [`steering/zapier-status.md`](./steering/zapier-status.md) | Health check, audit, and diagnose modes for monitoring the setup |
+| [`steering/create-my-tools-profile.md`](./steering/create-my-tools-profile.md) | Generate a personalized AI tool profile from enabled Zapier actions |
+| [`steering/zapier-lifecycle.md`](./steering/zapier-lifecycle.md) | Tool lifecycle rules, safety model, and error handling that govern all Zapier MCP interactions |
 
 ## When to Load Steering Files
 
@@ -61,8 +73,8 @@ Zapier MCP operates in one of two modes. Check which tools are available:
 
 ### zapier
 
-**Connection:** HTTPS API endpoint at `https://mcp.zapier.com/api/v1/connect`
-**Authorization:** OAuth via mcp.zapier.com (no API key required)
+- **Connection:** `https://mcp.zapier.com/api/v1/connect`
+- **Authorization:** OAuth via mcp.zapier.com (no API key required)
 
 **Mode detection signals:**
 
@@ -70,7 +82,7 @@ Zapier MCP operates in one of two modes. Check which tools are available:
 - **Classic mode**: `get_configuration_url` is present alongside individual `app_action_name` tools — each configured action is its own MCP tool
 - **Not connected**: No Zapier tools are available — the server needs authentication
 
-**Agentic mode tools (14 static meta-tools):**
+#### Agentic mode tools (14 static meta-tools)
 
 | Tool | Purpose |
 |------|---------|
@@ -89,7 +101,7 @@ Zapier MCP operates in one of two modes. Check which tools are available:
 | `delete_zapier_skill` | Delete a skill |
 | `send_feedback` | Send feedback to Zapier |
 
-**Classic mode tools:**
+#### Classic mode tools
 
 Each enabled action becomes its own MCP tool named `app_action_name` (e.g., `slack_send_channel_message`, `gmail_find_email`, `jira_find_issue_by_key`). Tool descriptions identify the associated app. The built-in `get_configuration_url` tool is always present and returns the URL where the user can add, remove, or manage actions in the web UI.
 
@@ -99,6 +111,7 @@ Each enabled action becomes its own MCP tool named `app_action_name` (e.g., `sla
 {
   "mcpServers": {
     "zapier": {
+      "type": "http",
       "url": "https://mcp.zapier.com/api/v1/connect"
     }
   }
@@ -107,6 +120,7 @@ Each enabled action becomes its own MCP tool named `app_action_name` (e.g., `sla
 
 ## License and support
 
-This power integrates with [Zapier](https://zapier.com/mcp) (Apache-2.0).
+This power integrates with [Zapier MCP](https://zapier.com/mcp). The plugin distribution is MIT-licensed.
+
 - [Privacy Policy](https://zapier.com/privacy)
 - [Support](https://zapier.com/support)
