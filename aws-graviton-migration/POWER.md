@@ -83,7 +83,7 @@ This power is provided by AWS and is subject to the AWS Customer Agreement and a
 
 This power uses the following MCP server and tools:
 
-- **arm-mcp** (`armswdev/arm-mcp:latest`): Docker container providing Arm migration tools
+- **arm-mcp** (`armlimited/arm-mcp:latest`): Docker container providing Arm migration tools
   - Distributed via Docker Hub by Arm
   - Contains multiple open-source tools with their respective licenses
   - For complete license information, see: https://github.com/arm/mcp/blob/main/LICENSE
