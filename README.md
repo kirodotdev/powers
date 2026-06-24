@@ -7,7 +7,7 @@ Documentation is available at https://kiro.dev/docs/powers/
 ## Available powers
 
 ### aws-agentcore
-**Build an agent with Amazon Bedrock AgentCore** - Build, test, and deploy AI agents using AWS Bedrock AgentCore with local development workflow. Amazon Bedrock AgentCore is an agentic platform for building, deploying, and operating effective agents.
+**Build an agent with Amazon Bedrock AgentCore** - Build, test, and deploy AI agents using Amazon Bedrock AgentCore with local development workflow. Amazon Bedrock AgentCore is an agentic platform for building, deploying, and operating effective agents.
 
 **MCP Servers:** agentcore-mcp-server
 
