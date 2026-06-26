@@ -993,6 +993,7 @@ Instead of manual shell scripts, you can deploy agents directly from Kiro using 
 deploy_agent_full_pipeline(
     agent_path="./agents/modernization",
     agent_name="modernization-orchestrator",
+    owner_contact_info="team@example.com",
     agent_version="1.0.0"
 )
 ```

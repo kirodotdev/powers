@@ -76,13 +76,16 @@ Ask the user these questions in order:
 
 3. **Agent version**: "What version?" (default: `1.0.0`)
 
-4. **IMPORTANT - Agent type**: "Will this agent be the main orchestrator that users interact with in the AWS Transform console?"
+4. **Owner contact** (required): "What email or CTI should receive notifications about this agent?" (e.g., `team@example.com`)
+   - Passed as `owner_contact_info`. The registry requires a contact on every published agent, so this is required unless you deploy with `skip_registry=True`.
+
+5. **IMPORTANT - Agent type**: "Will this agent be the main orchestrator that users interact with in the AWS Transform console?"
    - If user says **YES** → This is a job orchestrator (set `job_orchestrator=True`)
    - If user says **NO** → This is a subagent (set `job_orchestrator=False`)
 
-5. **If YES to question 4**, also ask: "What should the display name be in the chat UI?" (e.g., "Eswar Test Orchestrator")
+6. **If YES to question 5**, also ask: "What should the display name be in the chat UI?" (e.g., "Eswar Test Orchestrator")
 
-6. **Build method**: "Use CodeBuild?" (recommend yes for Windows, auto-detect otherwise)
+7. **Build method**: "Use CodeBuild?" (recommend yes for Windows, auto-detect otherwise)
 
 ### Step 2: Use deploy_agent_full_pipeline Tool
 
@@ -92,6 +95,7 @@ Call `deploy_agent_full_pipeline` with the gathered information:
 deploy_agent_full_pipeline(
     agent_path="<path from Step 1>",
     agent_name="<name from Step 1>",
+    owner_contact_info="<owner email or CTI from Step 1>",  # Required
     agent_version="<version from Step 1>",
     job_orchestrator=<True if user answered YES to orchestrator question, False otherwise>,
     chat_ui_label="<display name if job_orchestrator=True>",  # Optional
@@ -100,6 +104,7 @@ deploy_agent_full_pipeline(
 ```
 
 **Key parameters:**
+- `owner_contact_info` → Required. Email or CTI for the agent's owner contact and notifications (required unless `skip_registry=True`)
 - `job_orchestrator=True` → Agent can be bound to workspaces (for orchestrators)
 - `job_orchestrator=False` → Agent called by other agents only (for subagents)
 - `chat_ui_label` → Only needed if job_orchestrator=True
@@ -176,6 +181,7 @@ If you want to deploy to Bedrock AgentCore but skip registry registration:
 deploy_agent_full_pipeline(
     agent_path="./agents/modernization",
     agent_name="modernization-orchestrator",
+    owner_contact_info="",  # not required when skip_registry=True
     skip_registry=True
 )
 ```
@@ -188,6 +194,7 @@ For Windows users or CI/CD pipelines without local Docker:
 deploy_agent_full_pipeline(
     agent_path="./agents/modernization",
     agent_name="modernization-orchestrator",
+    owner_contact_info="team@example.com",
     use_codebuild=True
 )
 ```
@@ -200,6 +207,7 @@ If your IAM roles have different names:
 deploy_agent_full_pipeline(
     agent_path="./agents/modernization",
     agent_name="modernization-orchestrator",
+    owner_contact_info="team@example.com",
     execution_role_arn="arn:aws:iam::123456:role/CustomExecutionRole",
     access_role_arn="arn:aws:iam::123456:role/CustomAccessRole"
 )
