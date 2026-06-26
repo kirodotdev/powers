@@ -79,7 +79,7 @@ Ask the user these questions in order:
 4. **Owner contact** (required): "What email or CTI should receive notifications about this agent?" (e.g., `team@example.com`)
    - Passed as `owner_contact_info`. The registry requires a contact on every published agent, so this is required unless you deploy with `skip_registry=True`.
 
-5. **IMPORTANT - Agent type**: "Will this agent be the main orchestrator that users interact with in the AWS Transform console?"
+5. **IMPORTANT - Agent type**: "Will this agent be the main orchestrator that users interact with in the AWS Transform WebApp?"
    - If user says **YES** → This is a job orchestrator (set `job_orchestrator=True`)
    - If user says **NO** → This is a subagent (set `job_orchestrator=False`)
 
