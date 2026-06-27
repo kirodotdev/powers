@@ -1,0 +1,12 @@
+{
+  "name": "Compress Context",
+  "version": "1.0.0",
+  "description": "Consolidate older session summaries into a single compressed file to keep the session store lean.",
+  "when": {
+    "type": "userTriggered"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "The user wants to compress older session summaries. Follow the steering/compress-context.md guide:\n\n1. List all files in `.kiro/context-keeper/sessions/`.\n2. Count session summary files (exclude compressed-*.md from the count).\n3. If fewer than 4 session files exist, inform the user: 'Not enough session summaries to compress (need at least 4, found {count}).' and stop.\n4. Sort session files lexicographically. The 3 most recent are preserved unchanged.\n5. Read all older session files and any existing compressed-*.md files.\n6. Extract Key Decisions, Architectural Patterns, and User Preferences from each. Discard Session Metadata, Files Modified, Unresolved Questions, and Next Steps.\n7. Deduplicate extracted content (case-insensitive).\n8. Write the compressed summary to `.kiro/context-keeper/sessions/compressed-{YYYY}-{MM}-{DD}T{HH}-{mm}-{ss}.md`. Keep it under 150 lines.\n9. Delete the original merged files.\n10. Confirm to the user how many summaries were compressed and which file was created."
+  }
+}

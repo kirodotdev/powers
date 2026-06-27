@@ -1,0 +1,12 @@
+{
+  "name": "Restore Session Context",
+  "version": "1.0.0",
+  "description": "Automatically loads prior session context when a new session starts, preferring the current branch.",
+  "when": {
+    "type": "promptSubmit"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "A new session is starting. Follow the steering/restore-context.md guide to load prior context:\n\n1. Detect the current git branch: run `git rev-parse --abbrev-ref HEAD`. If it fails, use 'unknown'.\n2. Sanitize the branch name (replace / \\ : * ? \" < > | with hyphens).\n3. List files in `.kiro/context-keeper/sessions/`. If the directory doesn't exist or is empty, proceed silently without any error.\n4. Find the most recent session summary matching the current branch (exclude compressed- files). If no match, fall back to the most recent from any branch.\n5. If a summary was found from a different branch, note the source branch.\n6. Read `.kiro/context-keeper/project-memory.md` if it exists.\n7. Read the most recent `compressed-*.md` file if one exists.\n8. Present all loaded context in clearly labeled sections. If a summary is from a different branch, indicate it. Skip sections that have no content."
+  }
+}
