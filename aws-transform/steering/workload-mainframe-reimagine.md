@@ -24,6 +24,7 @@ After a mainframe modernization job completes analysis and generates requirement
 | DDD Bounded Context Design | `ddd-analysis.md` | Domain model with contexts, aggregates, events | `workload-mainframe-reimagine-ddd.md` |
 | Microservice Spec Generation | DDD model + `spec/` | One `*-specification.md` per service | `workload-mainframe-reimagine-specgen.md` |
 | Traceability Verification | Specs + `spec/` | `traceability-dashboard.html` (pass/fail) | `workload-mainframe-reimagine-verify.md` |
+| Modern Code Traceability | `outputs/microservices/*-specification.md` | Annotated code + `*-traceability-modern.yaml` per service | `workload-mainframe-reimagine-modern-traceability.md` |
 
 **User confirmation is required before starting the pipeline (see Gate below).** Once started, phases run sequentially without additional prompts.
 
@@ -111,7 +112,7 @@ Ask the user via AskUserQuestion:
 **Question:** "Workspace is ready. Would you like to start the reimagine analysis?"
 
 **Options:**
-- **"Start reimagine" (Recommended)** — "I'll run 4 phases to decompose your legacy system into microservice specifications: business function analysis → domain model design → microservice spec generation → traceability verification. I'll give you a summary after each phase."
+- **"Start reimagine" (Recommended)** — "I'll run 5 phases to decompose your legacy system into microservice specifications and generate modern code: business function analysis → domain model design → microservice spec generation → traceability verification → modern code generation with traceability annotations. I'll give you a summary after each phase."
 - **"Explore with AWS Transform plugin"** — "Install the AWS Transform VS Code extension to browse specs and source interactively with traceability and AI-powered docs."
 - **"Stop here"** — "Workspace is set up. You can come back later to start."
 
@@ -144,7 +145,8 @@ Before starting any phase, check what output files already exist in the workspac
 | `ddd-working.md` (without `ddd-bounded-contexts.md`) | Resume Domain Model Design mid-way — read the working file and continue from the last completed step |
 | `ddd-bounded-contexts.md` | Microservice Spec Generation |
 | `outputs/microservices/*.md` | Traceability Verification |
-| `traceability-dashboard.html` | Done — show results |
+| `traceability-dashboard.html` (without `outputs/microservices/*-traceability-modern.yaml`) | Modern Code Traceability |
+| `outputs/microservices/*-traceability-modern.yaml` | Done — show results |
 
 If a previous phase's output exists, tell the user: "I can see you've already completed [phase]. Continuing from [next phase]."
 
@@ -156,12 +158,13 @@ This allows the user to resume in a new conversation if context runs out.
 
 Once the user confirms, tell them:
 
-> "Starting the reimagine process. I'll run 4 phases and give you a summary along the way:"
+> "Starting the reimagine process. I'll run 5 phases and give you a summary along the way:"
 >
 > 1. **Business function analysis** — consolidate all spec artifacts into a single analysis document
 > 2. **Domain model design** — identify bounded contexts, aggregates, and domain events
 > 3. **Microservice spec generation** — produce one detailed specification per service
-> 4. **Traceability verification** — confirm every business rule and requirement is covered
+> 4. **Traceability verification** — confirm every business rule and requirement is covered in specs
+> 5. **Modern code traceability** — generate annotated code with requirement traces linked back to legacy rules
 >
 > If we run into context limits, you can start a new conversation — I'll detect the progress and resume from where we left off.
 
@@ -200,3 +203,13 @@ Tell the user: "Specs generated. Running traceability verification..."
 Read and follow `workload-mainframe-reimagine-verify.md`.
 
 When complete, present the coverage results (percentage, any gaps) and the path to the HTML dashboard.
+
+### Modern Code Traceability
+
+Tell the user: "Specs verified. Ready to generate modern code with full traceability annotations."
+
+Read and follow `workload-mainframe-reimagine-modern-traceability.md`.
+
+Process one microservice specification at a time. For each service: detect the target language, build the REQ-* tracking list from the spec, generate the annotated code, run the completeness gate, then produce `outputs/microservices/<service>-traceability-modern.yaml` before moving to the next service.
+
+When all services are complete, summarize: language detected, total services implemented, total requirements traced across all services, any exclusions, and paths to the generated `*-traceability-modern.yaml` files.
