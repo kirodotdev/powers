@@ -216,3 +216,30 @@ Once onboarding is complete, try:
 - Community Slack: https://localstack.cloud/slack
 - LocalStack Extensions: https://docs.localstack.cloud/user-guide/extensions/
 - Cloud Pods Guide: https://docs.localstack.cloud/user-guide/state-management/cloud-pods/
+
+---
+
+## License & Support
+
+### MCP Server License
+
+This power integrates with [`@localstack/localstack-mcp-server`](https://github.com/localstack/localstack-mcp-server) (Apache-2.0 license). For the full license text, see the [MCP server LICENSE file](https://github.com/localstack/localstack-mcp-server/blob/main/LICENSE).
+
+### Privacy Policy
+
+For information about how LocalStack collects, stores, and processes user data, review the [LocalStack Privacy Policy](https://www.localstack.cloud/legal/privacy-policy).
+
+### Support
+
+For technical support, questions, or to report issues with this power or the MCP server:
+
+- [LocalStack Help & Support](https://docs.localstack.cloud/aws/getting-started/help-support/)
+- [LocalStack Community Slack](https://localstack.cloud/slack)
+- Email: info@localstack.cloud
+
+---
+
+**Package:** `@localstack/localstack-mcp-server`
+**Source:** Official LocalStack
+**License:** Apache 2.0
+**Connection:** Local MCP server via `npx` with `LOCALSTACK_AUTH_TOKEN` authentication
