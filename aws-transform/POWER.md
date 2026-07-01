@@ -2,9 +2,9 @@
 name: "aws-transform"
 displayName: "AWS Transform"
 description: "Migrate, modernize, and upgrade codebases: .NET Framework to .NET 8/10, mainframe COBOL to Java, VMware VMs to EC2, SQL Server/Oracle/MySQL to Aurora, and Java/Python/Node.js version upgrades or AWS SDK migrations. Assess, plan, and execute code transformations from your IDE."
-keywords: ["migrate", "modernize", "mainframe", "cobol", "vmware", "dotnet", ".net framework", "windows", "sql server", "oracle", "mysql", "aurora", "ec2 migration", "rehost", "lift-and-shift", "replatform", "legacy", "code upgrade", "sdk migration", "boto3", "java upgrade", "atx"]
+keywords: ["migrate", "modernize", "mainframe", "cobol", "vmware", "dotnet", ".net framework", "windows", "sql server", "oracle", "mysql", "aurora", "ec2 migration", "rehost", "lift-and-shift", "replatform", "legacy", "code upgrade", "sdk migration", "boto3", "java upgrade", "atx", "continuous modernization", "AWS Transform - continuous modernization"]
 author: "AWS"
-version: "2.0.0"
+version: "2.1.2"
 ---
 
 # AWS Transform Power
@@ -14,6 +14,7 @@ version: "2.0.0"
 Follow these steps IN ORDER. Do NOT skip ahead. Authentication is handled just-in-time — only when a chosen action actually needs it. Do NOT probe auth before the user has declared an intent.
 
 ```
+Step 0: Routing Gate  → Identify workload + route (REQUIRED — see Workload Routing Gate)
 Step 1: Resume        → Check .atx/context.json
 Step 2: Intent        → Ask user what they want to do
 Step 3: Discovery     → Scan workspace + query available agents
@@ -24,6 +25,8 @@ Step 7: Approval      → User approves requirements (GATE 2)
 Step 8: Tasks         → Generate tasks.md
 Step 9: Execute       → Run transforms, monitor, review diffs
 ```
+
+**Step 0 is the entry point for every request.** Read and apply the **Workload Routing Gate** section below (Steps A–D) before doing anything else. Step 1 (Resume) runs silently in parallel as bookkeeping, but the gate's classification — workload type, continuous modernization vs. workload-specific path — must be settled before Step 3 Discovery starts. VMware, SQL, and mainframe requests NEVER fall through to continuous modernization regardless of phrasing; .NET asks the three-way intent question before continuing.
 
 **Discovery finds opportunities. Assessment produces detailed findings. Requirements come from the assessment — NOT from discovery.**
 
@@ -41,12 +44,80 @@ Step 9: Execute       → Run transforms, monitor, review diffs
 - Never show options as text bullets — use AskUserQuestion
 - Never mix workflow descriptions with actual questions in the same numbered list, and never use count language like "two questions" when some items are informational steps rather than questions. Keep what-I-will-do separate from what-I-need-from-you.
 - Never modify code, upgrade dependencies, or run analysis manually — always use AWS Transform tooling
+- Never probe `--help` to figure out a CLI invocation that the steering files already document. The capability-specific files under `steering/` (e.g. `workload-continuous-modernization-source.md`, `workload-continuous-modernization-analysis.md`, `workload-continuous-modernization-remediation.md`, custom transformation references) contain the canonical `atx ct …` and `atx custom …` commands with every required flag and example invocations — read the matching file and lift the command verbatim. The orchestrating files (`workload-continuous-modernization-guide.md`, `workload-continuous-modernization-setup.md`) explicitly point at them ("Use the `/source` skill for the exact commands"). `--help` is a fallback used ONLY when (a) no steering file covers the capability, or (b) a documented command demonstrably fails because the installed CLI version diverges from steering. Treat `--help` probes the user can see as a signal that the agent didn't read its own steering — that is the failure mode this rule prevents.
 - Never expose internal mechanics to the user. This means: do not name tools (get_status, list_resources), do not cite step numbers (Step 3), do not reference files you are reading (POWER.md, steering files, context.json), and do not narrate what you are about to do ("let me read the config", "now I'll check status"). Just do it silently and present the outcome in user terms.
 - Never frame HITL checkpoints, agent questions, or pending decisions as coming from "the web app", "the webapp", "the web UI", or a third-party "the agent is asking / the agent needs / the agent wants". The user is working with you in the IDE — you own the interaction. Present every checkpoint as your own first-person request, not a relayed message from elsewhere. **Wrong:** "The web app is asking how you want to deploy the landing zone." / "The agent is now asking about the replication subnet configuration." **Right:** "The next step is to choose how to deploy the landing zone." / "I need the replication subnet configuration to continue."
 - Never editorialize or use subjective language — no "interesting", "fascinating", "notably", "impressive", "remarkable". State findings as facts. Let users form their own opinions.
 - Never overclaim freshness. Two forms: (a) presenting cached state as current — if you did NOT fetch this turn, lead with "last I checked" (past tense throughout) and offer to refresh; (b) promising proactive surfacing when not polling — phrases like "I'll let you know when…" or "I'll surface those as they come up" mislead the user into assuming background monitoring. Say explicitly you don't watch in the background. See `steering/workflow.md` → Freshness & Source of Truth.
 - Never mix unrelated transformation goals in the same chat without warning. When the user shifts to a different transformation goal (different workload, different migration target, or clearly different body of work), suggest via AskUserQuestion that they start a new chat session with fresh context (they start it themselves), explain why (cross-contaminated answers), and wait for their choice. If the user declines, proceed to answer their question about the other job — do not refuse or redirect back to the original goal. Just avoid mixing cached state (e.g., don't apply VMware findings to the .NET question). See `steering/workflow.md` → Freshness & Source of Truth.
 - Never prompt for authentication, lecture about auth systems, or demand auth setup before the user has declared an intent. On a vague greeting like "I installed this power," present intent options — do not enumerate auth system names, do not ask the user to sign in, do not call `atx custom def list` (auth-required, and risks a user-visible CLI trust prompt). `get_status` is no-auth and Step 1 Resume calls it silently for returning users; that is allowed. The rule is about user-visible auth behavior, not about whether a specific tool may run internally. Auth prompts come from the tool a chosen action needs, framed around that action.
+- Never quote specific pricing (dollar amounts, hourly rates, daily costs) or timing estimates (minutes, hours, ETAs) for AWS resources or analyses. Pricing depends on the customer's usage and AWS quotas. For pricing questions, redirect to https://aws.amazon.com/ec2/pricing/ and https://aws.amazon.com/transform/pricing/.
+
+---
+
+## Step 0: Workload Routing Gate (apply BEFORE Step 1)
+
+**STOP. Before reading files, scanning workspaces, calling tools, or starting any workflow step, identify the workload first, then route.** This gate is **Step 0** in the MANDATORY SEQUENCE — it precedes Step 1 Resume. Run it the moment the user's intent becomes clear (immediately after Step 2 Intent if the user is fresh, or as soon as the resume message reveals their target if they're returning). Workload identification ALWAYS wins over keyword matching — do not let "analyze", "assess", "tech debt", or "security" phrasing override the rules below.
+
+> **Sequencing note.** Step 1 Resume's silent context refresh and Step 2 Intent's AskUserQuestion may run before Step 0's classification is final, because the gate often needs the user's first message to identify the workload. The contract is: by the time Step 3 Discovery starts, Step 0 MUST be settled. Never advance to Discovery, Scope, or any tool call that depends on workload type until the gate has produced a route.
+
+### Step A: Identify the workload
+
+Look for an explicit workload signal in the user's request — a named technology (`.NET`, `VMware`, `SQL Server`/`Aurora`/`Oracle`/`MySQL`, `mainframe`/`COBOL`), workload-specific terminology (Hyper-V, EC2 rehost, stored procs, CICS, JCL), or file/project signals already in the conversation. If no signal is present, treat the request as **workload-unspecified**.
+
+### Step B: Apply workload-specific routing
+
+Workload-specific rules ALWAYS win over the keyword list in Step C. Do not let "analysis" or "tech debt" phrasing override these.
+
+| Workload                | Route                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **.NET**                 | AskUserQuestion: "For your .NET work, are you looking to **modernize to .NET 8/10** (port the code, change targets), **run an assessment for modernization** (scope the work, identify blockers, plan the port), or **analyze your repos for tech debt, security vulnerabilities, or CVEs**?" → "Modernize" or "Assessment for modernization" → continue with the standard MANDATORY SEQUENCE using `steering/workload-dotnet*.md`. → "Analyze for tech debt / security / CVEs" → route to continuous modernization (Step D). |
+| **VMware**               | Continue the standard MANDATORY SEQUENCE with `steering/workload-vmware*.md`. **NEVER route VMware requests to continuous modernization** — even when the user uses words like "analyze", "assess", or "find issues". VMware assessment is handled by the VMware workload agent.                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| **SQL / Database**       | Continue with `steering/workload-sql*.md`. **NEVER route SQL/database requests to continuous modernization** — SQL Server, Oracle, MySQL, and Aurora migrations are handled by the SQL workload agent.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| **Mainframe / COBOL**    | Continue with `steering/workload-mainframe*.md`. **NEVER route mainframe requests to continuous modernization** — COBOL/CICS/JCL transformations are handled by the mainframe workload agent.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| **Workload-unspecified** | Continue to Step C.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+
+### Step C: Keyword-based routing (workload-unspecified only)
+
+This list applies **only** when the user has not named a workload. If any of the workload rules in Step B matched, you have already routed — do not re-evaluate against this list.
+
+If the user's workload-unspecified request matches any of these intents, route to **continuous modernization** — do NOT scan files yourself:
+
+- "analysis", "analyze", "find issues", "what's wrong", "tech debt", "security vulnerabilities", "CVEs"
+- "what should I fix", "where do I start"
+- "report", "dashboard", "compare", "trend"
+- "remediate findings", "remediation", "fix what you found"
+- "custom transform"
+- "continuous modernization", "AWS Transform - continuous modernization"
+
+For deeper Custom-vs-continuous modernization nuance (named transformations, prior findings, mixed scope, adoption nudge), see `steering/workload-continuous-modernization-routing.md`. Do NOT use that file's keyword lists to override Step B — VMware, SQL, and mainframe never reach continuous modernization regardless of phrasing.
+
+### Step D: For continuous modernization requests
+
+Once routed to continuous modernization:
+
+1. **First-response telemetry notice (once per session).** The first time a request routes here in this session, ALWAYS prepend this line exactly to your reply to the user before doing anything else:
+
+   > Note: this power collects telemetry. To opt out, see [here](https://docs.aws.amazon.com/transform/latest/userguide/transform-usage-telemetry.html).
+
+   Show it exactly once per session. Do NOT repeat it on subsequent continuous modernization requests in the same session. If the user explicitly asks to disable telemetry, omit `--telemetry` for the rest of the session (see each `workload-continuous-modernization-*.md` file's Telemetry section for the flag format).
+2. When invoking AWS Transform - continuous modernization (continuous modernization) commands, use `atx ct` (with a space). `atxct` (no space) is being deprecated; it remains functionally equivalent and hits the same backend, so an `atxct` invocation in the user's environment is not itself a problem. Do not warn the user about `atxct` and do not treat its presence as a failure cause.
+3. Check if `atx ct` is installed AND up to date — run as a single command:
+
+   ```
+   INSTALLED=$(atx ct --version 2>/dev/null | head -1); LATEST=$(curl -fsSL "https://transform-cli.awsstatic.com/index.json" 2>/dev/null | grep -o '"latest"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/.*"latest"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/'); echo "Installed: ${INSTALLED:-not found}, Latest: ${LATEST:-unknown}"
+   ```
+4. If `INSTALLED` is empty or `LATEST` is newer: `curl -fsSL https://transform-cli.awsstatic.com/install.sh | bash && source ~/.bashrc`
+5. If `atx ct` fails after install, the binary is rarely the cause — `atx ct` and `atxct` share the same backend and fail identically for env/auth/server reasons. Check those first:
+   - `ATXCT_FES_ENDPOINT` is set on the server process (not just the CLI shell)
+   - `AWS_PROFILE` points at a valid account with refreshed credentials
+   - The server is running (`atx ct status --health`)
+
+   Only after those check out, verify `atx --help` shows the `ct` subcommand and that `atxct-plugin.mjs` is co-located with the `atx` binary.
+6. Start the server using the [continuous-modernization-server.md](steering/workload-continuous-modernization-server.md) skill — it will ask the user for their region, validate it against the supported list, and start with the correct `AWS_REGION`. Wait 5s, then verify with `atx ct status --health`.
+7. Then use the appropriate continuous modernization steering file — see `steering/workload-continuous-modernization-routing.md` and the `workload-continuous-modernization-*.md` files referenced from it.
+
+**When in doubt for a workload-unspecified request → continuous modernization.** This default applies ONLY after Step B has cleared — VMware, SQL, and mainframe never fall through to continuous modernization regardless of how the question is phrased; .NET only routes to continuous modernization after the user picks "analyze for tech debt / security / CVEs" in Step B's intent question (both "Modernize" and "Assessment for modernization" stay in the .NET workload). Once routed, do NOT manually read source files to find issues — that's what `atx ct analysis run` does.
 
 ---
 
@@ -73,10 +144,19 @@ Check for `.atx/context.json` (workspace-relative). NEVER read `~/.aws/atx/kiro-
 
 ## Step 2: Intent
 
+**If Step 0 routed the request to continuous modernization, skip this entire step.** continuous modernization has its own self-contained onboarding flow — hand off directly to `steering/workload-continuous-modernization-guide.md`. Its first prompt (Mode selection: Local vs. AWS Infrastructure) is the user's first visible question. Do NOT show the generic intent menu first, and do NOT mix in non-continuous modernization options like "Browse My Jobs" or "Start a Specific Transform" — those are AWS Transform top-level capabilities, not continuous modernization features.
+
+For every other route — VMware, SQL, Mainframe, and .NET (modernize or assessment-for-modernization) — use the generic intent menu below. The menu's options (Discover Workspace, Browse Jobs, Start a Specific Transform, Scan for Issues) are how those workloads enter the standard MANDATORY SEQUENCE's Discovery → Scope → Assessment phases.
+
+### Generic intent menu
+
 AskUserQuestion: "What would you like to focus on?" The first user-visible action in this step is the AskUserQuestion — no auth-probing tool calls precede it, no auth lecture precedes it. (Step 1's silent job-refresh calls are not auth probes; they are a status check for a known prior session and do not surface to the user.)
 
-With projects: [Discover This Workspace] [Browse My Jobs] [Start a Specific Transform]
-No projects: [Browse My Jobs] [Open a Project Folder] [Start from Scratch]
+With projects: [Discover This Workspace] [Browse My Jobs] [Start a Specific Transform] [Scan for Issues]
+No projects: [Browse My Jobs] [Open a Project Folder] [Start from Scratch] [Scan for Issues]
+
+
+**Routing.** Once the user picks an intent from this generic menu, re-run the **Workload Routing Gate** (Step 0) before doing anything else. That gate identifies the workload first, applies workload-specific rules (VMware/SQL/mainframe never continuous modernization; .NET asks modernize vs. assessment-for-modernization vs. analyze-for-tech-debt), and only then falls back to keyword-based continuous modernization routing for still-unspecified requests. Deeper Custom-vs-continuous modernization nuance (prior findings, mixed scope) lives in `steering/workload-continuous-modernization-routing.md` — but its keyword lists do NOT override the gate.
 
 **Just-in-time auth.** Once the user picks an intent, the next tool that action needs may require auth. If so, prompt for auth then, framed around the action the user just chose ("to browse your jobs, sign in to AWS Transform"). Which auth each MCP tool needs is reported by the MCP server — read it from the tool's description, `get_status`, or the error the tool returns. CLI transforms use AWS credentials only — do NOT prompt for sign-in for CLI-only intents, even when sign-in is unconfigured. If the user picks something that needs no service call (e.g., "Open a Project Folder"), do not probe auth.
 

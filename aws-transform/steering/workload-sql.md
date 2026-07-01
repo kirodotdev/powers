@@ -153,8 +153,7 @@ Use this workflow when starting a new MSSQL → PostgreSQL conversion entirely f
 
 ### Step 1: Authentication
 
-- **Cookie auth requires the Transform app URL** — Ask for the prod tenant URL:
-  - Prod: `https://722368900496189c6.transform.us-east-1.on.aws`
+- **Cookie auth requires the Transform app URL** — Ask the user for their Transform app URL (e.g., `https://xxxxxxxx.transform.us-east-1.on.aws`).
 - Do **not** use the SSO/IdC start URL (`https://d-xxx.awsapps.com/start`).
 - If the auth cookie has expired, ask the user for a new one.
 
@@ -173,7 +172,7 @@ Use this workflow when starting a new MSSQL → PostgreSQL conversion entirely f
 - The source SQL file can be either a `.sql` file or a `.zip` archive containing SQL files. Both formats are accepted by AWS Transform. **Upload the file as-is — do NOT zip a `.sql` file before uploading.**
 - If the ActiveFile is a mssql file, use that.
 - If not, ask for user's permission and search locally for files — use `fileSearch` to find `.sql` or `.zip` files on the user's machine instead of asking for the full path.
-- Upload the file as an artifact first using `upload_transform_task_artifact`.
+- Upload the file as an artifact first using `upload_artifact`.
 - Then send the artifact reference in chat using the URI format:
 
   ```
@@ -184,7 +183,7 @@ Use this workflow when starting a new MSSQL → PostgreSQL conversion entirely f
 
 ### Step 4: Interacting with the Agent
 
-- **Always use `send_transform_message` as the primary form of communication with the job agent.**
+- **Always use `send_message` as the primary form of communication with the job agent.**
 - **Messages can have interaction buttons** — Agent messages include `SELECT` interactions with options. Respond by sending the option's `value` as a chat message.
 
 ### Step 5: Monitoring Job Progress

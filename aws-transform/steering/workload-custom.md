@@ -336,7 +336,7 @@ If NOT_CONFIGURED, explain what's needed and tell the user to run the create com
 >
 > Delete anytime: `aws secretsmanager delete-secret --secret-id atx/github-token --region "$REGION" --force-delete-without-recovery`"
 
-Do NOT ask the user to paste their token in chat. They run the command themselves.
+Do NOT ask the user to paste their token in chat, or ask them to confirm or repeat the token value in any way. They run the command themselves.
 Wait for the user to confirm it's done, then verify:
 
 ```bash

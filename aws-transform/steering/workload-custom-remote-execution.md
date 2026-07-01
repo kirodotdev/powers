@@ -88,10 +88,30 @@ If `git pull` reports a merge conflict, resolve it by keeping both the upstream
 changes and the user's customizations in the `CUSTOM LANGUAGES AND TOOLS` section
 of the Dockerfile, then commit the merge.
 
-Ensure `prebuiltImageUri` is set in `cdk.json` (it should be set to "public.ecr.aws/d9h8z6l7/aws-transform:latest" by default). Then deploy:
+Ensure `prebuiltImageUri` is set in `cdk.json` (it should be set to "public.ecr.aws/d9h8z6l7/aws-transform:latest" by default).
 
-```bash
-cd "$ATX_INFRA_DIR" && ./setup.sh
+**Network configuration (MANDATORY):** Before deploying, you MUST collect VPC, subnet,
+and security group IDs from the user and write them into `cdk.json` context. AWS
+Transform does NOT create VPCs, subnets, or NAT gateways — the user provides those.
+When querying subnets, filter to private subnets only (add filter
+`map-public-ip-on-launch=false`). After selection, verify the subnets' route tables
+do not have a default route to an internet gateway (`0.0.0.0/0 → igw-*`). The CDK
+stack sets `assignPublicIp: DISABLED` on Fargate tasks, so public subnets cannot
+provide outbound connectivity. If public subnets were excluded, inform the user. If
+no private subnets exist, or if an IGW route is detected post-selection, reject and
+direct the user to:
+
+```
+cd "$ATX_INFRA_DIR" && ./create-vpc.sh
+```
+
+(Run from another terminal with admin credentials.)
+
+You MUST NOT run `setup.sh` yourself — present it for the user to run from another
+terminal with admin credentials:
+
+```
+! cd "$HOME/.aws/atx/custom/remote-infra" && AWS_PROFILE=<your-admin-profile> ./setup.sh
 ```
 
 The setup script skips the Docker prerequisite check and container build when
@@ -118,7 +138,7 @@ cd "$ATX_INFRA_DIR" && sed -i.bak 's|"prebuiltImageUri": ".*"|"prebuiltImageUri"
 Customize the Dockerfile (see Container Customization below), then deploy:
 
 ```bash
-cd "$ATX_INFRA_DIR" && ./setup.sh
+! cd "$HOME/.aws/atx/custom/remote-infra" && AWS_PROFILE=<your-admin-profile> ./setup.sh
 ```
 
 This path requires Docker installed and running. First deploy takes ~5-10 minutes
@@ -141,62 +161,13 @@ The teardown script handles stacks in any state, including failed rollbacks.
 
 ### Attach IAM Policies
 
-After deployment, generate and attach the runtime policy so the caller has
-permissions to invoke Lambdas, upload/download from S3, use KMS, etc.:
+After deployment, direct the user to attach the executor policy to their IAM
+role/user. You MUST NOT attach it yourself — tell the user to do it manually:
 
-```bash
-cd "$ATX_INFRA_DIR" && npx ts-node generate-caller-policy.ts
-```
-
-This produces two JSON files in `$ATX_INFRA_DIR`:
-
-- `atx-runtime-policy.json` — Day-to-day operations (Lambda invoke, S3, KMS, Secrets Manager, logs)
-- `atx-deployment-policy.json` — One-time CDK deploy/destroy (CloudFormation, ECR, IAM, Batch, VPC)
-
-Attach the runtime policy to the caller:
-
-```bash
-ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-CALLER_ARN=$(aws sts get-caller-identity --query Arn --output text)
-
-# Create the managed policy (ignore EntityAlreadyExists, fail on other errors)
-if ! create_output=$(aws iam create-policy --policy-name ATXRuntimePolicy \
-  --policy-document "file://$ATX_INFRA_DIR/atx-runtime-policy.json" 2>&1); then
-  echo "$create_output" | grep -q "EntityAlreadyExists" \
-    || { echo "Failed to create policy: $create_output" >&2; exit 1; }
-fi
-
-# Attach to the caller (handles IAM users, IAM roles, and SSO/assumed roles)
-if echo "$CALLER_ARN" | grep -q ":user/"; then
-  IDENTITY_NAME=$(echo "$CALLER_ARN" | awk -F'/' '{print $NF}')
-  aws iam attach-user-policy --user-name "$IDENTITY_NAME" \
-    --policy-arn "arn:aws:iam::${ACCOUNT_ID}:policy/ATXRuntimePolicy"
-elif echo "$CALLER_ARN" | grep -Eq ":assumed-role/|:role/"; then
-  ROLE_NAME=$(echo "$CALLER_ARN" | sed 's/.*:\(assumed-\)\{0,1\}role\///' | cut -d'/' -f1)
-  aws iam attach-role-policy --role-name "$ROLE_NAME" \
-    --policy-arn "arn:aws:iam::${ACCOUNT_ID}:policy/ATXRuntimePolicy"
-fi
-```
-
-If the attachment fails (insufficient IAM permissions, or an SSO-managed role with
-name starting with `AWSReservedSSO_`), inform the user:
-
-- The policy JSON is at `$ATX_INFRA_DIR/atx-runtime-policy.json`
-- They need their AWS administrator to create and attach it to their identity
-- For SSO users, it must be added to their IAM Identity Center permission set
-
-Verify the policy is working by invoking a Lambda:
-
-```bash
-aws lambda invoke --function-name atx-list-jobs --payload '{}' \
-  --cli-binary-format raw-in-base64-out /dev/stdout
-```
-
-If this succeeds, the runtime policy is active. If not, the attachment hasn't
-taken effect yet — wait a few seconds and retry.
-
-If the caller also needs to deploy/destroy infrastructure (not just run jobs),
-repeat the above with `atx-deployment-policy.json` and policy name `ATXDeploymentPolicy`.
+"Attach the executor policy at `$HOME/.aws/atx/custom/remote-infra/AWSTransformInfrastructureExecutorAccessBatch.json`
+to your IAM role/user so day-to-day job submission needs only least-privilege.
+This is a manual step — create an IAM policy from the JSON file and attach it
+to the identity you use for running jobs."
 
 ## Lambda Function Names
 
@@ -337,8 +308,8 @@ aws secretsmanager create-secret --name "atx/ssh-key" --secret-string "$(cat <pa
 Setup (requires user consent):
 
 1. Explain which secrets will be created in their AWS account
-2. Get explicit confirmation and credentials from the user
-3. Create the secret(s)
+2. Get explicit confirmation from the user, then give them the `create-secret` command to run in their own terminal — do not ask them to paste the credential value into this chat
+3. Wait for the user to confirm they ran the command, then verify the secret exists with `aws secretsmanager describe-secret`
 4. Container entrypoint auto-fetches at startup — no image rebuild needed
 5. User can delete anytime: `aws secretsmanager delete-secret --secret-id "atx/github-token" --region "$REGION" --force-delete-without-recovery`
 
@@ -393,12 +364,19 @@ Credentials are fetched from AWS Secrets Manager at container startup — never 
 
 ```json
 [
-  {"path": "/home/atxuser/.npmrc", "content": "//npm.company.com/:_authToken=TOKEN"},
-  {"path": "/home/atxuser/.m2/settings.xml", "content": "<settings>...</settings>"},
-  {"path": "/home/atxuser/.config/pip/pip.conf", "content": "[global]\nindex-url = https://pypi.company.com/simple"},
-  {"path": "/home/atxuser/.gem/credentials", "content": "---\n:rubygems_api_key: KEY", "mode": "0600"},
-  {"path": "/home/atxuser/.cargo/credentials.toml", "content": "[registry]\ntoken = \"TOKEN\""},
-  {"path": "/home/atxuser/.nuget/NuGet.Config", "content": "<?xml version=\"1.0\"?>..."}
+  { "path": "/home/atxuser/.npmrc", "content": "//npm.company.com/:_authToken=TOKEN" },
+  { "path": "/home/atxuser/.m2/settings.xml", "content": "<settings>...</settings>" },
+  {
+    "path": "/home/atxuser/.config/pip/pip.conf",
+    "content": "[global]\nindex-url = https://pypi.company.com/simple"
+  },
+  {
+    "path": "/home/atxuser/.gem/credentials",
+    "content": "---\n:rubygems_api_key: KEY",
+    "mode": "0600"
+  },
+  { "path": "/home/atxuser/.cargo/credentials.toml", "content": "[registry]\ntoken = \"TOKEN\"" },
+  { "path": "/home/atxuser/.nuget/NuGet.Config", "content": "<?xml version=\"1.0\"?>..." }
 ]
 ```
 

@@ -47,6 +47,15 @@ This SOP defines how you, the agent, create and deploy genomics workflows for AW
 - WHEN using Nextflow 25.10+ `output { }` block, you MUST use ONLY relative paths in the `path` directive (HealthOmics manages the output directory).
 - Workflow-level content (provenance reports, DAGs) MUST be written to `/mnt/workflow/output/`.
 
+### Nextflow Engine Version
+- Pin the engine version with `manifest.nextflowVersion` in `nextflow.config` when the workflow depends on version-specific behavior or plugins.
+- HealthOmics workflows run in an isolated network and CANNOT fetch plugins or modules at run time. The workflow MUST only depend on plugins pre-installed by HealthOmics for the target engine version. For the per-version plugin matrix and feature support, see [Phase 6: Nextflow Version Compatibility](./migration-guide-for-nextflow.md#phase-6-nextflow-version-compatibility) in the Nextflow migration guide.
+- Nextflow v26.04 defaults to the strict (v2) syntax parser. Workflows authored against the legacy (v1) parser must opt in via `engineSettings.syntaxVersion = "v1"` at run time — see [Engine Settings](./running-a-workflow.md#engine-settings) in the Running a Workflow SOP.
+
+### Nextflow Profiles
+- HealthOmics supports profiles defined in the workflow's `nextflow.config` `profiles { }` block. Profiles MUST be defined inside the workflow zip — HealthOmics does NOT fetch profile definitions from external sources.
+- Profiles are selected at run time via `engineSettings.profile` — see [Engine Settings](./running-a-workflow.md#engine-settings).
+
 ### Containers
 - All workflow tasks run in containers. Containers MUST contain all software used in the script/command.
 - If the container is in a public registry (e.g. docker, ecr-public, quay.io) you MUST use ECR Pull Through caches. Consult the [ECR Pull Through Cache SOP](./ecr-pull-through-cache.md).
