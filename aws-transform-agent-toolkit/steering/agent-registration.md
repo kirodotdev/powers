@@ -212,7 +212,7 @@ These MUST be kept in sync with the `discover_subagents()` tool in `tools/orches
 | `chatAgentIdentifier` | string | Yes | Unique identifier for chat routing (use agent name) |
 | `a2aSupported` | boolean | Yes | Whether agent supports Agent-to-Agent protocol |
 
-> **Warning:** `jobOrchestratorMetadata` (`chatUILabel`, `chatAgentIdentifier`, `a2aSupported`) is set at `RegisterAgent` time and **cannot be updated** afterward — `UpdateAgent` only accepts `customerConfiguredAgentDependencies`, `marketplaceMetadata`, and `deprecated`. To fix a wrong value (e.g. `a2aSupported: false`), you must re-register under a different agent name. Choose carefully.
+> **Note:** `UpdateAgent` now supports updating: `description`, `ownerName`, `customerConfiguredAgentDependencies`, `workloadTypes`, `marketplaceMetadata`, `jobOrchestrator`, `jobOrchestratorMetadata`, `deprecated`, `ownerContactInfo`, and `resourceDeletionNotificationEnabled`.
 
 ### Complete Examples
 
