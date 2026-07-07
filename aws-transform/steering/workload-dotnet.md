@@ -1,6 +1,6 @@
 # .NET Modernization
 
-> Last Updated: 2026-05-13
+> Last Updated: 2026-07-05
 
 ## Capabilities
 
@@ -444,47 +444,105 @@ After build verification, the agent generates final artifacts (report, next step
 When the agent's message indicates transformation is complete and artifacts are ready:
 
 1. List output artifacts: `list_resources(resource="artifacts")`
-2. Present a summary to the user:
+2. Announce what is ready — present a summary so the user chooses with full knowledge of the available artifacts:
    - Projects transformed (count, names, status)
    - Per-project diff ZIPs — list each with project name and artifact ID. These contain `metadata.json`, `diffs/*.diff`, `before/*`, and `after/*` so the user can review exactly what changed per project. Identify them by `fileType: "ZIP"` with `planStepId != "default"` — match `planStepId` to plan steps to get the project name.
    - Transformation report available (`Transformation_Report.html` — detailed HTML report)
-   - Next steps available (`NextSteps.md` — recommended post-migration actions)
+   - Next steps available (`NextSteps.md` — remaining post-migration items to fix)
    - Final migrated source available (`*_Transformed_*.zip` — complete migrated solution)
-3. Ask the user:
+3. Ask the user how to proceed:
 
 ```python
 AskUserQuestion(questions=[{
-    "question": "The transformation is complete and all artifacts are ready. Would you like to finalize, or make adjustments?",
+    "question": "The transformation is done. Download the code and work through the NextSteps.md items to fix?",
+    "header": "Finalize",
+    "multiSelect": False,
+    "options": [
+        {"label": "Download code & fix next steps (Recommended)", "description": "Download the migrated source and all artifacts, then hand NextSteps.md back to the agent to work through the remaining items"},
+        {"label": "Download all to review", "description": "Save all artifacts locally for review, without handing next steps back to the agent"},
+        {"label": "Complete the transformation now", "description": "Mark the job as done without downloading or ingesting next steps"}
+    ]
+}])
+```
+
+4. Based on the user's choice:
+
+   **"Download & fix next steps"** — download, then ingest NextSteps.md back to the agent:
+
+   a. Download every output artifact to `.atx/` (migrated source ZIP, `Transformation_Report.html`, `NextSteps.md`, and each per-project diff ZIP):
+
+   ```python
+   get_resource(resource="artifact", workspaceId="<id>", jobId="<id>",
+     artifactId="<id>", savePath=".atx/<filename>")
+   ```
+
+   b. Locate the downloaded `NextSteps.md` (if multiple exist, use the most recent per the Artifacts Reference) and upload it back to the same job as customer input:
+
+   ```python
+   upload_artifact(workspaceId="<id>", jobId="<id>",
+     content=".atx/NextSteps.md", fileType="MARKDOWN", categoryType="CUSTOMER_INPUT")
+   ```
+
+   c. Tell the agent to act on it:
+
+   ```python
+   send_message(workspaceId="<id>", jobId="<id>",
+     text="I've uploaded NextSteps.md — please follow it and complete it.")
+   ```
+
+   The agent reads NextSteps.md and works the items, completing what it can and asking the user directly for anything it cannot do alone (for example, connection string updates). Your role is to relay, not to act on the items yourself:
+
+   - Do NOT claim the items are done. Report only what a live status check confirms.
+   - Do NOT create, edit, or generate any files. Your only writes are the artifact downloads (step 4a) and the `NextSteps.md` upload (step 4b).
+
+   Then continue to step 5.
+
+   **"Download all to review"** — download every output artifact to `.atx/` as in step 4a. Do not upload anything back. Then continue to step 5.
+
+   **"Complete the transformation now"** — skip download and ingest; go directly to step 5 to complete.
+
+5. Present the final gate:
+
+```python
+AskUserQuestion(questions=[{
+    "question": "Complete the transformation, or make adjustments?",
     "header": "Complete Job",
     "multiSelect": False,
     "options": [
-        {"label": "Complete the job", "description": "Mark the job as done and download artifacts"},
+        {"label": "Complete the transformation", "description": "Mark the job as done"},
         {"label": "Make adjustments", "description": "Request additional changes before completing"}
     ]
 }])
 ```
 
-4. Based on user's choice:
-
 ```python
-# User confirms completion:
+# User completes:
 send_message(workspaceId="<id>", jobId="<id>",
   text="Looks good, mark the job as complete.")
 
 # User wants adjustments — relay their request:
 send_message(workspaceId="<id>", jobId="<id>",
   text="<user's adjustment request>")
-# Agent will handle the request, then ask again — repeat this step.
+# Agent handles the request, then asks again — repeat step 5.
 ```
 
-5. Once job reaches `COMPLETED`, download any artifacts the user requests:
+6. Once the job reaches `COMPLETED`, update `.atx/context.json` with `phase: "complete"`.
+
+### Ingesting NextSteps.md on request
+
+The user may download artifacts themselves (from the AWS Transform website or a prior `.atx/` download), review the `NextSteps.md`, and then ask you to hand it back to the agent. When the user asks to ingest, feed, or send NextSteps.md to the agent:
+
+1. Locate the file: check `.atx/` first; if it is not there, ask the user for its local path (they may have downloaded it from the website).
+2. Confirm the job can still accept input. If the job is in a terminal state (`COMPLETED`, `STOPPED`, `FAILED`), the agent cannot act on an upload — tell the user plainly that ingestion is not possible on a closed job rather than reporting success. Otherwise:
 
 ```python
-get_resource(resource="artifact", workspaceId="<id>", jobId="<id>",
-  artifactId="<id>", savePath=".atx/<filename>")
+upload_artifact(workspaceId="<id>", jobId="<id>",
+  content="<path to NextSteps.md>", fileType="MARKDOWN", categoryType="CUSTOMER_INPUT")
+send_message(workspaceId="<id>", jobId="<id>",
+  text="I've uploaded NextSteps.md — please follow it and complete it.")
 ```
 
-6. Update `.atx/context.json` with `phase: "complete"`
+Do NOT create any files yourself — only upload the existing `NextSteps.md` and notify the agent.
 
 ---
 
