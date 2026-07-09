@@ -8,10 +8,10 @@
 
 ## Overview
 
-This file produces a **conservative migration plan** with wider timelines and lower confidence thresholds than the infrastructure path. Billing-only data provides service-level spend but lacks configuration details (instance sizes, replication settings, networking topology). The plan accounts for this uncertainty with:
+This file produces a **complexity-scaled migration plan** with wider timelines and lower confidence thresholds than the infrastructure path. Billing-only data provides service-level spend but lacks configuration details (instance sizes, replication settings, networking topology). The plan accounts for this uncertainty with:
 
-- Longer discovery refinement phase upfront
-- Wider success criteria thresholds
+- Complexity tier classification to right-size the timeline (small: 2-4 weeks, medium: 6-10 weeks, large: 12-18 weeks)
+- Wider success criteria thresholds scaled by tier
 - Explicit recommendation to run IaC discovery before executing the plan
 
 ## Prerequisites
@@ -50,65 +50,91 @@ If any required file is missing: **STOP**. Output: "Missing required artifact: [
 > This billing-only plan is suitable for initial budgeting and stakeholder discussions,
 > but must be refined with IaC discovery before executing the actual migration.
 
-## Part 2: Conservative Timeline
+## Part 2: Complexity-Scaled Timeline
 
-A 15-week timeline with extended discovery and parallel-run phases to account for billing-only uncertainty.
+> **Before building the timeline, load `steering/migration-complexity.md` and classify the migration tier using the inputs from `aws-design-billing.json`, `billing-profile.json`, and `preferences.json`.**
 
-### Stage 1: Discovery Refinement (Weeks 1-4)
+Use the **Billing-Only Path** stage templates from `migration-complexity.md` for the determined tier. The three tiers produce different timelines:
 
-- **Week 1-2**: Audit current GCP infrastructure manually
+### Small Tier (2-4 weeks)
+
+No parallel-run stage. Discovery and provisioning overlap. Suitable for migrations with <=3 services, <$1K/month, no databases, single-AZ, no compliance.
+
+- **Stage 1: Discovery + Provisioning (Week 1)**
+  - Quick audit of GCP infrastructure (few services, low complexity)
+  - Provision AWS VPC, compute, and supporting resources
+  - Configure IAM roles and security groups
+- **Stage 2: Deploy + Test (Week 2)**
+  - Deploy applications to AWS
+  - Run functional and integration tests
+  - Validate cost tracking against estimates
+- **Stage 3: Cutover + Validation (Weeks 3-4)**
+  - Execute cutover during maintenance window (DNS switch)
+  - 24-hour intensive monitoring
+  - Stabilization and GCP teardown planning
+
+### Medium Tier (6-10 weeks)
+
+Shortened parallel run. Discovery takes 1-2 weeks instead of 4. For migrations with 4-8 services, $1K-$10K/month, or databases present.
+
+- **Stage 1: Discovery Refinement (Weeks 1-2)**
+  - Audit current GCP infrastructure
   - Document instance sizes, database configs, networking topology
   - Map dependencies between services
-  - Identify stateful vs stateless services
-  - Catalog secrets, environment variables, API keys
-- **Week 3-4**: Refine AWS design based on discovered configurations
-  - Update `aws-design-billing.json` unknowns with actual values
-  - Re-estimate costs with refined configuration data
-  - Identify any services that need different AWS targets
+  - Refine AWS design based on discovered configurations
+- **Stage 2: Service Migration (Weeks 3-5)**
+  - Provision AWS infrastructure (VPC, compute, databases, storage)
+  - Deploy applications, set up CI/CD pipelines
+  - Integration testing and data migration dry run
+- **Stage 3: Parallel Run (Weeks 6-7)**
+  - Run both environments simultaneously
+  - Compare performance, reliability, and costs
+  - Validate data consistency
+- **Stage 4: Cutover and Validation (Weeks 8-10)**
+  - Execute cutover (DNS switch, traffic migration)
+  - 48-hour intensive monitoring
+  - Stabilization and GCP teardown planning
+
+### Large Tier (12-18 weeks)
+
+Full conservative plan with extended discovery and parallel-run phases. For migrations with 9+ services, >$10K/month, multi-region, compliance, or AI alongside infrastructure.
+
+- **Stage 1: Discovery Refinement (Weeks 1-4)**
+  - Weeks 1-2: Manual infrastructure audit, dependency mapping, configuration documentation
+  - Weeks 3-4: Refine AWS design, re-estimate costs, identify services needing different AWS targets
   - Consider running IaC discovery if Terraform files become available
-
-### Stage 2: Service Migration (Weeks 5-9)
-
-- **Week 5-6**: Provision AWS infrastructure
-  - Set up VPC, subnets, security groups (based on discovery findings)
-  - Provision compute, database, and storage resources
-  - Configure IAM roles and policies
-- **Week 7-8**: Deploy applications
-  - Migrate application code and configurations
-  - Set up CI/CD pipelines
-  - Deploy to AWS staging environment
-- **Week 9**: Integration testing
-  - End-to-end testing on AWS
-  - Performance baseline measurement
-  - Data migration dry run
-
-### Stage 3: Parallel Run (Weeks 10-12)
-
-- Run both GCP and AWS simultaneously
-- Compare performance, reliability, and costs
-- Validate data consistency between environments
-- Build confidence in AWS deployment
-- Monitor for 2+ weeks before cutover decision
-
-### Stage 4: Cutover and Validation (Weeks 13-15)
-
-- **Week 13**: Execute cutover (DNS switch, traffic migration)
-- **Week 14**: Intensive monitoring (48-hour watch period)
-- **Week 15**: Stabilization and GCP teardown planning
+- **Stage 2: Service Migration (Weeks 5-9)**
+  - Weeks 5-6: Provision AWS infrastructure (VPC, compute, databases, storage)
+  - Weeks 7-8: Deploy applications, set up CI/CD, migrate to staging
+  - Week 9: Integration testing, performance baseline, data migration dry run
+- **Stage 3: Parallel Run (Weeks 10-12)**
+  - Run both GCP and AWS simultaneously
+  - Compare performance, reliability, and costs
+  - Validate data consistency between environments
+  - Monitor for 2+ weeks before cutover decision
+- **Stage 4: Cutover and Validation (Weeks 13-15+)**
+  - Execute cutover (DNS switch, traffic migration)
+  - 48-hour intensive monitoring
+  - Stabilization and GCP teardown planning
 
 ## Part 3: Risk Assessment
 
-Risks are higher for billing-only migrations due to configuration uncertainty.
+Risks are scaled by complexity tier. Use the **Risk Scaling by Tier** table in `steering/migration-complexity.md` to set probability values. The table below shows risk templates — replace the probability column with the tier-appropriate value.
 
-| Risk                                         | Probability | Impact | Mitigation                                                          |
-| -------------------------------------------- | ----------- | ------ | ------------------------------------------------------------------- |
-| Incorrect service sizing                     | high        | high   | Extended discovery phase (Weeks 1-4); right-size after parallel run |
-| Missing dependencies discovered late         | high        | medium | Manual dependency mapping in Week 1-2; extra buffer in timeline     |
-| Data migration complexity underestimated     | medium      | high   | Dry run in Week 9; parallel run (Weeks 10-12) as safety net         |
-| Cost overrun due to unknown configurations   | high        | medium | Set billing alerts at 80% of high estimate; weekly cost reviews     |
-| Performance regression from incorrect sizing | medium      | high   | Parallel run comparison; resize before cutover                      |
-| Longer timeline than planned                 | high        | medium | Build 3-week buffer into schedule; communicate 15-week plan upfront |
-| Unmapped services block migration            | medium      | high   | Address unknowns in discovery refinement (Weeks 1-4)                |
+### Standard Risks
+
+| Risk                                                   | Small Prob. | Medium Prob. | Large Prob. | Impact | Mitigation                                                                                                          |
+| ------------------------------------------------------ | ----------- | ------------ | ----------- | ------ | ------------------------------------------------------------------------------------------------------------------- |
+| Incorrect service sizing                               | low         | medium       | high        | high   | Discovery phase audit; right-size after validation                                                                  |
+| Missing dependencies discovered late                   | low         | medium       | high        | medium | Manual dependency mapping in discovery; buffer in timeline                                                          |
+| Data migration complexity underestimated               | n/a         | medium       | high        | high   | Dry run before cutover; parallel run as safety net (medium/large only)                                              |
+| Cost overrun due to unknown configurations             | low         | medium       | high        | medium | Set billing alerts at 80% of high estimate; weekly cost reviews                                                     |
+| Performance regression from incorrect sizing           | low         | medium       | medium      | high   | Parallel run comparison (medium/large); resize before cutover                                                       |
+| Longer timeline than planned                           | low         | medium       | high        | medium | Build buffer into schedule; communicate planned timeline upfront                                                    |
+| Unmapped services block migration                      | low         | medium       | medium      | high   | Address unknowns in discovery refinement                                                                            |
+| BigQuery migration complexity (if BigQuery in billing) | high        | high         | high        | high   | Engage AWS account team for specialist guidance on query patterns, data volumes, ETL pipelines, and BI integrations |
+
+For the determined tier, include only risks with probability > "n/a". Use the probability from that tier's column.
 
 ## Part 4: Per-Service Migration Steps
 
@@ -119,7 +145,7 @@ For each service in `aws-design-billing.json.services[]`, generate a migration s
 ```
 Service: [gcp_service] → [aws_service]
 Monthly Cost: $[monthly_cost] (GCP) → $[aws_mid] estimated (AWS)
-Confidence: billing_inferred
+How chosen: Estimated from billing only (JSON: billing_inferred) — see steering/design-ref-fast-path.md User-facing vocabulary
 
 Steps:
 1. [ ] Determine actual configuration (instance size, storage, etc.)
@@ -140,7 +166,7 @@ Unknowns:
 ```
 Service: Cloud Run → Fargate
 Monthly Cost: $450.00 (GCP) → $270-$630 estimated (AWS)
-Confidence: billing_inferred
+How chosen: Estimated from billing only (JSON: billing_inferred)
 SKU Hints: CPU Allocation Time, Memory Allocation Time
 
 Steps:
@@ -179,79 +205,82 @@ Action Required:
 
 ## Part 5: Success Criteria
 
-Relaxed thresholds reflecting billing-only uncertainty.
+Thresholds scaled by complexity tier. Simpler migrations have fewer unknowns and tighter targets. Use the **Success Criteria Scaling by Tier > Billing-Only Path** table in `steering/migration-complexity.md`.
 
-| Criteria                    | Target                     | Note                                                          |
-| --------------------------- | -------------------------- | ------------------------------------------------------------- |
-| Performance within baseline | Within 20% of GCP          | Wider than infra path (10%) due to sizing uncertainty         |
-| Monitoring stability        | 48-hour watch period       | Longer than infra path (24 hours)                             |
-| Post-migration stability    | 45-day observation         | Longer than infra path (30 days)                              |
-| Cost variance               | Within 40% of mid estimate | Wider than infra path (15%) due to billing-only confidence    |
-| Data integrity              | 100%                       | Same as infra path — no compromise on data                    |
-| Service availability        | 99%                        | Lower than infra path (99.9%) initially, improve after tuning |
+| Criteria                    | Small                      | Medium                     | Large                      |
+| --------------------------- | -------------------------- | -------------------------- | -------------------------- |
+| Performance within baseline | Within 15% of GCP          | Within 20% of GCP          | Within 20% of GCP          |
+| Monitoring stability        | 24-hour watch period       | 48-hour watch period       | 48-hour watch period       |
+| Post-migration stability    | 14-day observation         | 30-day observation         | 45-day observation         |
+| Cost variance               | Within 25% of mid estimate | Within 30% of mid estimate | Within 40% of mid estimate |
+| Data integrity              | 100%                       | 100%                       | 100%                       |
+| Service availability        | 99%                        | 99%                        | 99%                        |
+
+Apply the column matching the determined complexity tier.
 
 ## Part 6: Output Format
 
-Generate `generation-billing.json` in `$MIGRATION_DIR/` with the following schema:
+Generate `generation-billing.json` in `$MIGRATION_DIR/` with the following schema.
+
+The example below shows a **small** tier migration. Adjust `complexity_tier`, `complexity_inputs`, `total_weeks`, `approach`, phases, risk probabilities, success metric thresholds, and `estimated_total_effort_hours` according to the determined tier (see Part 2, Part 3, Part 5, and `steering/migration-complexity.md`).
 
 ```json
 {
   "phase": "generate",
   "generation_source": "billing_only",
   "confidence": "low",
+  "complexity_tier": "small",
+  "complexity_inputs": {
+    "service_count": 2,
+    "monthly_spend": 75.71,
+    "has_databases": false,
+    "has_stateful_storage": false,
+    "has_ai_workloads": false,
+    "availability": "single-az",
+    "compliance": "none",
+    "multi_region": false
+  },
   "timestamp": "2026-02-26T14:30:00Z",
   "migration_plan": {
-    "total_weeks": 15,
-    "approach": "conservative_with_discovery",
+    "total_weeks": 4,
+    "approach": "compressed",
     "phases": [
       {
-        "name": "Discovery Refinement",
-        "weeks": "1-4",
+        "name": "Discovery + Provisioning",
+        "weeks": "1",
         "key_activities": [
-          "Manual infrastructure audit",
-          "Dependency mapping",
-          "Configuration documentation",
-          "Design refinement"
-        ],
-        "note": "Extended discovery to compensate for missing IaC data"
+          "Quick infrastructure audit",
+          "AWS provisioning",
+          "IAM and security configuration"
+        ]
       },
       {
-        "name": "Service Migration",
-        "weeks": "5-9",
+        "name": "Deploy + Test",
+        "weeks": "2",
         "key_activities": [
-          "AWS infrastructure provisioning",
           "Application deployment",
-          "Integration testing",
-          "Data migration dry run"
+          "Functional and integration testing",
+          "Cost validation"
         ]
       },
       {
-        "name": "Parallel Run",
-        "weeks": "10-12",
+        "name": "Cutover + Validation",
+        "weeks": "3-4",
         "key_activities": [
-          "Dual environment operation",
-          "Performance comparison",
-          "Cost validation",
-          "Confidence building"
-        ]
-      },
-      {
-        "name": "Cutover and Validation",
-        "weeks": "13-15",
-        "key_activities": [
-          "DNS switch",
-          "48-hour intensive monitoring",
-          "Stabilization"
+          "DNS switch during maintenance window",
+          "24-hour intensive monitoring",
+          "Stabilization and GCP teardown planning"
         ]
       }
     ],
     "services": [
       {
-        "gcp_service": "Cloud Run",
-        "aws_service": "Fargate",
-        "monthly_cost_gcp": 450.00,
-        "estimated_cost_aws_mid": 450.00,
+        "gcp_service": "Compute Engine",
+        "aws_service": "EC2",
+        "monthly_cost_gcp": 75.46,
+        "estimated_cost_aws_mid": 75.46,
         "confidence": "billing_inferred",
+        "human_expertise_required": false,
         "unknowns": ["instance sizing", "scaling config"]
       }
     ]
@@ -259,22 +288,22 @@ Generate `generation-billing.json` in `$MIGRATION_DIR/` with the following schem
   "risks": [
     {
       "category": "incorrect_sizing",
-      "probability": "high",
+      "probability": "low",
       "impact": "high",
-      "mitigation": "Extended discovery phase; right-size after parallel run",
-      "phase_affected": "Discovery Refinement"
+      "mitigation": "Discovery audit; right-size after validation",
+      "phase_affected": "Discovery + Provisioning"
     }
   ],
   "success_metrics": {
-    "performance_threshold": "within 20% of GCP baseline",
-    "monitoring_period_hours": 48,
-    "stability_period_days": 45,
-    "cost_variance_threshold": "within 40% of mid estimate",
+    "performance_threshold": "within 15% of GCP baseline",
+    "monitoring_period_hours": 24,
+    "stability_period_days": 14,
+    "cost_variance_threshold": "within 25% of mid estimate",
     "data_integrity": "100%",
     "availability_target": "99%"
   },
   "recommendation": {
-    "approach": "Conservative migration with extended discovery",
+    "approach": "Compressed migration",
     "confidence": "low",
     "iac_discovery_offered": true,
     "note": "For tighter estimates and a shorter timeline, provide Terraform files and re-run discovery.",
@@ -283,7 +312,7 @@ Generate `generation-billing.json` in `$MIGRATION_DIR/` with the following schem
       "Missing dependency information",
       "Cost variance due to unknown sizing"
     ],
-    "estimated_total_effort_hours": 720
+    "estimated_total_effort_hours": 60
   }
 }
 ```
@@ -293,15 +322,27 @@ Generate `generation-billing.json` in `$MIGRATION_DIR/` with the following schem
 - `phase` is `"generate"`
 - `generation_source` is `"billing_only"`
 - `confidence` is `"low"`
-- `migration_plan.total_weeks` is 12-18 (conservative range)
-- `migration_plan.phases` includes Discovery Refinement as first phase
+- `complexity_tier` is one of `"small"`, `"medium"`, `"large"`
+- `complexity_inputs` object is present with all required fields (service_count, monthly_spend, has_databases, has_stateful_storage, has_ai_workloads, availability, compliance, multi_region)
+- `migration_plan.total_weeks` is within the tier's allowed range: small 2-4, medium 6-10, large 12-18
+- `migration_plan.approach` matches tier: small = `"compressed"`, medium = `"standard_with_discovery"`, large = `"conservative_with_discovery"`
+- `migration_plan.phases` stage names match the tier template from Part 2
 - `migration_plan.services` covers every service from `aws-design-billing.json`
-- `risks` array has at least 4 entries (more than infra path, reflecting higher uncertainty)
-- Each risk `probability` is appropriately elevated (most are "medium" or "high")
-- `success_metrics` has relaxed thresholds compared to infrastructure path
+- `risks` array has at least 2 entries (small), 4 entries (medium), or 5 entries (large)
+- Each risk `probability` matches the tier column from Part 3
+- `success_metrics` thresholds match the tier column from Part 5
 - `recommendation.iac_discovery_offered` is `true`
 - `recommendation.confidence` is `"low"`
+- `recommendation.estimated_total_effort_hours` is within the tier's range from `migration-complexity.md`
 - Output is valid JSON
+
+## Completion Handoff Gate (Fail Closed)
+
+Before returning control to `generate.md`, require:
+
+- `generation-billing.json` exists and passes the Output Validation Checklist above.
+
+If this gate fails: STOP and output: "generate-billing did not produce a valid `generation-billing.json`; do not continue Generate Stage 2."
 
 ## Generate Phase Integration
 

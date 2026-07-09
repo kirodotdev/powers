@@ -8,7 +8,9 @@ Present questions with a conversational tone and brief context explaining why ea
 
 ## Q1 — Where are your users located?
 
-**Rationale:** Geography drives AWS region selection and CDN strategy. It does NOT by itself justify multi-region architecture or Aurora Global Database — those decisions require understanding write patterns and RTO/RPO requirements from Q6 (uptime) and Q7 (maintenance window). Recommending multi-region based on geography alone would over-engineer most architectures and significantly increase cost.
+**Auto-extract signal:** When `gcp-resource-inventory.json` shows a **single** GCP region among PRIMARY compute/database resources, map to the closest AWS region and **skip Q1** with `target_region` `chosen_by: "extracted"`. When multiple regions are present, suggest the closest AWS region as default but still ask Q1.
+
+**Rationale:** Geography drives AWS region selection and CDN strategy.
 
 > I need to understand your user base to recommend the right AWS region and CDN strategy.
 >
@@ -48,18 +50,20 @@ Default: A — single region, closest AWS region to GCP region in inventory.
 > D) HIPAA — Healthcare data
 > E) FedRAMP / Government — Federal compliance
 > F) GDPR / Data residency — EU data sovereignty requirements
-> G) I don't know
+> G) CCPA / CPRA — California Consumer Privacy Act / California Privacy Rights Act
+> H) I don't know
 >
 > _(Multiple selections allowed)_
 
-| Answer            | Recommendation Impact                                                                                                                      |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| None              | Full service catalog available, any region                                                                                                 |
-| SOC 2 / ISO 27001 | CloudTrail, Config, Security Hub enabled by default; encryption at rest required                                                           |
-| PCI DSS           | Dedicated VPC with strict segmentation, WAF required, no shared tenancy for cardholder data, specific RDS encryption config                |
-| HIPAA             | BAA-eligible services only, encryption in transit and at rest mandatory, specific logging requirements, us-east-1/us-west-2 preferred      |
-| FedRAMP           | GovCloud regions required (us-gov-east-1, us-gov-west-1), GovCloud-specific service endpoints, limited service catalog                     |
-| GDPR              | EU regions required (eu-west-1, eu-central-1), data residency constraints, no cross-region replication outside EU without explicit consent |
+| Answer            | Recommendation Impact                                                                                                                                                                                                                                                                                                                                          |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| None              | Full service catalog available, any region                                                                                                                                                                                                                                                                                                                     |
+| SOC 2 / ISO 27001 | CloudTrail, Config, Security Hub enabled by default; encryption at rest required                                                                                                                                                                                                                                                                               |
+| PCI DSS           | CloudTrail, Config, Security Hub + PCI DSS standard enabled by default; dedicated VPC with strict segmentation; WAF required; no shared tenancy for cardholder data; specific RDS encryption config                                                                                                                                                            |
+| HIPAA             | CloudTrail, Config, Security Hub (FSBP only — Security Hub does not provide a HIPAA-specific standard) enabled by default; BAA-eligible services only; encryption in transit and at rest mandatory; specific logging requirements; us-east-1/us-west-2 preferred; engage a qualified HIPAA auditor for end-to-end posture validation                           |
+| FedRAMP           | CloudTrail, Config, Security Hub (FSBP only — NIST 800-53 is the target control set but is not directly subscribable in Security Hub the way PCI DSS is; engage your AWS account team for agency-level attestation) enabled by default; GovCloud regions required (us-gov-east-1, us-gov-west-1); GovCloud-specific service endpoints; limited service catalog |
+| GDPR              | EU regions required (eu-west-1, eu-central-1), data residency constraints, no cross-region replication outside EU without explicit consent                                                                                                                                                                                                                     |
+| CCPA / CPRA       | Consumer privacy posture: data inventory, access/deletion workflows, opt-out of sale/sharing where applicable, retention minimization, encryption and audit logging (CloudTrail); prefer documenting data flows and subprocessors — confirm target regions with legal/compliance (often US)                                                                    |
 
 Interpret:
 
@@ -70,7 +74,8 @@ C -> compliance: ["pci"] — Dedicated VPC, WAF required, strict segmentation
 D -> compliance: ["hipaa"] — BAA-eligible services only, encryption mandatory, us-east-1/us-west-2 preferred
 E -> compliance: ["fedramp"] — GovCloud regions required (us-gov-east-1, us-gov-west-1)
 F -> compliance: ["gdpr"] — EU regions required (eu-west-1, eu-central-1), data residency constraints
-G -> same as default (A) — no constraint assumed; verify with compliance team before production
+G -> compliance: ["ccpa"] — CCPA/CPRA: logging, retention, consumer-request readiness; document data flows; align region/subprocessor choices with legal review
+H -> same as default (A) — no constraint assumed; verify with compliance team before production
 ```
 
 Default: A — no constraint.
@@ -78,6 +83,16 @@ Default: A — no constraint.
 ---
 
 ## Q3 — Approximately how much are you spending on GCP per month in total?
+
+**Auto-extract signal:** If `billing-profile.json` exists, map `summary.total_monthly_spend` to the spend band below and **skip Q3** when unambiguous (`chosen_by: "extracted"`). If billing is absent or ambiguous, ask Q3.
+
+| Monthly USD   | `gcp_monthly_spend` |
+| ------------- | ------------------- |
+| < 1,000       | `"<$1K"`            |
+| 1,000–4,999   | `"$1K-$5K"`         |
+| 5,000–19,999  | `"$5K-$20K"`        |
+| 20,000–99,999 | `"$20K-$100K"`      |
+| ≥ 100,000     | `">$100K"`          |
 
 **Rationale:** Total GCP spend is the primary input for ARR estimation, which determines credits eligibility tier. Also provides a sanity check for cost estimates when billing data is not uploaded.
 
@@ -90,30 +105,71 @@ Default: A — no constraint.
 > E) > $100,000/month
 > F) I don't know
 
-**Billing enrichment:** If `billing-profile.json` exists, show:
+**Billing enrichment (when Q3 is not skipped):** If `billing-profile.json` exists but extraction was skipped due to ambiguity, show:
 
 > Your billing data shows ~$[total_monthly_spend]/month. Does this match your expectation?
 
-| Answer                 | Recommendation Impact                                                                                                        |
-| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| < $1,000/month         | AWS Activate credits eligibility (~$5K–$25K); cost estimates use conservative ranges                                         |
-| $1,000–$5,000/month    | IW Migrate credits at 25% of ARR (~$3K–$15K/yr); mid-range estimates                                                         |
-| $5,000–$20,000/month   | IW Migrate credits at 25% of ARR (~$15K–$60K/yr); Reserved Instance recommendations included                                 |
-| $20,000–$100,000/month | IW Migrate credits at 25% of ARR (~$60K–$300K/yr); Savings Plans analysis; AWS Specialist consultation eligible (>=$60K ARR) |
-| > $100,000/month       | MAP eligibility (>$500K ARR); Enterprise support tier; dedicated migration team engagement                                   |
+| Answer                 | Recommendation Impact                                                                              |
+| ---------------------- | -------------------------------------------------------------------------------------------------- |
+| < $1,000/month         | Entry-tier migration funding programs may apply; cost estimates use conservative ranges            |
+| $1,000–$5,000/month    | Migration funding review may apply; cost estimates use mid-range assumptions                       |
+| $5,000–$20,000/month   | Migration funding review may apply; reserved pricing options are evaluated in cost recommendations |
+| $20,000–$100,000/month | Migration funding and support program review may apply; savings commitment options are evaluated   |
+| > $100,000/month       | Enterprise migration program review may apply; dedicated migration support path may be recommended |
 
-Interpret (write constraint only — do NOT surface the downstream notes to the user):
+Interpret:
 
 ```
-A -> gcp_monthly_spend: "<$1K"
-B -> gcp_monthly_spend: "$1K-$5K"
-C -> gcp_monthly_spend: "$5K-$20K"
-D -> gcp_monthly_spend: "$20K-$100K"
-E -> gcp_monthly_spend: ">$100K"
-F -> same as default (billing-informed bucket if billing data exists, otherwise B)
+A -> gcp_monthly_spend: "<$1K" — entry-tier funding review; conservative cost assumptions
+B -> gcp_monthly_spend: "$1K-$5K" — funding review; mid-range cost assumptions
+C -> gcp_monthly_spend: "$5K-$20K" — funding review; reserved pricing recommendations
+D -> gcp_monthly_spend: "$20K-$100K" — funding/support review; savings commitment analysis
+E -> gcp_monthly_spend: ">$100K" — enterprise program/support review
+F -> same as default (B)
 ```
 
-Default: If `billing-profile.json` exists, use the billing-informed bucket from Step 2 extraction. Otherwise B — `gcp_monthly_spend: "$1K-$5K"`.
+Default: B — `gcp_monthly_spend: "$1K-$5K"`.
+
+---
+
+## Q3.5 — Do you have active GCP Committed Use Discounts (CUDs)?
+
+**Rationale:** Active CUDs affect migration timing and cost comparison accuracy. If a customer has unexpired CUDs, they'll continue paying commitment fees even after migrating — this is a sunk cost that affects the migration ROI timeline. Also determines whether to compare against GCP list price or committed rate.
+
+**Conditional:** Only ask if `billing-profile.json` exists AND `commitments.has_active_cuds == true`. If billing data shows active CUDs, present the detected information and ask for confirmation/details.
+
+> Your billing data shows active Committed Use Discounts (~[effective_discount_percent]% effective discount). CUD timing affects migration ROI — commitment fees continue regardless of usage until the term expires.
+>
+> A) Yes, and they expire within 6 months
+> B) Yes, and they expire in 6–12 months
+> C) Yes, and they have more than 12 months remaining
+> D) Yes, but I'm not sure when they expire
+> E) No active CUDs / I don't know
+> F) I plan to let them expire and not renew
+
+| Answer                        | Recommendation Impact                                                                                                 |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Expire within 6 months        | Migration timing favorable — plan migration to coincide with CUD expiration for clean cost transition                 |
+| Expire in 6–12 months         | Consider phased migration starting now; some overlap cost is acceptable for operational benefits                      |
+| More than 12 months remaining | Factor CUD overlap cost into ROI analysis; migration still viable if operational benefits justify dual-payment period |
+| Not sure when they expire     | Recommend customer check GCP console (Billing → Commitments) before finalizing migration timeline                     |
+| No active CUDs                | No commitment overlap concern; migrate on any timeline                                                                |
+| Plan to let them expire       | Align migration completion with CUD expiration date for optimal cost transition                                       |
+
+Interpret:
+
+```
+A -> cud_status: "expiring_soon" — Align migration with CUD expiration
+B -> cud_status: "expiring_medium" — Phased migration acceptable; some overlap cost
+C -> cud_status: "long_remaining" — Factor overlap into ROI; justify with operational benefits
+D -> cud_status: "unknown_expiry" — Recommend checking GCP console
+E -> cud_status: "none" — No constraint
+F -> cud_status: "not_renewing" — Align migration completion with expiration
+```
+
+Default: E — `cud_status: "none"` (no constraint on migration timing).
+
+If `billing-profile.json` does not exist or `commitments.has_active_cuds == false`, **skip this question entirely**.
 
 ---
 
@@ -154,7 +210,18 @@ Default: B — no constraint, evaluate full compute options.
 
 ## Q6 — If your application went down unexpectedly right now, what would happen?
 
+**Auto-extract signal (Cloud SQL PostgreSQL/MySQL only):** Read `availability_type` from `google_sql_database_instance` (`config.availability_type` or top-level). When unambiguous:
+
+| GCP value  | `availability` extracted | Skip Q6?                       |
+| ---------- | ------------------------ | ------------------------------ |
+| `ZONAL`    | `"single-az"`            | Yes — `chosen_by: "extracted"` |
+| `REGIONAL` | `"multi-az"`             | Yes — `chosen_by: "extracted"` |
+
+**Never auto-extract:** `multi-az-ha` and `multi-region` require Q6 user answers (Mission-Critical / Catastrophic) — IaC cannot infer these. Cloud SQL `REGIONAL` is RDS Multi-AZ (`multi-az`), not Aurora (`multi-az-ha`). Skip Q6 only when **all** instances agree. When instances disagree or `availability_type` is missing on any instance, ask Q6.
+
 **Rationale:** Availability requirements drive database engine selection, deployment topology, and whether multi-AZ is mandatory. Aurora Global Database and multi-region compute are only recommended when Catastrophic is selected AND Q1 confirms global users — both signals are required.
+
+**Cloud SQL PostgreSQL / MySQL → RDS vs Aurora (decision order):** For customers on Cloud SQL (PostgreSQL or MySQL), **Q6 is the only question that selects the AWS product family** — **RDS** (PostgreSQL or MySQL, matching the Cloud SQL engine) vs **Aurora** (Aurora PostgreSQL or Aurora MySQL). **Q12–Q13 never override Q6**; they tune sizing, replicas, storage/I/O billing, and Aurora variants **after** Q6 has chosen RDS or Aurora. When Cloud SQL is detected, you may add: _"For dev/staging or workloads where brief outage is tolerable, RDS PostgreSQL is usually simpler and cheaper; Aurora is for mission-critical HA needs."_
 
 **Context for user:** When asking, include these descriptions so the user can self-select accurately:
 
@@ -199,8 +266,10 @@ Default: B — `availability: "multi-az"`.
 
 **Database migration tooling notes:**
 
-- For PostgreSQL databases <10GB: **pg_dump/pg_restore** is sufficient.
-- For larger PostgreSQL databases (>10GB): **pgcopydb** offers parallel table copying and index rebuilding, significantly reducing migration time within the same maintenance window.
+- Read `preferences.json` → `design_constraints.db_size.value` (set by Q13b in `clarify-database.md`) to select the right tool. If absent, fall back to the size thresholds below.
+- For PostgreSQL databases `db_size: "<10GB"` or unknown-small: **pg_dump/pg_restore** is sufficient.
+- For PostgreSQL databases `db_size: "10-100GB"` or `"100-500GB"`: **pgcopydb** offers parallel table copying and index rebuilding, significantly reducing migration time within the same maintenance window.
+- For PostgreSQL databases `db_size: ">500GB"`: **AWS DMS strongly recommended** regardless of maintenance window — single-pass export/import at this scale is high-risk.
 - pgcopydb's CDC mode requires `wal_level=logical` on Cloud SQL, which must be enabled explicitly.
 
 > The maintenance window determines your migration cutover strategy and which database migration tooling we recommend. Zero-downtime migrations require significantly more complex infrastructure.
@@ -211,12 +280,12 @@ Default: B — `availability: "multi-az"`.
 > D) Flexible — we can schedule one if needed
 > E) I don't know
 
-| Answer         | Recommendation Impact                                                                                                                                                                                                              |
-| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Weekly window  | Standard cutover with DNS switchover during window; **pg_dump/pg_restore** for PostgreSQL <10GB; **pgcopydb** for larger databases — parallel copying cuts migration time significantly; no DMS licensing, no replication lag risk |
-| Monthly window | Cutover timed to monthly window; pg_dump/pg_restore or **pgcopydb** depending on DB size; blue/green for application layer                                                                                                         |
-| Zero downtime  | **AWS DMS required** for live database replication; blue/green deployment for application layer; Aurora blue/green deployments; Route 53 weighted routing for traffic shifting                                                     |
-| Flexible       | Recommend scheduling a weekly window to enable pg_dump/pgcopydb approach; falls back to DMS if window cannot be arranged                                                                                                           |
+| Answer         | Recommendation Impact                                                                                                                                                                                                                                       |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Weekly window  | Standard cutover with DNS switchover during window; **pg_dump/pg_restore** for PostgreSQL <10GB; **pgcopydb** for larger databases — parallel copying cuts migration time significantly; no DMS licensing, no replication lag risk                          |
+| Monthly window | Cutover timed to monthly window; pg_dump/pg_restore or **pgcopydb** depending on DB size; blue/green for application layer                                                                                                                                  |
+| Zero downtime  | **AWS DMS required** for live database replication; blue/green deployment for application layer; **RDS blue/green deployments** (RDS path per Q6) or **Aurora blue/green deployments** (Aurora path per Q6); Route 53 weighted routing for traffic shifting |
+| Flexible       | Recommend scheduling a weekly window to enable pg_dump/pgcopydb approach; falls back to DMS if window cannot be arranged                                                                                                                                    |
 
 Interpret:
 

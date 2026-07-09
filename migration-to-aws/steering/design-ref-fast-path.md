@@ -1,300 +1,113 @@
-# Fast Path: Unconditional Mappings
+# Fast-Path: Direct GCP→AWS Mappings
 
-> This file contains deterministic resource mappings that skip the evaluation rubric entirely. Use as a lookup table in Pass 1 of Design phase.
->
-> **CRITICAL:** If a resource type appears in any table below, use the mapping directly. Do NOT proceed to Pass 2 rubric evaluation. This is not optional guidance — it is an authoritative lookup.
+**Confidence: `deterministic`** (1:1 mapping, no rubric evaluation needed)
 
----
+## What `deterministic` vs `inferred` means
 
-## Purpose
+Use these labels **only** as defined here — they describe _how the mapping was chosen_, not whether the AWS architecture is "obvious."
 
-Fast-path mappings are 100% deterministic mappings with **zero viable alternatives** and **no config-dependent conditions**. They encode domain knowledge that doesn't change:
+| Label                  | Meaning                                                                                                                                                                                                                                                                               |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`deterministic`**    | The GCP **Terraform resource type** appears in the **Direct Mappings** table below, the row's **Conditions** are satisfied, and the AWS target is taken from that row. **No** 6-criteria rubric is run for that mapping.                                                              |
+| **`inferred`**         | The resource type is **not** in Direct Mappings (or BigQuery / specialist gate applies). The agent loads the category file from `steering/design-ref-index.md`, runs eliminators and the **6-criteria rubric** (and may apply **Preferred AWS Target Services**), then picks the AWS service. |
+| **`billing_inferred`** | Billing-only design path: mappings from billing SKUs/service names — see `steering/design-billing.md`.                                                                                                                                                                |
 
-- Single candidate (no alternatives to evaluate)
-- No eliminator rules apply (service limits don't matter)
-- Operational model is identical
-- No conflicts possible
+### User-facing vocabulary (chat, MIGRATION_GUIDE, migration-report)
 
-Example: `google_compute_network` always maps to `aws_vpc`. There is no alternative VPC service on AWS. No rubric needed.
+JSON artifacts **must** keep the `confidence` string values above. When speaking or writing **for end users**, lead with plain English — do **not** use "deterministic," "inferred," or "rubric" as the primary label unless the user asks for technical detail.
 
----
+| JSON `confidence`  | Say this to users               | Optional one-line hint                                                                                                                              |
+| ------------------ | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `deterministic`    | **Standard pairing**            | Same AWS target for this GCP resource type whenever it matches our fixed list — quick to sanity-check.                                              |
+| `inferred`         | **Tailored to your setup**      | Based on your Terraform configuration, how the resource fits the rest of your stack, and your migration preferences — review again if those change. |
+| `billing_inferred` | **Estimated from billing only** | From GCP spend line items without full infrastructure detail — add Terraform for a tighter mapping.                                                 |
 
-## Direct Mappings (Primary)
+**BigQuery / specialist gate** rows still store `confidence: "inferred"` in JSON; in user-facing text you may say **Tailored to your setup** and emphasize **specialist engagement** (no automated AWS analytics target).
 
-Unconditional mappings for primary resources. These resolve in Pass 1 without rubric evaluation.
+**Canonical reference:** This subsection — other phase files should point here instead of redefining wording.
 
-**Usage:** If resource type matches column 1, use mapping in column 2. Set `confidence: "deterministic"`. Add `new_aws_resources` from column 4. Do not proceed to Pass 2.
+**Common confusion:** `steering/design-ref-index.md` lists a **typical AWS target** per GCP service. That is not automatically the same as **`deterministic`**. Confidence is `deterministic` only when the exact Terraform resource type appears in the Direct Mappings table above and its conditions are met; otherwise confidence is `inferred` via rubric evaluation.
 
-| GCP Resource Type | AWS Target | Reason | new_aws_resources |
-|---|---|---|---|
-| `google_compute_network` | `aws_vpc` | Single candidate for VPC abstraction. No alternatives on AWS. Always 1:1. | `[aws_internet_gateway, aws_route_table, aws_route]` |
-| `google_compute_subnetwork` | `aws_subnet` | Single candidate for subnet abstraction. Always 1:1. | `[]` |
-| `google_storage_bucket` | `aws_s3_bucket` | Single candidate for object storage. Storage class affects S3 tier but destination is always S3. | `[]` |
-| `google_compute_firewall` | `aws_security_group` | Single candidate for firewall rules. Always 1:1. | `[]` |
-| `google_dns_record_set` | `aws_route53_record` | Single candidate for DNS records. Always 1:1. | `[]` |
-| `google_dns_managed_zone` | `aws_route53_zone` | Single candidate for managed DNS zone. Always 1:1. | `[]` |
-| `google_sql_database_instance` (PostgreSQL) | `aws_rds_cluster` (Aurora PostgreSQL) | 1:1 mapping; Serverless v2 for dev, Provisioned for prod. | `[aws_rds_cluster_instance]` |
-| `google_sql_database_instance` (MySQL) | `aws_rds_cluster` (Aurora MySQL) | 1:1 mapping; Serverless v2 for dev, Provisioned for prod. | `[aws_rds_cluster_instance]` |
-| `google_sql_database_instance` (SQL Server) | `aws_db_instance` (SQL Server) | 1:1 mapping; always provisioned (no serverless). | `[]` |
-| `google_redis_instance` | `aws_elasticache_replication_group` | 1:1 mapping; preserve cluster mode and node type. | `[aws_elasticache_subnet_group]` |
-| `google_service_account` | `aws_iam_role` | 1:1 mapping; map permissions directly, adjust service principals. | `[aws_iam_role_policy]` |
+**Add-ons (ALB, NAT, etc.):** A row may say "Fargate" while the architecture diagram also includes an **ALB** or **NAT Gateway** from **other** Terraform resources. Confidence is still per **resource row** — e.g. `google_cloud_run_service` = `inferred`; `google_compute_forwarding_rule` + backend = often `inferred` (see `design-ref-networking.md`).
 
 ---
 
-## Skip Mappings
+**Direct Mappings use confidence: `deterministic`** (fixed table lookup — no rubric for that resource)
 
-Resources that should never be mapped to AWS resources. Record in "Skipped Resources" section of aws-design-report.md.
+## Direct Mappings Table
 
-**Usage:** If resource type matches below, skip it entirely. Do NOT map to AWS. Record reason in report.
+| GCP Service                                 | AWS Service          | Conditions | Notes                                                |
+| ------------------------------------------- | -------------------- | ---------- | ---------------------------------------------------- |
+| `google_storage_bucket`                     | S3                   | Always     | 1:1 mapping; preserve ACL/versioning/lifecycle rules |
+| `google_cloud_run_service`                  | Fargate              | Always     | Preferred container runtime target                   |
+| `google_cloud_run_v2_service`               | Fargate              | Always     | v2 API variant of Cloud Run                          |
+| `google_cloudfunctions_function`            | Lambda               | Always     | Gen 1 function mapping                               |
+| `google_cloudfunctions2_function`           | Lambda               | Always     | Gen 2 function mapping                               |
+| `google_sql_database_instance` (SQL Server) | RDS SQL Server       | Always     | Always provisioned (no serverless)                   |
+| `google_compute_network`                    | VPC                  | Always     | 1:1; preserve CIDR ranges                            |
+| `google_compute_firewall`                   | Security Group       | Always     | 1:1 rule mapping; adjust CIDR if needed              |
+| `google_dns_managed_zone`                   | Route 53 Hosted Zone | Always     | Preserve zone name and records                       |
+| `google_service_account`                    | IAM Role             | Always     | Map permissions directly; adjust service principals  |
+| `google_secret_manager_secret`              | Secrets Manager      | Always     | Create secret metadata and IAM-scoped access         |
+| `google_secret_manager_secret_version`      | Secrets Manager      | Always     | Carry current value or explicit migration TODO       |
+| `google_redis_instance`                     | ElastiCache Redis    | Always     | 1:1 mapping; preserve cluster mode and node type     |
 
-| GCP Resource Type | Reason |
-|---|---|
-| `google_project_service` | API enablement is implicit on AWS. Services are enabled by default. No AWS equivalent needed. |
-| `data.google_service_account` | Data source only (read-only). No mapping needed. Use actual service account if created. |
-| `null_resource` | Terraform orchestration artifact. Not needed on AWS. |
-| `time_sleep` | Terraform orchestration artifact. Not needed on AWS. |
+### Cloud SQL PostgreSQL / MySQL — NOT in Direct Mappings
 
----
+**Do not** assign `google_sql_database_instance` (PostgreSQL or MySQL) from this table. Always use **Pass 2** + `design-ref-database.md` rubric with confidence = **`inferred`**.
+
+**Q6 (`design_constraints.availability`) is the only selector for RDS vs Aurora:**
+
+| `availability` value | AWS target (match engine from GCP)                 |
+| -------------------- | -------------------------------------------------- |
+| `single-az`          | **RDS PostgreSQL** or **RDS MySQL**                |
+| `multi-az`           | **RDS PostgreSQL** or **RDS MySQL** Multi-AZ       |
+| `multi-az-ha`        | **Aurora PostgreSQL** or **Aurora MySQL** Multi-AZ |
+| `multi-region`       | **Aurora Global Database** (engine per GCP)        |
+
+Q12 (traffic) and Q13 (I/O) tune sizing and storage **within** the family Q6 chose — they never upgrade Inconvenient/Significant Issue workloads to Aurora.
+
+## Skip Mappings Table
+
+These GCP resources do **not** require AWS equivalents in v1.0:
+
+| GCP Service                  | Reason                                                                                |
+| ---------------------------- | ------------------------------------------------------------------------------------- |
+| `google_project`             | AWS account structure (manual, not IaC)                                               |
+| `google_monitoring_*`        | Fallback to CloudWatch (managed)                                                      |
+| `google_logging_*`           | Fallback to CloudWatch Logs (managed)                                                 |
+| `google_compute_address`     | Elastic IPs managed by ALB/NAT (not standalone)                                       |
+| `google_identity_platform_*` | Auth provider — keep existing solution, do not migrate to AWS Cognito or any AWS auth |
+| `google_firebase_auth_*`     | Auth provider — keep existing solution, do not migrate to AWS Cognito or any AWS auth |
+
+## Preferred AWS Target Services
+
+For the workload categories below, always steer toward the **preferred** AWS service. If rubric evaluation or LLM reasoning would select a non-preferred service, substitute the preferred alternative instead.
+
+| Workload Category       | Preferred AWS Target                                         | Rationale                                                                                  |
+| ----------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| Containerized workloads | Fargate (default), Lambda (event-driven), EKS (K8s required) | Deeper integration with VPC, ALB, IAM, and auto-scaling than lighter-weight alternatives   |
+| Third-party auth in use | Keep existing auth provider                                  | Startups using Auth0, Firebase Auth, Clerk, etc. should preserve their existing investment |
+
+**Enforcement:** Check every resource mapping against this table before writing to `aws-design.json` or `aws-design-billing.json`. If a mapping would select a non-preferred service, substitute the preferred alternative.
+
+**Exception:** For Cloud SQL PostgreSQL/MySQL, **Q6 availability always overrides** any implicit Aurora preference. Do not substitute Aurora when `availability` is `single-az` or `multi-az`.
 
 ## Secondary Behavior Lookups
 
-Determines how secondary resources map **based on what their primary became**.
+For resources in the Skip Mappings table but present in inventory:
 
-**Usage (Pass 1):**
-1. Primary is resolved (fast-path or rubric)
-2. Secondary's `serves` array is checked
-3. For each primary the secondary serves, look up behavior in this table
-4. If found: apply behavior. If not found: check "Direct Mappings (Secondary)" table
-
-**Format:** If secondary_role matches column 1 AND primary became the AWS service in column 2, apply column 3.
-
-| Secondary Role | Primary Becomes | Behavior | Target | Notes |
-|---|---|---|---|---|
-| `identity` | `aws_lambda_function` | maps | `aws_iam_role` | Lambda requires explicit IAM role |
-| `identity` | `aws_ecs_task_definition` | maps | `aws_iam_role` | ECS task requires explicit IAM role |
-| `identity` | `aws_apprunner_service` | maps | `aws_iam_role` | App Runner requires explicit IAM role |
-| `identity` | `aws_ec2_instance` | absorbed | `aws_iam_instance_profile` | Instance profile is attached to instance config |
-| `identity` | `aws_rds_cluster` | absorbed | (not separate) | RDS uses DB-level authentication |
-| `identity` | skip | skip | (not needed) | If primary is skipped, identity not needed |
-| `network_path` | `aws_vpc` | absorbed | (not separate) | Subnet, firewall rules absorbed into VPC config |
-| `network_path` | `aws_security_group` | absorbed | (not separate) | Rules absorbed into security group config |
-| `network_path` | skip | skip | (not needed) | If primary is skipped, network not needed |
-| `access_control` | any | maps | `aws_iam_policy_statement` | IAM bindings become policy statements on roles |
-| `access_control` | skip | skip | (not needed) | If primary is skipped, access control not needed |
-| `configuration` | `aws_rds_db_instance` | absorbed | (db_name, db_user fields) | Database and user absorbed into RDS config |
-| `configuration` | `aws_secretsmanager_secret` | absorbed | (secret fields) | Secret versions absorbed into secret config |
-| `configuration` | `aws_route53_zone` | absorbed | (record config) | DNS records absorbed into zone config |
-| `configuration` | skip | skip | (not needed) | If primary is skipped, configuration not needed |
-| `encryption` | any | maps | `aws_kms_key_policy` | KMS permissions referenced in resource policy |
-| `encryption` | skip | skip | (not needed) | If primary is skipped, encryption not needed |
-| `orchestration` | any | skip | (not needed) | Terraform orchestration not needed on AWS |
+1. Log as "secondary resource, no AWS equivalent needed"
+2. Do not include in aws-design.json
+3. Note in aws-design.json warnings array
 
 ---
 
-## Direct Mappings (Secondary)
+**Workflow:**
 
-Mappings for secondary resources that don't depend on what their primary became. Use if not found in "Secondary Behavior Lookups" above.
-
-**Usage (Pass 1):**
-1. Secondary not resolved by "Secondary Behavior Lookups"
-2. Check this table
-3. If secondary type matches column 1: apply mapping in column 2
-
-| GCP Secondary Type | AWS Target | Reason |
-|---|---|---|
-| `google_kms_crypto_key` | `aws_kms_key` | 1:1 mapping. Always separate resource. |
-| `google_kms_key_ring` | (absorbed) | Key ring is metadata on aws_kms_key. Not separate. |
-| `google_compute_router_nat` | `aws_nat_gateway` | 1:1 mapping. NAT routing rules absorbed into route table. |
-| `google_compute_address` | `aws_eip` (if address_type=EXTERNAL) or `aws_nat_gateway` (if purpose=NAT) | Determined by config (address_type, purpose) — rubric needed if ambiguous. |
-
----
-
-## Examples
-
-### Example 1: Primary Fast-Path Resolution
-
-**Resource:** `google_storage_bucket.data_lake`
-
-**Pass 1 Evaluation:**
-```
-Check Direct Mappings (Primary) table:
-  google_storage_bucket → aws_s3_bucket ✓ found
-
-Result:
-  source: "google_storage_bucket.data_lake"
-  target: "aws_s3_bucket"
-  confidence: "deterministic"
-  reason: "Fast path: Object storage bucket → S3. Single candidate, no alternatives."
-  source_config: { "storage_class": "NEARLINE", "lifecycle_rule": "delete after 90 days" }
-  related: { "gcp": [], "aws": [] }
-  new_aws_resources: []
-
-Do NOT proceed to Pass 2 for this resource.
-```
-
----
-
-### Example 2: Secondary Fast-Path Resolution (After Primary)
-
-**Primary Resolution (from fast-path or rubric):**
-```
-google_sql_database_instance → aws_rds_db_instance
-```
-
-**Secondary:** `google_sql_database.main` (secondary_role: configuration, serves: [google_sql_database_instance.main])
-
-**Pass 1 Evaluation:**
-```
-Check Secondary Behavior Lookups:
-  secondary_role=configuration, primary_becomes=aws_rds_db_instance
-  → behavior: absorbed, target: (db_name field)  ✓ found
-
-Result:
-  source: "google_sql_database.main"
-  target: "(absorbed into aws_rds_db_instance.database_name)"
-  confidence: "deterministic"
-  reason: "Fast path: Database configuration absorbed. Database name becomes db_name on RDS instance."
-  related: { "gcp": ["google_sql_database_instance.main"] }
-
-Do NOT proceed to Pass 2 for this resource.
-```
-
----
-
-### Example 3: Secondary Deferred to Pass 2
-
-**Primary:** `google_cloud_run_service.api` (not in fast-path, needs rubric)
-
-**Secondary:** `google_service_account.app` (secondary_role: identity, serves: [google_cloud_run_service.api])
-
-**Pass 1 Evaluation:**
-```
-Check Secondary Behavior Lookups:
-  secondary_role=identity, primary_becomes=??? (not yet resolved)
-
-Primary not yet resolved. Cannot determine behavior.
-
-Result: Leave secondary for Pass 2.
-
-(After Pass 2 resolves primary to aws_apprunner_service,
- return to secondary in Pass 2 Phase 2)
-```
-
----
-
-### Example 4: Skip Mapping
-
-**Resource:** `google_project_service.run`
-
-**Pass 1 Evaluation:**
-```
-Check Skip Mappings table:
-  google_project_service → skip ✓ found
-
-Result:
-  source: "google_project_service.run"
-  target: "(skipped)"
-  confidence: "deterministic"
-  reason: "Fast path skip: API enablement not needed on AWS. Services are enabled by default."
-  related: { "gcp": [], "aws": [] }
-
-Note: Add to "Skipped Resources" section of aws-design-report.md
-
-Do NOT proceed to Pass 2 for this resource.
-```
-
----
-
-## Pass 1 Algorithm
-
-**For each resource in cluster (both primary and secondary):**
-
-### Primary Resource
-
-```
-1. Is resource_type in "Direct Mappings (Primary)" table?
-   YES → Record mapping. Set confidence=deterministic. Add new_aws_resources.
-         Mark as RESOLVED. Do not proceed to Pass 2.
-   NO  → Continue to step 2.
-
-2. Is resource_type in "Skip Mappings" table?
-   YES → Skip resource. Record in skipped list.
-         Mark as RESOLVED. Do not proceed to Pass 2.
-   NO  → Leave for Pass 2 (rubric evaluation)
-```
-
-### Secondary Resource
-
-```
-1. Are ALL primaries in secondary.serves[] already resolved?
-   NO  → Leave for Pass 2 (wait for primaries)
-   YES → Continue to step 2.
-
-2. For each primary served:
-   Check "Secondary Behavior Lookups" for (secondary_role, primary_became):
-   FOUND → Record behavior. Mark secondary as RESOLVED. Do not proceed to Pass 2.
-   NOT FOUND → Continue to step 3.
-
-3. Is secondary_type in "Direct Mappings (Secondary)" table?
-   YES → Record mapping. Mark as RESOLVED. Do not proceed to Pass 2.
-   NO  → Leave for Pass 2 (rubric evaluation needed)
-```
-
----
-
-## After Pass 1
-
-**If ALL resources resolved by Pass 1:**
-- Write cluster block to aws-design.json
-- Add all new_aws_resources to cluster's new_aws_resources array
-- Update metadata: `resolved_by_fast_path` += count
-- Move to next cluster (skip Pass 2 entirely)
-
-**If ANY resources unresolved:**
-- Record Pass 1 results (mapped, skipped, absorbed)
-- Proceed to Pass 2 (rubric) for remaining resources
-- Use Pass 1 results as context for Pass 2 evaluation
-
----
-
-## Maintenance Notes
-
-**Adding new fast-path mappings:**
-
-1. Ensure mapping is **100% unconditional** (no config-dependent logic)
-2. Verify **no viable alternative** exists on AWS
-3. Include **clear reasoning** for why there's no ambiguity
-4. Test with sample resources before committing
-
-**Example (good candidate for fast-path):**
-```
-google_compute_instance → aws_ec2_instance
-Reason: Single candidate. No serverless alternative for fixed VMs.
-No config field changes this decision.
-```
-
-**Example (NOT a fast-path candidate):**
-```
-google_cloud_run_service → ??? (could be Lambda, App Runner, or ECS)
-Reason: Timeout, memory, concurrency, GPU support, and scale behavior
-determine candidate. Config-dependent. Needs rubric.
-```
-
----
-
-## Related Files
-
-- `design.md` — Pass 1 (fast-path) and Pass 2 (rubric) algorithm
-- `design-ref-index.md` — Lookup for which design-ref file contains resource
-- `design-ref-compute.md` — Rubric rules for compute resources
-- `design-ref-database.md` — Rubric rules for database resources
-- `design-ref-networking.md` — Rubric rules for networking resources
-- `design-ref-storage.md` — Rubric rules for storage resources
-- `design-ref-messaging.md` — Rubric rules for messaging resources
-- `design-ref-ai.md` — Rubric rules for AI/ML resources
-
----
-
-**Last Updated:** 2026-02-24
-**Status:** Active (Production)
-
+1. Extract GCP resource type
+2. Look up in Direct Mappings table
+3. If found and condition met: assign AWS service (confidence = deterministic)
+4. If `google_sql_database_instance` (PostgreSQL/MySQL): skip Direct Mappings → apply `design-ref-database.md` rubric (confidence = inferred)
+5. If found in Skip Mappings: skip it (confidence = n/a)
+6. If not found: use `steering/design-ref-index.md` to determine category → apply rubric in that category's file

@@ -6,8 +6,8 @@
 
 If the detected AI workload is LLM-based (generative models), load the source-specific design reference instead of this file:
 
-- If `ai-workload-profile.json` → `summary.ai_source` = `"gemini"`: load `steering/design-ref-ai-gemini-to-bedrock.md`
-- If `ai-workload-profile.json` → `summary.ai_source` = `"openai"`: load `steering/design-ref-ai-openai-to-bedrock.md`
+- If `ai-workload-profile.json` → `summary.ai_source` = `"gemini"`: load `design-ref-ai-gemini-to-bedrock.md`
+- If `ai-workload-profile.json` → `summary.ai_source` = `"openai"`: load `design-ref-ai-openai-to-bedrock.md`
 - If `ai-workload-profile.json` → `summary.ai_source` = `"both"`: load both files
 - If `ai-workload-profile.json` → `summary.ai_source` = `"other"` or absent, OR if the workload is traditional ML (custom models, Vision API, Speech API): use the SageMaker/Rekognition/Textract rubric below.
 
@@ -26,7 +26,7 @@ If the detected AI workload is LLM-based (generative models), load the source-sp
 - **Image classification, OCR** → AWS Rekognition (images) or Textract (OCR)
 - **Document understanding** → AWS Textract (more powerful for docs)
 
-### Cloud ML Engine (deprecated — now part of Vertex AI)
+### Cloud ML Engine (deprecated — legacy Terraform configs only)
 
 - **Model training** → SageMaker (managed training jobs)
 - **AutoML** → SageMaker Autopilot / Canvas

@@ -7,20 +7,22 @@ This file covers two related categories:
 
 ---
 
-## Category B — Configuration Gaps (Billing-Source Inventories Only)
+## Category B — Configuration Gaps (Billing-Only Mode)
 
-_Fire when:_ `gcp-resource-inventory.json` exists with `metadata.source == "billing"` AND at least one resource has `config_confidence == "assumed"`.
-_Skip when:_ `metadata.source == "terraform"`.
+_Fire when:_ `billing-profile.json` exists AND `gcp-resource-inventory.json` does NOT exist (billing-only mode).
+_Skip when:_ `gcp-resource-inventory.json` exists (Terraform/IaC provides configuration directly).
 
-These fill factual gaps in the inferred inventory. Answers update the inventory understanding — they do not produce design constraints directly.
+These fill factual gaps that billing data alone cannot answer. Answers update the inventory understanding — they do not produce design constraints directly.
 
-- **Cloud SQL HA**: Single-zone or high-availability? _(ask if SKU says Zonal)_
+Each question fires only when the matching `gcp_service_type` appears in `billing-profile.json → services[]`:
+
+- **Cloud SQL HA**: Single-zone or high-availability? _(fire if `google_sql_database_instance` in billing services)_
   > Default: assume Zonal is intentional.
-- **Cloud Run service count**: How many distinct services? _(ask if Cloud Run billing is present)_
+- **Cloud Run service count**: How many distinct services? _(fire if `google_cloud_run_service` in billing services)_
   > Default: assume 1 service.
-- **Memorystore memory size**: How much memory (GB)? _(ask if cannot be derived from usage units)_
+- **Memorystore memory size**: How much memory (GB)? _(fire if `google_redis_instance` in billing services)_
   > Default: estimate from usage amount.
-- **Cloud Functions generation**: Gen 1 or Gen 2? _(ask if SKU does not specify)_
+- **Cloud Functions generation**: Gen 1 or Gen 2? _(fire if `google_cloudfunctions_function` in billing services)_
   > Default: assume Gen 1.
 
 Record Category B answers in `metadata.inventory_clarifications`.
@@ -68,10 +70,16 @@ A -> kubernetes: "eks-managed" — EKS recommended, preserves K8s investment
 B -> kubernetes: "eks-or-ecs" — EKS with managed node groups to reduce operational burden
 C -> kubernetes: "ecs-fargate" — Strong ECS Fargate recommendation, eliminates K8s management
 D -> (no constraint written — no K8s workloads)
-E -> same as default (B) — assume neutral, evaluate both EKS and ECS
+E -> same as default — see IaC-signal default rule below
 ```
 
-Default: B — `kubernetes: "eks-or-ecs"`.
+**Default (IaC-signal driven):**
+
+- If `gcp-resource-inventory.json` contains `google_container_cluster` resources → Default **C** (`kubernetes: "ecs-fargate"`). Teams that answer "I don't know" are better served by Fargate's lower operational overhead; EKS remains available via explicit answers A and B.
+- If no `google_container_cluster` in inventory (Cloud Run, Cloud Functions, or billing-only) → Default **C** (`kubernetes: "ecs-fargate"`). No Kubernetes signal; Fargate is the lower-ops starting point.
+- If inventory is absent (billing-only mode) → Default **C** (`kubernetes: "ecs-fargate"`).
+
+**Rationale:** Teams that answer E ("I don't know") have not expressed a Kubernetes preference. Defaulting to Fargate gives them a simpler, lower-ops starting point regardless of what discovery found. Teams who actively want EKS will answer A or B explicitly. EKS remains fully available via explicit answers A and B.
 
 ---
 
@@ -79,7 +87,9 @@ Default: B — `kubernetes: "eks-or-ecs"`.
 
 _Fire when:_ Compute resources present AND WebSocket usage cannot be determined from inventory.
 
-**Rationale:** WebSocket support affects load balancer configuration. App Runner is now on KTLO (keep the lights on) and is no longer recommended for any workload — this question confirms whether ALB WebSocket configuration is needed in templates.
+**Auto-extract signal:** Only when application code was analyzed (see Clarify Step 2 item 14). If code was scanned and no WebSocket patterns found, extract `websocket: false` and skip. **If no code was analyzed** (Terraform-only), always ask Q9 — do not infer absence of WebSockets.
+
+**Rationale:** WebSocket support affects load balancer configuration.
 
 > WebSocket support affects load balancer configuration. This confirms whether ALB WebSocket configuration is needed in the migration templates.
 >
@@ -108,7 +118,9 @@ Default: B — no constraint.
 
 _Fire when:_ Cloud Run present in inventory. Skip when: no Cloud Run.
 
-**Rationale:** Cloud Run's scale-to-zero is its primary cost advantage. If traffic is constant, that advantage disappears and AWS becomes cost-competitive or cheaper. This drives whether we recommend migrating Cloud Run at all.
+**Auto-extract signal:** When Cloud Run `min_instance_count` / `min_instances` > 0 in Terraform config, extract `cloud_run_traffic_pattern: "constant-24-7"` with `chosen_by: "extracted"` and **skip Q10**.
+
+**Rationale:** Cloud Run's scale-to-zero is its primary cost advantage.
 
 > Cloud Run's scale-to-zero is its primary cost advantage. Understanding your traffic pattern helps me determine whether migrating Cloud Run to AWS makes financial sense.
 >

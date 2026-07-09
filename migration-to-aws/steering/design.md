@@ -4,7 +4,8 @@
 
 ## Prerequisites
 
-Read `$MIGRATION_DIR/preferences.json`. If missing: **STOP**. Output: "Phase 2 (Clarify) not completed. Run Phase 2 first."
+1. Read `$MIGRATION_DIR/.phase-status.json`. If missing, invalid, or `phases.clarify` is not exactly `"completed"`: **STOP**. Output: "Phase 2 (Clarify) not completed or phase state is missing/invalid. Run `steering/clarify.md` until Clarify finishes and `.phase-status.json` shows `phases.clarify`: `completed`."
+2. Read `$MIGRATION_DIR/preferences.json`. If missing: **STOP**. Output: "Phase 2 (Clarify) not completed. Run Phase 2 first."
 
 Check which discovery artifacts exist in `$MIGRATION_DIR/`:
 
@@ -48,16 +49,42 @@ Produces: `aws-design-ai.json`
 
 ## Phase Completion
 
-After all applicable sub-designs finish, use the Phase Status Update Protocol (Write tool) to write `.phase-status.json` with `phases.design` set to `"completed"` — **in the same turn** as the output message below.
+Before marking Design complete, enforce route output gates (fail closed):
+
+1. Determine which design routes ran:
+   - IaC route: `gcp-resource-inventory.json` AND `gcp-resource-clusters.json` exist
+   - Billing-only route: `billing-profile.json` exists AND `gcp-resource-inventory.json` does NOT exist
+   - AI route: `ai-workload-profile.json` exists
+2. Require at least one route to be active. If none active: STOP.
+3. For each active route, require its expected artifact:
+   - IaC route -> `aws-design.json`
+   - Billing-only route -> `aws-design-billing.json`
+   - AI route -> `aws-design-ai.json`
+4. If any active route is missing its expected output: STOP and output: "Design route [name] did not produce required artifact(s). Re-run the failed sub-design before completing Phase 3."
+
+## Completion Handoff Gate (Fail Closed)
+
+Load `steering/handoff-gates.md`. **Re-read from disk** each active route artifact before checking.
+
+**Re-entry guard:** If `estimation-infra.json` (or sibling estimate artifacts) exists and `phases.estimate` is `"completed"`: STOP unless the user explicitly confirms re-running Design. Emit `GATE_FAIL | phase=design | field=estimation-infra.json | reason=stale_downstream`.
+
+**On any route gate FAIL:** Emit `GATE_FAIL | phase=design | field=<artifact> | reason=missing`. **Do NOT modify artifacts to pass the gate.** **Do NOT update `.phase-status.json`.**
+
+**On PASS:** Emit `HANDOFF_OK | phase=design | artifacts=<comma-separated active design files>`.
+
+After `HANDOFF_OK`, use the Phase Status Update Protocol (read-merge-write) to update `.phase-status.json` — **in the same turn** as the output message below:
+
+- Set `phases.design` to `"completed"`
+- Set `current_phase` to `"estimate"`
 
 Output to user: "AWS Architecture designed. Proceeding to Phase 4: Estimate Costs."
 
 ## Reference Files
 
-Sub-design files may reference rubrics in `steering/`:
+Sub-design files may reference rubrics in the `steering/design-ref-*.md` files:
 
 - `steering/design-ref-index.md` — GCP type → rubric file lookup
-- `steering/design-ref-fast-path.md` — Deterministic 1:1 GCP→AWS mappings
+- `steering/design-ref-fast-path.md` — Direct (table) mappings vs rubric path; **User-facing vocabulary** for presenting `confidence` to users (**Standard pairing** / **Tailored to your setup** / **Estimated from billing only**)
 - `steering/design-ref-compute.md` — Compute service rubric
 - `steering/design-ref-database.md` — Database service rubric
 - `steering/design-ref-storage.md` — Storage service rubric

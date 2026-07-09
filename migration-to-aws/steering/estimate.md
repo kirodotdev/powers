@@ -22,12 +22,34 @@ Attempt to reach awspricing with **up to 2 retries** (3 total attempts):
 3. **If still fails**: Wait 2 seconds, retry (Attempt 3)
 4. **If all 3 attempts fail**: Use cached prices with staleness warning
 
+### Step 0c: MCP Preflight — Surface Status to User (ALWAYS run)
+
+**Before any sub-estimate file runs**, display the pricing mode to the user so they know what to expect:
+
+- **If cache ≤ 90 days and MCP not needed**: "Pricing source: cached (updated [date], ±5-25% accuracy). Live pricing API not required."
+- **If cache > 90 days and MCP available**: "Pricing source: live API (awspricing MCP). Cache is stale ([date]) — using real-time pricing."
+- **If cache > 90 days and MCP unavailable**: "⚠️ Pricing source: stale cache only (updated [date]). The awspricing MCP server is unreachable — ensure `uvx` is installed (`pip install uv` or `brew install uv`) and AWS credentials are configured. Proceeding with cached pricing; accuracy may be ±15-25% for AI models."
+- **If cache ≤ 90 days but a required service is NOT in cache and MCP unavailable**: "⚠️ Some services not in pricing cache and MCP unreachable. Those services will show `pricing_source: unavailable` in the estimate."
+
+This prevents silent failures — the user sees the pricing constraint upfront, not after 5 minutes of estimation work.
+
 ### Pricing Hierarchy
 
 Each sub-estimate file uses this lookup order per service:
 
 1. **`steering/cached-prices.md`** (primary) — Cached prices (±5-25% accuracy). Set `pricing_source: "cached"`. Used first because it requires zero API calls and covers most common services.
-2. **MCP API** (fallback) — Real-time pricing for services NOT in cached-prices.md (±5-10% accuracy, more precise). Set `pricing_source: "live"`. Only called when the cache lacks the needed service or model.
+2. **MCP API** (secondary) — Real-time pricing for services NOT in cached-prices.md (±5-10% accuracy, more precise). Set `pricing_source: "live"`. Only called when the cache lacks the needed service or model. **Region note:** The `.mcp.json` sets `AWS_REGION=us-east-1` as the MCP server default, but each `get_pricing()` call accepts a `region` parameter that overrides it. Always pass the user's target region (from `preferences.json`) in MCP queries.
+3. **Cache after MCP failure** — If MCP was attempted but failed (timeout, error), and the service IS in the cache, use the cached price. Set `pricing_source: "cached_fallback"`. This distinguishes intentional cache use from MCP failure recovery.
+4. **Unavailable** — If a service is NOT in the cache AND MCP is unavailable, set `pricing_source: "unavailable"` for that service. Add the service to `services_with_missing_fallback` and display a warning to the user: "Pricing unavailable for [service] — not in cache and MCP unreachable. Exclude from totals or provide a manual estimate."
+
+**`pricing_source` values summary:**
+
+| Value               | Meaning                                                   |
+| ------------------- | --------------------------------------------------------- |
+| `"cached"`          | Found in cached-prices.md (normal path)                   |
+| `"live"`            | Retrieved from MCP API in real-time                       |
+| `"cached_fallback"` | MCP was attempted but failed; fell back to cache          |
+| `"unavailable"`     | Not in cache AND MCP failed; service excluded from totals |
 
 If cache is > 90 days old and MCP is unavailable:
 
@@ -36,7 +58,8 @@ If cache is > 90 days old and MCP is unavailable:
 
 ## Step 1: Prerequisites
 
-Read `$MIGRATION_DIR/preferences.json`. If missing: **STOP**. Output: "Phase 2 (Clarify) not completed. Run Phase 2 first."
+1. Read `$MIGRATION_DIR/.phase-status.json`. If missing, invalid, or `phases.clarify` is not exactly `"completed"`: **STOP**. Output: "Phase 2 (Clarify) not completed or phase state is missing/invalid. Complete Clarify before Estimate."
+2. Read `$MIGRATION_DIR/preferences.json`. If missing: **STOP**. Output: "Phase 2 (Clarify) not completed. Run Phase 2 first."
 
 Check which design artifacts exist in `$MIGRATION_DIR/`:
 
@@ -79,7 +102,39 @@ Produces: `estimation-ai.json`
 
 ## Phase Completion
 
-After all applicable sub-estimates finish, use the Phase Status Update Protocol (Write tool) to write `.phase-status.json` with `phases.estimate` set to `"completed"` — **in the same turn** as the output message below.
+Before marking Estimate complete, enforce route output gates (fail closed):
+
+1. Determine which estimate routes ran:
+   - Infra route: `aws-design.json` exists
+   - Billing-only route: `aws-design-billing.json` exists AND `aws-design.json` does NOT exist
+   - AI route: `aws-design-ai.json` exists
+2. Require at least one route to be active. If none active: STOP.
+3. For each active route, require its expected artifact:
+   - Infra route -> `estimation-infra.json`
+   - Billing-only route -> `estimation-billing.json`
+   - AI route -> `estimation-ai.json`
+4. If any active route is missing its expected output: STOP and output: "Estimate route [name] did not produce required artifact(s). Re-run the failed sub-estimate before completing Phase 4."
+
+## Completion Handoff Gate (Fail Closed)
+
+Load `steering/handoff-gates.md`. **Re-read from disk** each active estimate artifact before checking.
+
+**Re-entry guard:** If `generation-infra.json` (or sibling generation artifacts) exists and `phases.generate` is not `"pending"`: STOP unless the user explicitly confirms re-running Estimate. Emit `GATE_FAIL | phase=estimate | field=generation-infra.json | reason=stale_downstream`.
+
+**Infra route additional checks** (when `estimation-infra.json` exists):
+
+- `recommendation.path` ∈ `{migrate_optimized, migrate_phased, stay}`
+- `recommendation.path_label` is non-empty
+- `recommendation.migrate_if` and `recommendation.stay_if` are non-empty arrays
+
+**On any FAIL:** Emit `GATE_FAIL | phase=estimate | field=<path> | reason=missing`. **Do NOT modify artifacts to pass the gate.** **Do NOT update `.phase-status.json`.** Tell the user to re-run `estimate-infra.md` Part 7 (recommendation block).
+
+**On PASS:** Emit `HANDOFF_OK | phase=estimate | artifacts=<comma-separated active estimate files>`.
+
+After `HANDOFF_OK`, use the Phase Status Update Protocol (read-merge-write) to update `.phase-status.json` — **in the same turn** as the output message below:
+
+- Set `phases.estimate` to `"completed"`
+- Set `current_phase` to `"generate"`
 
 Output to user: "Cost estimation complete. Proceeding to Phase 5: Generate Migration Artifacts."
 

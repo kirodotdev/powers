@@ -4,6 +4,19 @@ Hardcoded lists for classifying GCP resources as PRIMARY or SECONDARY.
 
 Each PRIMARY resource is assigned a `tier` indicating its infrastructure layer.
 
+## Priority 0: Excluded Resources (Skip Entirely)
+
+These resource types are **excluded from classification, clustering, and migration**. Do not classify them as PRIMARY or SECONDARY. Do not create clusters for them. Do not include them in `gcp-resource-inventory.json`.
+
+### Authentication Providers
+
+Third-party and GCP-adjacent authentication resources. Users should keep their existing auth provider — do not recommend migrating to AWS Cognito or any AWS auth service.
+
+- `google_identity_platform_*` — GCP Identity Platform (all variants: config, tenant, default_supported_idp_config, inbound_saml_config, oauth_idp_config)
+- `google_firebase_auth_*` — Firebase Authentication (all variants)
+
+If encountered: log as "Auth provider detected — excluded from migration scope. Keep your existing auth solution." and skip.
+
 ## Priority 1: PRIMARY Resources (Workload-Bearing)
 
 These resource types are always PRIMARY:
