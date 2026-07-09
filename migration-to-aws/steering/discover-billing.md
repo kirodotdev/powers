@@ -39,12 +39,60 @@ Group by service and calculate monthly totals.
 
 ---
 
+## Step 1.5: Identify Commitments and Discounts
+
+Scan billing line items for GCP Committed Use Discount (CUD) artifacts and other billing-level discounts. These are **not workload costs** — they are financial instruments that must be separated from actual resource usage.
+
+### Detection patterns
+
+| Pattern                  | How to identify                                                                                 | Type             |
+| ------------------------ | ----------------------------------------------------------------------------------------------- | ---------------- |
+| Resource-based CUD fee   | SKU contains "Commitment v1:" (e.g., "Commitment v1: E2 Cpu in Americas for 1 Year")            | `resource_based` |
+| Dollar-based CUD fee     | SKU contains "Commitment - dollar based" (e.g., "Commitment - dollar based v1: GCE for 1 year") | `dollar_based`   |
+| CUD credit (offset)      | Column `committedUsageDiscount` or `committedUsageDiscountDollarBase` has non-zero value        | credit           |
+| Sustained usage discount | Column `sustainedUsageDiscount` has non-zero value                                              | credit           |
+| Subscription benefit     | Column `subscriptionBenefit` has non-zero value                                                 | credit           |
+| Free tier credit         | Column `freeTier` has non-zero value                                                            | credit           |
+
+Additional signals:
+
+- `resourceGlobalName` contains `project_commitments` → commitment fee row
+- `resourceName` starts with `commitment-` → commitment fee row
+
+### Extraction
+
+For each detected commitment fee row, extract:
+
+- **Term**: Parse from SKU (e.g., "1 Year" or "3 Year")
+- **Covered service**: Parse from SKU (e.g., "E2 Cpu", "E2 Ram", "GCE", "Cloud SQL")
+- **Region**: From the `region` field
+- **Monthly fee**: Sum `costAtListUSD` for all rows in that commitment
+
+For discount credits, sum per type across all services:
+
+- Total `committedUsageDiscount` (negative values = credits applied)
+- Total `sustainedUsageDiscount`
+- Total `freeTier`
+
+### Cost basis determination
+
+If any CUD-related columns or rows are detected:
+
+- Use `costAtListUSD` (list price) as the baseline for all service costs in Step 2
+- Record `total_at_list` (sum of all `costAtListUSD`)
+- Record `total_net_of_discounts` (list price + all discount credits)
+- Calculate `effective_discount_percent`: `(total_at_list - total_net_of_discounts) / total_at_list × 100`
+
+If no CUD columns are present in the export (older export format), use the available cost column as-is and set `cost_basis.uses_list_price` to `false`.
+
+---
+
 ## Step 2: Build Service Usage Profile
 
 From the parsed billing data:
 
 1. List all GCP services with non-zero spend
-2. Calculate monthly cost per service
+2. Calculate monthly cost per service **using list price (`costAtListUSD`) when available** — exclude commitment fee rows from service totals
 3. Identify top services by spend (sorted descending)
 4. Note usage patterns (consistent vs bursty spend)
 
@@ -70,43 +118,56 @@ Write `$MIGRATION_DIR/billing-profile.json` with the following structure:
 ```json
 {
   "metadata": {
-    "report_date": "[ISO 8601 date]",
-    "billing_files_analyzed": ["path/to/billing.csv"],
-    "currency": "USD"
+    "report_date": "2026-02-24",
+    "project_directory": "/path/to/project",
+    "billing_source": "gcp-billing-export.csv",
+    "billing_period": "2026-01"
   },
   "summary": {
-    "total_monthly_spend": 0.00,
-    "service_count": 0,
-    "top_services_by_spend": []
+    "total_monthly_spend": 2450.00,
+    "service_count": 8,
+    "currency": "USD"
   },
   "services": [
     {
-      "service": "Cloud Run",
+      "gcp_service": "Cloud Run",
       "gcp_service_type": "google_cloud_run_service",
       "monthly_cost": 450.00,
+      "percentage_of_total": 0.18,
       "top_skus": [
         {
-          "sku": "Cloud Run - CPU Allocation Time",
-          "monthly_cost": 320.00,
-          "usage_amount": 1500,
-          "usage_unit": "vCPU-seconds"
+          "sku_description": "Cloud Run - CPU Allocation Time",
+          "monthly_cost": 300.00
+        },
+        {
+          "sku_description": "Cloud Run - Memory Allocation Time",
+          "monthly_cost": 150.00
         }
       ],
-      "usage_pattern": "consistent"
+      "ai_signals": []
     }
   ],
-  "ai_signals": [
-    {
-      "pattern": "3.1",
-      "service_description": "Vertex AI",
-      "monthly_cost": 200.00,
-      "confidence": 0.98
+  "commitments": {
+    "has_active_cuds": false,
+    "total_monthly_commitment_fees": 0.00,
+    "total_monthly_cud_credits": 0.00,
+    "effective_discount_percent": 0.0,
+    "details": []
+  },
+  "cost_basis": {
+    "uses_list_price": true,
+    "total_at_list": 2450.00,
+    "total_net_of_discounts": 2450.00,
+    "discount_breakdown": {
+      "committed_usage_discount": 0.00,
+      "sustained_usage_discount": 0.00,
+      "free_tier": 0.00
     }
-  ],
-  "ai_detection": {
-    "has_ai_workload": false,
+  },
+  "ai_signals": {
+    "detected": false,
     "confidence": 0,
-    "ai_monthly_spend": 0.00
+    "services": []
   }
 }
 ```

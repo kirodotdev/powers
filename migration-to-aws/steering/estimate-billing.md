@@ -52,6 +52,16 @@ Per-service breakdown:
 
 This is actual spend data — higher confidence than inferred costs.
 
+### CUD-Aware Baseline Adjustment
+
+If `billing-profile.json` contains `commitments.has_active_cuds == true`:
+
+1. **Use list price as baseline**: The `services[].monthly_cost` values already reflect list price (commitment fee rows are excluded). Use these directly — do not subtract CUD credits from the baseline.
+2. **Exclude commitment fees from workload costs**: Commitment fee rows (e.g., "Commitment v1: E2 Cpu") are billing artifacts, not workload costs. They are already excluded from `services[]` by the discover phase.
+3. **Note the customer's effective discount**: Record `commitments.effective_discount_percent` for the comparison narrative. The customer currently pays this percentage below list price on GCP.
+
+If `commitments.has_active_cuds == false` or the `commitments` section is absent, proceed with `total_monthly_spend` as-is.
+
 ## Step 2: Generate AWS Cost Ranges
 
 For each service in `aws-design-billing.json`, produce low/mid/high estimates:
@@ -106,7 +116,39 @@ Difference:
   Worst case: [high vs GCP] (potential increase of $X/month)
 ```
 
-## Step 4: Document Unknowns
+### Commitment-to-Commitment Comparison (if CUDs detected)
+
+If `billing-profile.json` has `commitments.has_active_cuds == true`, add a commitment context note:
+
+```
+Commitment Context:
+  GCP current effective rate: [effective_discount_percent]% below list price via CUDs
+  GCP list price baseline:   $[cost_basis.total_at_list]/month
+  GCP net-of-discounts:      $[cost_basis.total_net_of_discounts]/month
+
+  AWS equivalent commitment options:
+    Compute Savings Plans (Fargate/Lambda/EC2): up to 66% max; typical 20-40% (1yr no-upfront)
+    Database Savings Plans (Aurora/RDS/etc.): up to 35% (serverless) / up to 20% (provisioned); 1yr no-upfront
+    RDS Reserved Instances: up to 69% (3yr All Upfront); mutually exclusive with Database SP on same workload
+    1-year Compute Savings Plan: typically 20-40% below on-demand
+    3-year Compute Savings Plan: typically 40-66% below on-demand
+
+  Fair comparison: GCP list price vs AWS on-demand (both uncommitted)
+  Committed comparison: GCP net-of-CUD vs AWS with applicable 1yr commitments
+  Cloud Run / GKE → Fargate note: Do not size Compute Savings Plans from GCP billing — establish 30-90 day AWS baseline post-migration. GKE node pools may inform a rough floor estimate only.
+```
+
+This ensures the customer understands that their current GCP discount has an AWS equivalent, and the comparison is apples-to-apples.
+
+## Step 4: Human One-Time Migration Costs (Out of Scope)
+
+**Do not** present human labor, professional services, engineering, training, discovery/design effort, or similar people-time work as one-time migration **costs** or budget categories.
+
+Populate `migration_cost_considerations.categories` as an **empty array** `[]`. Use `migration_cost_considerations.note` to state that human and professional-services one-time migration costs are intentionally excluded. You may still recommend IaC discovery in `recommendation.next_steps` or `unknowns` as a **precision** improvement — without framing it as a cost line item.
+
+**Vendor fees:** If you discuss GCP egress in narrative, describe it only as **vendor/network charges** when grounded in `billing-profile.json` (do not invent dollar amounts). Do not mix human effort into “one-time cost” lists.
+
+## Step 5: Document Unknowns
 
 List what would narrow the cost ranges:
 
@@ -123,7 +165,7 @@ Recommendation:
   This would narrow total estimate range from ±30-40% to ±10-15%.
 ```
 
-## Step 5: Generate Output
+## Step 6: Generate Output
 
 Write `estimation-billing.json`.
 
@@ -135,7 +177,7 @@ Write `estimation-billing.json`.
   "timestamp": "[ISO 8601]",
   "metadata": {
     "estimate_source": "billing_only",
-    "pricing_source": "cached|live|fallback",
+    "pricing_source": "cached|live|cached_fallback|unavailable",
     "confidence_note": "Estimates have wider ranges due to billing-only source"
   },
   "accuracy_confidence": "±30-40%",
@@ -177,6 +219,12 @@ Write `estimation-billing.json`.
     "aws_monthly_high": 0.00,
     "best_case_savings": 0.00,
     "worst_case_increase": 0.00
+  },
+
+  "migration_cost_considerations": {
+    "categories": [],
+    "note": "Human and professional-services one-time migration costs are not presented by this advisor. Billing-only source increases estimate variance; IaC discovery narrows recurring cost ranges.",
+    "complexity_factors": ["billing_only_source", "unknown_infrastructure_config"]
   },
 
   "unknowns": [
@@ -226,17 +274,27 @@ Write `estimation-billing.json`.
 - No reference to Terraform-based configurations
 - All unknowns documented with impact and resolution
 - All cost values are numbers, not strings
+- `migration_cost_considerations.categories` is `[]` — no human one-time migration costs presented
 - Output is valid JSON
+
+## Completion Handoff Gate (Fail Closed)
+
+Before returning control to `estimate.md`, require:
+
+- `estimation-billing.json` exists and passes the Output Validation Checklist above.
+
+If this gate fails: STOP and output: "estimate-billing did not produce a valid `estimation-billing.json`; do not complete Phase 4."
 
 ## Present Summary
 
 After writing `estimation-billing.json`, present a concise summary to the user:
 
-1. GCP baseline from billing data (total monthly spend)
-2. AWS projected cost ranges: low / mid / high per service
-3. Total projection: best case / expected / worst case vs GCP
-4. Key unknowns that would narrow the estimates
-6. Recommendation: run IaC discovery for tighter estimates (±10-15% vs ±30-40%)
+1. **Pricing source and accuracy**: State that estimates are billing-only projections with ±30-40% accuracy due to lack of infrastructure configuration. Example: "Billing-only estimates, accuracy ±30-40%. Provide Terraform files to narrow to ±10-15%."
+2. GCP baseline from billing data (total monthly spend)
+3. AWS projected cost ranges: low / mid / high per service
+4. Total projection: best case / expected / worst case vs GCP
+5. Key unknowns that would narrow the estimates
+6. Recommendation: run IaC discovery for tighter estimates (±10-15% vs ±30-40%) — as a precision step, not as a human cost estimate
 
 Keep it under 20 lines. The user can ask for details or re-read `estimation-billing.json` at any time.
 
@@ -247,3 +305,4 @@ The Generate phase uses `estimation-billing.json`:
 - Uses wide cost ranges for conservative timeline planning
 - Recommends IaC discovery as a prerequisite step
 - Documents unknowns as prerequisites per generation step
+- **Do not** surface human one-time migration **costs** from this artifact — `migration_cost_considerations.categories` remains empty in user-facing docs

@@ -12,6 +12,7 @@ Produce comprehensive migration documentation from all generated artifacts. This
 
 - `MIGRATION_GUIDE.md` — Step-by-step migration guide organized by phase
 - `README.md` — Quick start, artifact catalog, and architecture overview
+- `STARTUP_PROGRAMS.md` — AWS startup program eligibility and credit guidance (AI track only)
 
 ## Prerequisites
 
@@ -51,6 +52,13 @@ The MIGRATION_GUIDE.md follows this structure:
 - Section 1: Prerequisites (always included)
 
 #### Prerequisites Section Content
+
+#### Pre-migration: root user security
+
+- **Enable root MFA (ACCT.05).** Operators must complete root MFA setup before first console sign-in. The plugin does not manage MFA devices.
+- **Restrict use of the root user (ACCT.02).** Store root credentials in a password manager; use only for account recovery or the small handful of tasks that require root. Do not use for daily work.
+- **Remove any root access keys.** Root access keys should not exist; if any are present, delete them before any migration work.
+- **Plan for day-to-day access via IAM Identity Center (ACCT.03, ACCT.04, ACCT.13).** Creating IAM Identity Center users, group-based permission sets, and short-lived credentials is out of scope for this plan and is covered by the landing-zone spec.
 
 Include these checklists:
 
@@ -92,6 +100,10 @@ Secrets Migration (only if `scripts/04-migrate-secrets.sh` exists): `./scripts/0
 
 **Section 4: Service Migration** — Per-cluster migration steps from generation-infra.json, organized by creation_order depth.
 
+**Human Expertise Advisory (BigQuery / deferred analytics)** — If any service has `human_expertise_required: true` for BigQuery or `aws_service` is **`Deferred — specialist engagement`**, include a prominent callout in Section 4 next to that service:
+
+> **Specialist engagement required (BigQuery):** This plugin **does not** choose an AWS analytics or warehouse target (no Athena/Redshift/Glue recommendation). Engage your **AWS account team** and/or a **data analytics migration partner** before data warehouse, lake, or SQL analytics design. BigQuery work involves query patterns, data movement, ETL/ELT, and BI integration that must be assessed by specialists.
+
 #### IF AI track ran (generation-ai.json exists)
 
 Generate the following section:
@@ -111,6 +123,10 @@ Generate the following section:
 
 ### Common Sections (always included)
 
+**AWS Credits callout (only when generation-ai.json exists):**
+
+> 💡 **Before incurring costs:** Check [STARTUP_PROGRAMS.md](./STARTUP_PROGRAMS.md) for AWS Activate credits that apply to Bedrock and infrastructure costs. Credits do not apply retroactively — apply before running `terraform apply`.
+
 **Cutover section** with subsections:
 
 - Pre-Cutover Checklist (from generation plan)
@@ -119,18 +135,36 @@ Generate the following section:
 
 **Validation and Cleanup section** with subsections:
 
+#### Post-migration: remove unused default VPC (ACCT.09)
+
+Confirm first that no resources depend on the default VPC:
+
+```bash
+aws ec2 describe-instances --filters "Name=vpc-id,Values=<default-vpc-id>" \
+  --region <target-region>
+```
+
+Delete the default VPC (this also deletes default subnets, route tables, and internet gateway associations):
+
+```bash
+aws ec2 delete-vpc --vpc-id <default-vpc-id> --region <target-region>
+```
+
+If the command fails with dependency errors, investigate the listed resources before retrying. Do not force-delete.
+
 - Validation Steps checklist: services responding, performance thresholds, data integrity, cost tracking
 - GCP Teardown checklist (after stability period): archive data, delete resources, disable billing
 
 **Troubleshooting section** with a Common Issues table:
 
-| Issue                        | Cause                      | Resolution                                 |
-| ---------------------------- | -------------------------- | ------------------------------------------ |
-| Terraform apply fails        | Missing permissions        | Check IAM role has required policies       |
-| Database connection refused  | Security group rules       | Verify inbound rules allow app subnet CIDR |
-| Container image pull fails   | ECR authentication         | Run `aws ecr get-login-password`           |
-| Bedrock InvokeModel fails    | Model access not enabled   | Enable in AWS Console                      |
-| High latency after migration | Suboptimal instance sizing | Review CloudWatch metrics and right-size   |
+| Issue                                                    | Cause                                               | Resolution                                                                                                                 |
+| -------------------------------------------------------- | --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Terraform apply fails                                    | Missing permissions                                 | Check IAM role has required policies                                                                                       |
+| Database connection refused                              | Security group rules                                | Verify inbound rules allow app subnet CIDR                                                                                 |
+| Container image pull fails                               | ECR authentication                                  | Run `aws ecr get-login-password`                                                                                           |
+| Bedrock InvokeModel fails                                | Model access not enabled                            | Enable in AWS Console                                                                                                      |
+| High latency after migration                             | Suboptimal instance sizing                          | Review CloudWatch metrics and right-size                                                                                   |
+| `validation-report.json` shows `passed_degraded_offline` | Provider registry was unreachable when Generate ran | From a network-connected shell, run `cd terraform/ && terraform init && terraform validate` to complete the skipped checks |
 
 Rollback Procedure subsection (from generation plan — rollback triggers, steps, and RTO).
 
@@ -154,14 +188,33 @@ The README.md follows this structure:
 - Title: `# GCP to AWS Migration Artifacts`
 - Subtitle: `> Generated by GCP to AWS Migration Advisor`
 
-#### Quick Start
+Immediately after the subtitle, before any other section, write a conditional **Start here** callout block. Include only the lines that apply to what was actually generated:
+
+```markdown
+> **Start here**
+>
+> - **AI migration:** `cd ai-migration && ./setup_bedrock.sh --dry-run`, then re-run with `--execute` when ready
+> - **Infrastructure:** `cd terraform && terraform init && terraform plan -out migration.tfplan`, then `terraform apply migration.tfplan`
+> - **Both tracks:** complete AI setup first, then run Terraform
+```
+
+**Conditional rules:**
+
+- Omit the AI line entirely if `ai-migration/` was not generated
+- Omit the Infra line entirely if `terraform/` was not generated
+- Omit the "Both" line if only one track ran
+- If neither directory exists (billing-only run), omit the Start here block entirely
+
+#### Next steps
 
 Numbered steps:
 
-1. Review the Migration Guide (link to MIGRATION_GUIDE.md)
-1. Deploy infrastructure: `cd terraform/ && terraform init && terraform plan`
+1. If AI track ran: `cd ai-migration && ./setup_bedrock.sh` (dry run), then `--execute` when ready
+1. If infra track ran: `cd terraform && terraform init && terraform plan`, then `terraform apply migration.tfplan`
 1. Run migration scripts: `./scripts/01-validate-prerequisites.sh`
 1. If AI track ran: Set up AI: `cd ai-migration/ && ./setup_bedrock.sh`
+1. If AI track ran: Review AWS credits: [STARTUP_PROGRAMS.md](./STARTUP_PROGRAMS.md) — apply before incurring costs
+1. Review the full Migration Guide: [MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md)
 
 #### Artifact Catalog
 
@@ -170,7 +223,7 @@ Table with columns: Artifact, Description, Status. List all generated files/dire
 Subsections:
 
 - Migration Plans (Stage 1): list generation-*.json files
-- Infrastructure (Stage 2): list .tf files and migration scripts if they exist
+- Infrastructure (Stage 2): list .tf files, **`terraform/README.md`** (when infra Terraform was generated), and migration scripts if they exist
 - AI Migration (Stage 2): list adapter, test harness, setup script if they exist
 - Documentation: MIGRATION_GUIDE.md and README.md
 
@@ -182,11 +235,66 @@ Subsections:
 
 #### Cost Summary
 
-Table from estimation artifacts with: Current GCP Monthly, Projected AWS Monthly, Annual Savings (or Increase), Timeline.
+#### Security baseline costs
+
+**Scenario A — Tier 1 alone** (no compliance declared in Q2):
+
+Per-unit pricing verified against the AWS Pricing API for us-east-1 on 2026-05-04; accuracy ±25%.
+
+| Resource                      | Monthly cost                                                        | Notes                                                              |
+| ----------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Account alternate contacts    | $0                                                                  | Free (ACCT.01)                                                     |
+| IAM password policy           | $0                                                                  | Free (ACCT.06)                                                     |
+| S3 account-level PAB          | $0                                                                  | Free (ACCT.08)                                                     |
+| EBS default encryption        | $0                                                                  | Free (defense-in-depth; KMS encrypt/decrypt is negligible for EBS) |
+| IAM Access Analyzer           | $0                                                                  | Free for external-access analyzers on your own account (ACCT.11)   |
+| IMDSv2 account default        | $0                                                                  | Free (defense-in-depth)                                            |
+| CloudTrail trail              | $0 for events (first trail per region free); S3 storage ~$0.50–3/mo | Management events only (ACCT.07)                                   |
+| S3 bucket for CloudTrail logs | ~$0.50–3/mo                                                         | Storage + PUT requests                                             |
+| AWS Budgets (1 budget)        | $0                                                                  | First 2 budgets per account are free (ACCT.10)                     |
+| GuardDuty                     | $0 for 30 days, then ~$2–25/mo                                      | Scales with VPC traffic and API calls (defense-in-depth)           |
+| **Total estimate**            | **$3–30/mo after trial**                                            | GuardDuty is the dominant line item                                |
+
+To skip the baseline, delete `terraform/baseline.tf` before running `terraform apply`.
+
+**Scenario B — Tier 1 + compliance-conditional** (SOC 2 / PCI / HIPAA / FedRAMP declared in Q2):
+
+Per-unit pricing verified against the AWS Pricing API for us-east-1 on 2026-05-04; accuracy ±25%.
+
+Tier 1 subtotal (as in Scenario A above): **$3–30/mo after trial**.
+
+Additional compliance-conditional resources:
+
+| Resource                                      | Monthly cost                           | Notes                                                                                 |
+| --------------------------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------- |
+| AWS Config (account-level recorder)           | ~$2–10/mo                              | $0.003 per CI continuous mode; daily mode cheaper, lower signal                       |
+| S3 bucket for Config delivery                 | ~$0.20–1/mo                            | Storage + PUT requests; same retention as CloudTrail                                  |
+| AWS Security Hub (FSBP + any extra standards) | $0 for 30 days, then ~$1–15/mo         | Tiered per-check + per-resource (Fargate-only startups pay nothing for EC2 dimension) |
+| **Compliance-conditional subtotal**           | **~$3–25/mo after Security Hub trial** |                                                                                       |
+| **Grand total**                               | **~$6–55/mo after both free trials**   |                                                                                       |
+
+**Compliance notes**:
+
+- Security Hub does NOT provide a HIPAA-specific standard. FSBP covers many overlapping controls; for full HIPAA attestation, engage a qualified HIPAA auditor and review the [AWS HIPAA Eligible Services Reference](https://aws.amazon.com/compliance/hipaa-eligible-services-reference/).
+- FedRAMP compliance uses NIST 800-53 at the agency level, but this mapping is not directly subscribable in Security Hub — engage your AWS account team for FedRAMP attestation.
+
+To skip the compliance-conditional section only, delete the block between `########## Compliance-Conditional ##########` and `########## End Compliance-Conditional ##########` in `terraform/baseline.tf` before `terraform apply`. To skip the baseline entirely, delete `terraform/baseline.tf`.
+
+Table from estimation artifacts with: Current GCP Monthly, Projected AWS Monthly (use **Balanced** tier for the primary AWS column when `estimation-infra.json` exists), Timeline. **Only include a "GCP data transfer egress (est.)" column when `estimation-infra.json` exists and `migration_cost_considerations.billing_data_available` is `true`.** Do **not** add columns or rows for human labor, professional services, or other people-time migration costs. If billing data is unavailable, add a note below the table: "GCP data transfer egress estimates require billing data. Provide a billing export and re-run discovery to see vendor egress projections."
+
+**How to read cost tiers** (required when infra estimates include Premium / Balanced / Optimized):
+
+- The three AWS monthly totals are **scenarios** for the **same** architecture, ordered **high → mid → low** estimate.
+- **Premium** — _Highest resilience / highest monthly estimate in this model_
+- **Balanced** — _Default scenario; compare GCP to this first_
+- **Optimized** — _Lower monthly estimate; reservations / Spot / storage trade-offs assumed_
+- **Terraform:** The `terraform/` directory (when present) implements **one** stack, aligned with the **Balanced** scenario. **Premium** and **Optimized** are not separate generated folders — see `terraform/README.md` and the `migration_summary` output in `outputs.tf`.
+
+Include a compact three-tier row or table if the executive report does, matching figures from `estimation-infra.json`.
 
 #### Key Decisions
 
-Bullet list from design and generation artifacts: Compute, Database, Storage, and AI/ML (if applicable) with GCP service, AWS service, and rationale.
+Bullet list from design and generation artifacts: Compute, Database, Storage, and AI/ML (if applicable) with GCP service, AWS service, and rationale. For each GCP→AWS mapping, add how it was chosen using `steering/design-ref-fast-path.md` → **User-facing vocabulary**: **Standard pairing**, **Tailored to your setup**, or **Estimated from billing only** (from the design artifact’s `confidence` field). For any service with `human_expertise_required: true`, append: "(Specialist guidance recommended — contact your AWS account team)".
 
 #### TODO Items
 
@@ -204,8 +312,8 @@ End with: `Generated by GCP to AWS Migration Advisor`
 
 - **Artifact catalog**: List all files actually generated (check for directory/file existence)
 - **Architecture overview**: Extract from `aws-design.json`, `aws-design-ai.json`, or `aws-design-billing.json`
-- **Cost summary**: Extract from `estimation-infra.json`, `estimation-ai.json`, or `estimation-billing.json`
-- **Key decisions**: Extract from design artifact `rationale` fields
+- **Cost summary**: Extract from `estimation-infra.json`, `estimation-ai.json`, or `estimation-billing.json`; include **How to read cost tiers** when three infra tiers exist; state **Balanced** as primary vs GCP and Terraform alignment per `terraform/README.md` when present
+- **Key decisions**: Extract from design artifact `rationale` fields and map `confidence` to user-facing labels per `steering/design-ref-fast-path.md` → **User-facing vocabulary**
 - **Timeline**: Extract from `generation-*.json` `migration_plan.total_weeks`
 
 ## Step 3: Self-Check
@@ -224,6 +332,15 @@ After generating documentation, verify:
 ## Phase Completion
 
 Report the list of generated files to the parent orchestrator. **Do NOT update `.phase-status.json`** — the parent `generate.md` handles phase completion.
+
+Before reporting completion, enforce artifact output gate:
+
+- `MIGRATION_GUIDE.md` exists.
+- `README.md` exists.
+- Conditional sections in docs match tracks that actually ran (infra/ai/billing).
+- Referenced artifact paths in docs exist.
+
+If this gate fails: STOP and output: "generate-artifacts-docs did not produce complete documentation artifacts."
 
 Output:
 

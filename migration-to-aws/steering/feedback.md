@@ -8,6 +8,32 @@ Builds an anonymized usage trace and directs the user to the Pulse survey form.
 
 Read `$MIGRATION_DIR/.phase-status.json`. Verify `phases.discover == "completed"`. If not: **STOP**. Output: "Feedback requires at least the Discover phase to be completed."
 
+## Step 0: Detect IDE Type and Plugin Version
+
+Detect the IDE type and plugin version for the survey URL. These are passed as hidden fields — the user never sees or enters them.
+
+### IDE Detection
+
+Determine which IDE is running:
+
+- **Claude Code**: Check if the environment indicates Claude Code (e.g., the `CLAUDE_CODE` environment variable is set, or the skill was invoked via `/skill` or Claude Code CLI). Set `ide` to `claude-code`.
+- **Cursor**: Check if the environment indicates Cursor (e.g., the `CURSOR_TRACE_ID` environment variable is set, or the editor context is Cursor). Set `ide` to `cursor`.
+- **Fallback**: If detection fails, set `ide` to `unknown`.
+
+### Plugin Version Detection
+
+Read the plugin version from the plugin manifest:
+
+- **Claude Code**: Read `.claude-plugin/plugin.json` → `version` field (relative to the plugin install root).
+- **Cursor**: Read `.cursor-plugin/plugin.json` → `version` field (relative to the plugin install root).
+- **Fallback**: If the manifest cannot be read, set `version` to `0.0.0`.
+
+### Sanitization
+
+Values must use only Pulse-safe characters: letters, numbers, dots (`.`), tildes (`~`), hyphens (`-`), and underscores (`_`). Strip or replace any other characters.
+
+Store the detected values as `$IDE_TYPE` and `$PLUGIN_VERSION` for use in Step 2.
+
 ## Step 1: Build Trace
 
 Load `steering/feedback-trace.md` and execute it. This produces `$MIGRATION_DIR/trace.json`.
@@ -39,15 +65,17 @@ Then output the single-line minified version for copy-paste:
 --- End ---
 ```
 
-Then provide the survey link:
+Then provide the survey link with IDE and version as hidden field query parameters:
 
 ```
 Open the feedback form in your browser:
-https://pulse.amazon/survey/JWX45QZH
+https://pulse.amazon/survey/MY0ZY7UA?ide=$IDE_TYPE&version=$PLUGIN_VERSION
 
 Answer the 5 quick questions in the form, then paste the trace line above
 into the "Migration trace (optional)" field and submit.
 ```
+
+Replace `$IDE_TYPE` and `$PLUGIN_VERSION` with the actual values detected in Step 0. Example: `https://pulse.amazon/survey/MY0ZY7UA?ide=claude-code&version=1.0.0`
 
 ## Step 3: Write feedback.json
 
@@ -56,7 +84,7 @@ Write `$MIGRATION_DIR/feedback.json`:
 ```json
 {
   "timestamp": "<ISO 8601>",
-  "survey_url": "https://pulse.amazon/survey/JWX45QZH",
+  "survey_url": "https://pulse.amazon/survey/MY0ZY7UA?ide=$IDE_TYPE&version=$PLUGIN_VERSION",
   "phases_completed_at_feedback": ["<list of completed phases>"],
   "trace_included": true
 }
@@ -66,7 +94,14 @@ If trace building failed: set `"trace_included": false`.
 
 ## Step 4: Update Phase Status
 
-Use the Phase Status Update Protocol (Write tool) to write `.phase-status.json` with `phases.feedback` set to `"completed"` — **in the same turn** as the output message below.
+Before status update, enforce output gate:
+
+- `feedback.json` must exist.
+- If `trace_included` is true, `trace.json` must exist.
+
+If output gate fails: STOP and output: "Feedback outputs are incomplete. Fix feedback artifacts before completion."
+
+Use the Phase Status Update Protocol (read-merge-write) to update `.phase-status.json` with `phases.feedback` set to `"completed"` — **in the same turn** as the output message below.
 
 Output to user: "Thank you for helping improve this tool."
 
