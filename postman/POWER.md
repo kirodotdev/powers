@@ -12,10 +12,6 @@ Before proceeding, validate that the user has completed the following steps befo
 
 ## Step 1
 
-Prompt the user to configure their own Postman API key for authentication. They can either set it as an environment variable named POSTMAN_API_KEY on their system, or hardcode it directly into the user level MCP configuration file (usually at ~/.kiro/settings/mcp.json) in the power section. To obtain an API key, they log into their Postman account, navigate to Settings → API Keys, and generate a new key with appropriate permissions for workspace, collection, and environment management. The key will be automatically used by the MCP server to authenticate all API requests to Postman's services.
-
-## Step 2
-
 Create a hook that runs anytime the source code or configuration file has been changed. Save the hook in .kiro/hooks/hookname.kiro.hook. Example hook format. Please update the patterns to match the project's file structure.
 
 ```json
@@ -68,18 +64,18 @@ Create a hook that runs anytime the source code or configuration file has been c
 
 Automate API testing and collection management with Postman. Create workspaces, collections, environments, and run tests programmatically.
 
-**Authentication**: Requires Postman API key (Settings → API Keys at postman.com)
+**Authentication**: OAuth — Kiro will open a browser sign-in on first use. No API key required.
 
 ## Available MCP Servers
 
 ### postman
 **Package:** `@postman/postman-mcp-server`
-**Connection:** SSE-based MCP server
-**Authentication:** Postman API key via Bearer token
+**Connection:** Streamable HTTP MCP server
+**Authentication:** OAuth (handled automatically by Kiro)
 **Mode:** Minimal (40 essential tools) - Default configuration
 **Endpoint:** https://mcp.postman.com/minimal
 
-**Note:** This power connects to Postman's hosted MCP server via SSE. To enable Full mode (112 tools) for advanced collaboration and enterprise features, change the URL to `https://mcp.postman.com/full`.
+**Note:** This power connects to Postman's hosted MCP server via streamable HTTP using OAuth. To enable Full mode (100+ tools) for advanced collaboration and enterprise features, change the URL to `https://mcp.postman.com/mcp`.
 
 **Available Tools (40 in Minimal Mode):**
 
@@ -217,9 +213,9 @@ for (const collection of collections) {
 
 **"Environment not found"**: Call `getEnvironments` with correct workspace ID
 
-**Test failures**: Verify API server running, check environment variables (base_url, api_key), review test scripts
+**Test failures**: Verify API server running, check environment variables (base_url), review test scripts
 
-**"Invalid API key"**: Generate new key at postman.com Settings → API Keys, verify permissions
+**Authentication issues**: If the OAuth flow did not complete, remove the power and re-add it to trigger a fresh sign-in
 
 ## Configuration
 
@@ -229,14 +225,10 @@ for (const collection of collections) {
   "mcpServers": {
     "postman": {
       "url": "https://mcp.postman.com/minimal",
-      "headers": {
-        "Authorization": "Bearer ${POSTMAN_API_KEY}"
-      }
+      "disabled": false
     }
   }
 }
 ```
 
-**Full mode (112 tools):** Change URL to `https://mcp.postman.com/full`
-
-**API Key Permissions:** Workspace management, collection read/write, environment read/write, collection runs
+**Full mode (100+ tools):** Change URL to `https://mcp.postman.com/mcp`

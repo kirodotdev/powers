@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "arm-mcp-server": {
+      "command": "docker",
+      "args": ["run", "--rm", "-i", "--pull=always", "armlimited/arm-mcp:latest"],
+      "env": {
+        "FASTMCP_LOG_LEVEL": "ERROR",
+        "ARM_MCP_CACHE_DIR": "~/.cache/arm-mcp",
+        "ARM_MCP_TIMEOUT": "30"
+      },
+      "disabled": false,
+      "autoApprove": ["knowledge_base_search", "sysreport_instructions"],
+      "disabledTools": ["migrate_ease_scan"]
+    }
+  }
+}

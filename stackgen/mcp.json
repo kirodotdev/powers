@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "stackgen": {
+      "url": "https://cloud.stackgen.com/api/mcp/sse",
+      "disabled": false,
+      "disabledTools": []
+    }
+  }
+}

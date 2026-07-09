@@ -1,11 +1,8 @@
 {
   "mcpServers": {
     "postman": {
-      "url":"https://mcp.postman.com/minimal",
-      "headers": {
-        "Authorization": "Bearer ${POSTMAN_API_KEY}"
-      }
+      "url": "https://mcp.postman.com/minimal",
+      "disabled": false
     }
-  },
-  "disabled": false
+  }
 }

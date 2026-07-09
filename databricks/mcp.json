@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "databricks": {
+      "command": "~/.ai-dev-kit/.venv/bin/python",
+      "args": ["~/.ai-dev-kit/repo/databricks-mcp-server/run_server.py"],
+      "env": {
+        "DATABRICKS_CONFIG_PROFILE": "${DATABRICKS_CONFIG_PROFILE}"
+      },
+      "disabled": true
+    }
+  }
+}

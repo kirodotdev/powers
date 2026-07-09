@@ -6,17 +6,32 @@ Documentation is available at https://kiro.dev/docs/powers/
 
 ## Available powers
 
-### aurora-dsql
-**Deploy a distributed SQL database on AWS** - PostgreSQL-compatible serverless distributed SQL database with Aurora DSQL - manage schemas, execute queries, and handle migrations with DSQL-specific constraints.
-
-**MCP Servers:** aurora-dsql, aws-core (optional)
-
----
-
 ### aws-agentcore
 **Build an agent with Amazon Bedrock AgentCore** - Build, test, and deploy AI agents using AWS Bedrock AgentCore with local development workflow. Amazon Bedrock AgentCore is an agentic platform for building, deploying, and operating effective agents.
 
 **MCP Servers:** agentcore-mcp-server
+
+---
+
+### aws-amplify
+**Build full-stack apps with AWS Amplify** - Build and extend full-stack applications with AWS Amplify Gen 2 using type-safe TypeScript, guided workflows, and best practices. Covers authentication, data models, storage, serverless functions, AI/ML integration, and deployment to sandbox and production.
+
+**MCP Servers:** aws-mcp
+
+---
+
+### aws-devops-agent
+**AWS DevOps Agent** - AI agent for AWS operational intelligence. Investigate incidents, optimize costs, review architecture, map topology, chat with the agent, get remediation, run automated release tests (UI and API), and trigger pre-merge release readiness reviews — all enhanced with your local workspace context.
+
+**MCP Servers:** aws-devops-agent (remote MCP Server, supports Bearer token + SigV4 auth), aws-mcp
+
+---
+
+### aws-healthomics
+
+**Create and Manage Bioinformatics Workflows with AWS HealthOmics** - create, migrate, run, debug and identify optimization opportunities for bioinformatics workflows in AWS HealthOmics.
+
+**MCP Servers:** awslabs.aws-healthomics-mcp-server
 
 ---
 
@@ -27,10 +42,38 @@ Documentation is available at https://kiro.dev/docs/powers/
 
 ---
 
+### aws-sam
+**Build serverless applications with AWS SAM** - Build, test, and deploy serverless applications using AWS Serverless Application Model (SAM) with local development workflow and MCP tooling.
+
+**MCP Servers:** awslabs.aws-serverless-mcp-server, fetch
+
+---
+
+### aws-transform
+**Agents modernizing the world's infrastructure and software**, backed by years of AWS expertise. AWS Transform is a full modernization factory — connecting assessment through execution in a single experience, so the manual handoffs and lost context that commonly stall large-scale migrations and ongoing tech debt reduction no longer slow you down. This power brings AWS Transform directly into Kiro. AWS Transform custom is the first supported capability, with more playbooks on the way. Find out more at [aws.amazon.com/transform](https://aws.amazon.com/transform/)
+
+**MCP Servers:** None
+
+---
+
 ### cloud-architect
 **Build infrastructure on AWS** - Build AWS infrastructure with CDK in Python following AWS Well-Architected framework best practices.
 
 **MCP Servers:** awspricing, awsknowledge, awsapi, context7, fetch
+
+---
+
+### cloudwatch-application-signals
+**Amazon CloudWatch Application Signals** - Monitor service health, analyze SLO compliance, and perform root cause analysis with distributed tracing and audit capabilities.
+
+**MCP Servers:** awslabs.cloudwatch-applicationsignals-mcp-server
+
+---
+
+### databricks
+**Databricks AI Dev Kit** - Comprehensive Databricks development toolkit with 44 MCP tools (180+ operations) and expert guidance for building data pipelines, ML workflows, dashboards, jobs, and applications on the Databricks platform across AWS, Azure, and GCP.
+
+**MCP Servers:** databricks (ai-dev-kit local MCP server)
 
 ---
 
@@ -111,6 +154,10 @@ Documentation is available at https://kiro.dev/docs/powers/
 
 ---
 
+
+## License
+
+Unless otherwise specified by the license in the individual power or the repository that hosts it, Kiro users have a non-exclusive license to access, download, and otherwise use the power for their personal or business purposes.
 
 ## Security
 

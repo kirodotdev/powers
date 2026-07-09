@@ -1,0 +1,51 @@
+name: New Power PR Check
+
+on:
+  pull_request_target:
+    types: [opened]
+
+permissions:
+  pull-requests: write
+
+concurrency:
+  group: new-power-check-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  check-new-power:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for new power and comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+
+            const newPowerDirs = new Set(
+              files
+                .filter(f => f.status === 'added' && /^[^/]+\/POWER\.md$/.test(f.filename))
+                .map(f => f.filename.split('/')[0])
+            );
+
+            if (newPowerDirs.size === 0) {
+              console.log('No new POWER.md found at a top-level folder — skipping comment.');
+              return;
+            }
+
+            const user = context.payload.pull_request.user.login;
+            const body = [
+              `Hi @${user}, thank you for your contribution!`,
+              '',
+              'Please note that if you haven\'t already, you would also need to submit your power officially at [kiro.dev/powers/submit](https://kiro.dev/powers/submit) so it can be reviewed for listing in the Kiro powers registry.'
+            ].join('\n');
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body
+            });

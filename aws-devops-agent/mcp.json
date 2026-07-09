@@ -1,0 +1,30 @@
+{
+  "mcpServers": {
+    "aws-devops-agent": {
+      "url": "https://connect.aidevops.${DEVOPS_AGENT_REGION}.api.aws/mcp",
+      "headers": {
+        "Authorization": "Bearer ${DEVOPS_AGENT_TOKEN}"
+      },
+      "timeout": 120000
+    },
+    "aws-devops-agent-sigv4": {
+      "command": "uvx",
+      "timeout": 120000,
+      "args": [
+        "mcp-proxy-for-aws@latest",
+        "https://connect.aidevops.${DEVOPS_AGENT_REGION}.api.aws/mcp",
+        "--service", "aidevops",
+        "--region", "${DEVOPS_AGENT_REGION}"
+      ]
+    },
+    "aws-mcp": {
+      "command": "uvx",
+      "timeout": 100000,
+      "args": [
+        "mcp-proxy-for-aws@latest",
+        "https://aws-mcp.${DEVOPS_AGENT_REGION}.api.aws/mcp",
+        "--metadata", "AWS_REGION=${DEVOPS_AGENT_REGION}"
+      ]
+    }
+  }
+}

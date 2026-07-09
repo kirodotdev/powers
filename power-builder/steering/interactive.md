@@ -1070,32 +1070,33 @@ Call action "readSteering" with powerName="power-builder", steeringFile="testing
 
 After you've created and tested your power, you can share it with others:
 
-### Method 1: Local Directory Repository
+### Method 1: Local Directory
 
 **Best for:** Local development, testing, private powers
 
-1. Create a directory with your powers (each power in its own subdirectory)
-2. Each power subdirectory must have POWER.md (+ optional mcp.json, steering/)
-3. In Kiro Powers UI: "Available Powers" → "Manage Repos" → "Add Repository"
-4. Select "Local Directory" and provide the full path
-5. System automatically:
-   - Scans for power directories (detected by POWER.md)
-   - Validates each power
-   - Adds valid powers to available powers list
-   - Shows with "Repo: {name}" badge
+**To share a power locally, provide the full path to the specific power directory:**
+
+1. Each power must be in its own directory with POWER.md (+ optional mcp.json, steering/)
+2. In Kiro Powers UI: Click "Add Custom Power" button at the top
+3. Select "Local Directory" option
+4. Provide the full absolute path to the specific power directory
+5. Click "Add" to install
 
 **Example:**
 ```bash
-# Your directory structure
-/path/to/my-powers/
-├── monitor-website-uptime/
-│   ├── POWER.md
-│   ├── mcp.json
-│   └── steering/
-│       └── advanced.md
-└── another-power/
-    └── POWER.md
+# Your power directory structure
+/path/to/workspace/powers/monitor-website-uptime/
+├── POWER.md
+├── mcp.json
+└── steering/
+    └── advanced.md
+
+# In Powers UI, use this path:
+/path/to/workspace/powers/monitor-website-uptime
 ```
+
+**For multiple powers:**
+Each power needs to be added separately with its own specific path.
 
 ### Method 2: Git Repository (GitHub Public Repos)
 

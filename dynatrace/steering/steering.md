@@ -1,6 +1,4 @@
-# Dynatrace Observability & Monitoring
-
-## Overview
+# Dynatrace Observability & Production Impact Assessment
 
 ## Dynatrace MCP Server Capabilities
 
@@ -14,95 +12,89 @@
 | **Notifications** | `send_email`, `send_slack_message`, `create_workflow_for_notification` | Send alerts; automate team notifications |
 | **Resource Mgmt** | `reset_grail_budget` | Reset query budget limits after exhaustion |
 
-### Finding Service Entities
+---
 
-You can find entities via the `find_entities_by_name` tool using your application name or namespace as well as specific service names.
-You should find entities like `[<cluster>][<namespace>] <ServiceName>`.
+## Finding Entities & Problems
 
-**Note**: K8s metadata fields (like `k8s.namespace.name`, `k8s.cluster.name`) are NOT available when querying `fetch dt.entity.service`. Use `entity.name` and `id` fields only. For K8s metadata, query logs or events instead.
-
-### Finding Problems
-
-You can find problems via the `list_problems` tool and applying the following filter:
+### Service Discovery
 
 ```dql
-contains(k8s.namespace.name, "<namespace>") OR contains(dt.entity.application.name, "<application-name>")
+// Find services by name pattern
+fetch dt.entity.service
+| filter matchesValue(entity.name, "*<SERVICE_NAME>*")
+| fields id, entity.name, calls, called_by
+
+// Find services in a namespace (via naming convention)
+fetch dt.entity.service
+| filter matchesValue(entity.name, "*<NAMESPACE>*")
+| fields id, entity.name
 ```
 
-If you want to narrow down the problem of a specific entity, like a service, you can use the following filter:
+**Note**: K8s metadata fields (`k8s.namespace.name`, `k8s.cluster.name`) are NOT available on `fetch dt.entity.service`. Use `entity.name` patterns or query logs/events for K8s metadata.
+
+### Problem Discovery
 
 ```dql
-in(affected_entity_ids, "<service-id>") OR dt.entity.$type == "<entity-id>" OR ...
+// Find problems by namespace
+list_problems(filter: "contains(k8s.namespace.name, \"<NAMESPACE>\")")
+
+// Find problems affecting a specific service
+list_problems(filter: "in(affected_entity_ids, \"<SERVICE_ID>\")")
 ```
 
-### Metrics
+---
 
-You can then investigate metrics via the DQL command
+## Metrics Reference
+
+### Service-Level Metrics
+
+| Metric | Key |
+|--------|-----|
+| Response Time | `dt.service.request.response_time` |
+| Request Count | `dt.service.request.count` |
+| Failure Count | `dt.service.request.failure_count` |
+
+### Container-Level Metrics
+
+| Metric | Key |
+|--------|-----|
+| CPU Usage | `dt.kubernetes.container.cpu_usage` |
+| Memory Working Set | `dt.kubernetes.container.memory_working_set` |
+| CPU Requests | `dt.kubernetes.container.requests_cpu` |
+| Memory Requests | `dt.kubernetes.container.requests_memory` |
+| CPU Limits | `dt.kubernetes.container.limits_cpu` |
+| Memory Limits | `dt.kubernetes.container.limits_memory` |
+
+### Runtime Metrics
+
+| Runtime | Metrics |
+|---------|---------|
+| **JVM** | `dt.runtime.jvm.memory.heap.used`, `dt.runtime.jvm.memory.heap.max` |
+| **Go** | `dt.runtime.go.scheduler.goroutine_count`, `dt.runtime.go.memory.heap` |
+
+### Metric Discovery
 
 ```dql
-timeseries avg(<metric-key>),
-from: now() -14d, to: now(),
-filter: matchesValue(k8s.deployment.name, "*<service-name>*")
+// Find metrics for a service
+fetch metric.series 
+| filter dt.entity.service == "<SERVICE_ID>" 
+| summarize cnt = count(), by:{metric.key} 
+| sort cnt desc | limit 50
+
+// Find container metrics in a namespace
+fetch metric.series 
+| filter k8s.namespace.name == "<NAMESPACE>" 
+| filter matchesValue(metric.key, "*kubernetes.container*")
+| summarize cnt = count(), by:{metric.key} 
+| sort cnt desc
 ```
 
-Additionally, you should add a filter like this: `| filter dt.entity.service == "<service-id>"` to focus on a specific service.
-
-#### Service-Level Metrics
-
-- _Service Response Time_: `dt.service.request.response_time`
-- _Service Request Count_: `dt.service.request.count`
-- _Service Failure Count_: `dt.service.request.failure_count`
-
-#### Container-Level Metrics
-
-- _Container CPU Usage_: `dt.kubernetes.container.cpu_usage`
-- _Container Memory Working Set_: `dt.kubernetes.container.memory_working_set`
-- _Container CPU Requests_: `dt.kubernetes.container.requests_cpu`
-- _Container Memory Requests_: `dt.kubernetes.container.requests_memory`
-- _Container CPU Limits_: `dt.kubernetes.container.limits_cpu`
-- _Container Memory Limits_: `dt.kubernetes.container.limits_memory`
-
-#### Kubernetes Infrastructure Metrics
-
-- _Pod Conditions_: `dt.kubernetes.workload.conditions`
-- _Pod Status_: `dt.kubernetes.pods`
-- _Container State_: `dt.kubernetes.containers`
-
-#### Technology-Specific Metrics
-
-- _JVM Memory Usage_: `dt.runtime.jvm.memory.heap.used`, `dt.runtime.jvm.memory.heap.max`
-- _Goroutine count_: `dt.runtime.go.scheduler.goroutine_count`
-- _Go Worker thread count_: `dt.runtime.go.scheduler.worker_thread_count`
-- _Go Heap Memory_: `dt.runtime.go.memory.heap`
-- _Go Memory Committed_: `dt.runtime.go.memory.committed`
-
-You can find additional metrics via `fetch metric.series | filter dt.entity.service == "<service-id>" | limit 50` or for containers: `fetch metric.series | filter k8s.namespace.name == "<namespace>" | filter metric.key == "dt.kubernetes.container.cpu_usage" or metric.key == "dt.kubernetes.container.memory_working_set" | limit 50`.
-
-### Logs
-
-You can find logs via the `fetch logs` tool and applying the following filter:
-
-```dql
-fetch logs
-| filter k8s.namespace.name == "<namespace>"
-| sort timestamp desc
-```
-
-Filter error logs with
-
-```dql
-| filter loglevel == "ERROR"
-```
-
-You can furthermore narrow down logs for a specific service by adding a filter like this: `| filter contains(k8s.deployment.name, "<service-name>")`.
+---
 
 ## DQL Query Fundamentals
 
-### Query Syntax Fundamentals
+### Pipeline Structure
 
-**Pipeline Processing:** DQL queries process data left-to-right through a chain of commands. Each command receives records from the previous command, transforms them, and passes results to the next.
-
-**Basic Structure:**
 ```dql
 fetch <record-type> | filter <condition> | summarize <aggregation> | sort <field> | limit <count>
 ```
@@ -111,397 +103,518 @@ fetch <record-type> | filter <condition> | summarize <aggregation> | sort <field
 - `fetch` retrieves raw records from Grail storage
 - `filter` reduces the result set (apply early for performance)
 - `fields` selects specific columns (reduces data transfer)
-- `summarize` aggregates records into groups
-- `sort` orders results (can reference aggregation aliases)
-- `limit` restricts output size (use liberally during development)
+- `summarize` aggregates records into groups (**ALWAYS requires aggregation function**)
+- `sort` orders results (**MUST reference aggregation aliases, NOT functions**)
+- `limit` restricts output size
 
-**Record Flow:** Each record flows through the pipeline. Commands like `filter` remove records, `fields` reshapes them, `summarize` combines multiple records into one.
+### ⚠️ CRITICAL: Summarize and Sort Syntax
 
-### Commands
+**These two errors cause most DQL failures:**
 
-**fetch** - Retrieve data: `fetch logs`, `fetch events`, `fetch spans`, `fetch dt.entity.service`
-**filter** - Apply conditions: `| filter loglevel == "ERROR" and timestamp > now() - 1h`
-**fields** - Select fields: `| fields timestamp, content, loglevel`
-**summarize** - Aggregate: `| summarize count(), by:{namespace}` (**ALWAYS requires aggregation function** - count(), sum(), avg(), etc.)
-**sort** - Order: `| sort timestamp desc`
-**limit** - Restrict: `| limit 100`
-**timeseries** - Metrics: `timeseries avg(dt.host.cpu.usage), interval:5m, by:{host}`
+1. **Summarize ALWAYS needs an aggregation function:**
+   ```dql
+   // ❌ WRONG - missing aggregation function
+   | summarize by:{k8s.deployment.name}
+   
+   // ✅ CORRECT - includes count()
+   | summarize count(), by:{k8s.deployment.name}
+   ```
 
-### Operators & Functions
+2. **Sort MUST use an alias, NOT the aggregation function:**
+   ```dql
+   // ❌ WRONG - cannot sort by function directly
+   | summarize count(), by:{namespace}
+   | sort count() desc
+   
+   // ✅ CORRECT - define alias, then sort by alias
+   | summarize cnt = count(), by:{namespace}
+   | sort cnt desc
+   ```
 
-**Comparison:** `==`, `!=`, `<`, `<=`, `>`, `>=`
-**Logical:** `and`, `or`, `not`
-**Pattern Matching:**
-- `matchesValue(field, "pattern*")` - Wildcard patterns (`*` for any characters)
-- `matchesPhrase(field, "exact phrase")` - Exact phrase search
-- `startsWith(field, "prefix")` - Check if field starts with value
-- `endsWith(field, "suffix")` - Check if field ends with value
-- `contains(field, "substring")` - Check if field contains substring
-**Null:** `isNull(field)`, `isNotNull(field)`
-**Array:** `in(array, value)` - Check if value exists in array field (NOT for filtering by multiple literal values)
+3. **bin() in summarize MUST use an alias for sorting:**
+   ```dql
+   // ❌ WRONG - timestamp no longer exists after summarize
+   | summarize cnt = count(), by:{bin(timestamp, 5m)}
+   | sort timestamp desc
+   
+   // ✅ CORRECT - alias the bin() expression
+   | summarize cnt = count(), by:{timeframe = bin(timestamp, 5m)}
+   | sort timeframe desc
+   ```
 
-### String Matching & Wildcards
+**Always follow this pattern:**
+```dql
+| summarize <alias> = <function>(), by:{<field>}
+| sort <alias> desc
+```
+
+### Other Syntax Rules
+
+| Rule | Wrong ❌ | Correct ✅ |
+|------|---------|-----------|
+| String quotes | `'ERROR'` | `"ERROR"` |
+| Multiple values | `id in ("A", "B")` | `id == "A" or id == "B"` |
+| Special char fields | `filter field-name == "x"` | ``filter `field-name` == "x"`` |
+
+**⚠️ IMPORTANT: No `in()` or set notation for multiple values**
+DQL does NOT support `in ("val1", "val2")` or `in {"val1", "val2"}` syntax. Use `or` chains:
+```dql
+// ❌ WRONG - neither parentheses nor curly braces work
+filter k8s.namespace.name in ("<NS1>", "<NS2>", "<NS3>")
+filter k8s.namespace.name in {"<NS1>", "<NS2>", "<NS3>"}
+
+// ✅ CORRECT - use or chains
+filter k8s.namespace.name == "<NS1>"
+  or k8s.namespace.name == "<NS2>"
+  or k8s.namespace.name == "<NS3>"
+```
+This applies to both `| filter` pipes AND `timeseries filter:` clauses.
+
+### Pattern Matching
 
 ```dql
-// Exact match (double quotes required)
-filter loglevel == "ERROR"
+// Wildcard patterns (PREFERRED)
+filter matchesValue(k8s.deployment.name, "*<SERVICE>*")   // contains
+filter matchesValue(k8s.deployment.name, "<PREFIX>-*")   // starts with
+filter matchesValue(k8s.deployment.name, "*-<SUFFIX>")   // ends with
 
-// Multiple values (use OR - NO set literal syntax in DQL)
-filter loglevel == "ERROR" or loglevel == "WARN"
-filter (loglevel == "ERROR" or loglevel == "WARN")  // Parentheses for clarity
-
-// Wildcard patterns (* for any characters)
-filter matchesValue(k8s.deployment.name, "*frontend*")
-filter matchesValue(k8s.deployment.name, "prod-*")
-filter matchesValue(log.source, "*/var/log/*", caseSensitive:false)  // Case-insensitive
-
-// Starts/ends with (simpler than wildcards for prefix/suffix)
-filter startsWith(k8s.deployment.name, "api-")
-filter endsWith(k8s.pod.name, "-prod")
-
-// Contains (substring search)
-filter contains(k8s.deployment.name, "frontend")
-filter contains(content, "timeout")
-
-// Phrase search (exact sequence)
+// Exact phrase search
 filter matchesPhrase(content, "connection timeout")
-```
-
-### Escaping Special Characters
-
-**Backslash escaping** for special characters in strings:
-```dql
-// Escape quotes within strings
-filter content == "Error: \"invalid input\""
-
-// Escape backslashes
-filter path == "C:\\Program Files\\App"
-
-// Field names with spaces or special chars (use backticks)
-filter `field.with-dash` == "value"
-filter `field with spaces` == "value"
-```
-
-**Parse pattern escaping** (pipe `|` conflicts with DQL pipeline operator):
-```dql
-// ❌ Wrong: Pipe character breaks parsing
-parse content, "LD 'error' | 'code:' DATA:code"  // Syntax error
-
-// ✅ Correct: Avoid pipe in pattern or use separate parse commands
-parse content, "LD 'error code:' DATA:code"
-parse content, "LD 'error' LD 'code:' DATA:code"
-
-// ✅ Alternative: Two parse commands
-parse content, "LD 'error' DATA:error_part"
-| parse error_part, "LD 'code:' DATA:code"
-```
-
-### Critical Syntax Rules
-
-**1. Strings MUST use double quotes:** `"ERROR"` ✅ | `'ERROR'` ❌
-**2. Summarize ALWAYS needs aggregation function:** `summarize count(), by:{x}` ✅ | `summarize by:{x}` ❌
-**3. Multiple values use OR, not IN with lists:** `id == "SERVICE-1" or id == "SERVICE-2"` ✅ | ~~`id in ("SERVICE-1", "SERVICE-2")`~~ ❌ | The `in()` function only works with array fields, not literal value lists
-**4. Use aliases for aggregations:** `summarize cnt = count() | sort cnt desc` ✅
-**5. Array access after expand:** `fetch logs | expand tags | fields tags[key]` ✅ | `expand tags | fields key` ❌
-**6. Metrics as fields not supported:** Service metrics like `dt.service.request.response_time` cannot be selected as fields on `fetch dt.entity.service`. Use `timeseries` or `fetch metrics` instead
-
-### Common Patterns
-
-```dql
-// Error analysis by namespace/deployment (find error hotspots)
-fetch logs | filter loglevel == "ERROR" and timestamp > now() - 24h
-| summarize cnt = count(), by:{k8s.namespace.name, k8s.deployment.name} | sort cnt desc | limit 20
-
-// Service performance timeseries (track response time trends)
-timeseries avg(dt.service.request.response_time), percentile(dt.service.request.response_time, 95),
-  from: now() - 7d, filter: dt.entity.service == "SERVICE-123"
-
-// Pod health monitoring (errors & warnings by pod)
-fetch logs | filter k8s.namespace.name == "prod" and (loglevel == "ERROR" or loglevel == "WARN") and timestamp > now() - 1h
-| summarize cnt = count(), by:{k8s.pod.name, loglevel} | sort cnt desc
-
-// Container resource usage (CPU/memory trends)
-timeseries avg(dt.kubernetes.container.cpu_usage), avg(dt.kubernetes.container.memory_working_set),
-  filter: k8s.namespace.name == "prod", by: {k8s.deployment.name}
-
-// Log lookup with entity context (enrich logs with service metadata)
-fetch logs | filter timestamp > now() - 1h
-| lookup [fetch dt.entity.service], sourceField:dt.entity.service, lookupField:id
-| fields timestamp, content, entity.name, k8s.deployment.name
-
-// Parse log content (extract specific error codes/messages)
-fetch logs | filter loglevel == "ERROR" and timestamp > now() - 1h
-| parse content, "LD 'error:' SPACE? DATA:error_msg"
-| summarize cnt = count(), by:{error_msg} | sort cnt desc | limit 10
 ```
 
 ### Entity Fields vs Metrics
 
-**Important Distinction**: Entity fields and metric data require different query approaches:
-
 ```dql
-// ✅ Correct: Query entity metadata
+// ✅ Entity metadata
 fetch dt.entity.service
-| filter matchesValue(entity.name, "*checkout*")
+| filter matchesValue(entity.name, "*<SERVICE>*")
 | fields id, entity.name, calls, called_by
 
-// ❌ Wrong: Cannot access metrics as fields on entities
+// ❌ WRONG: Cannot access metrics as entity fields
 fetch dt.entity.service
 | fields id, dt.service.request.response_time  // This fails!
 
-// ✅ Correct: Query metrics with timeseries
+// ✅ Metrics via timeseries
 timeseries avg(dt.service.request.response_time),
   from: now() - 1h,
-  filter: dt.entity.service == "SERVICE-123"
+  filter: dt.entity.service == "<SERVICE_ID>"
+```
 
-// ✅ Correct: Query metrics directly
-fetch metrics
-| filter metric.key == "dt.service.request.response_time"
-  and dt.entity.service == "SERVICE-123"
+---
+
+## Common Query Patterns
+
+### Error Analysis
+
+```dql
+// Error hotspots by deployment
+fetch logs 
+| filter k8s.namespace.name == "<NAMESPACE>" 
+  and loglevel == "ERROR" 
   and timestamp > now() - 1h
+| summarize errorCount = count(), by:{k8s.deployment.name}
+| sort errorCount desc | limit 20
+
+// Error message patterns for a service
+fetch logs 
+| filter contains(k8s.deployment.name, "<SERVICE>") 
+  and loglevel == "ERROR" 
+  and timestamp > now() - 1h
+| summarize cnt = count(), by:{content}
+| sort cnt desc | limit 20
+
+// When did errors start?
+fetch logs 
+| filter k8s.deployment.name == "<SERVICE>" 
+  and loglevel == "ERROR" 
+  and timestamp > now() - 6h
+| summarize errorCount = count(), by:{timeframe = bin(timestamp, 5m)} 
+| sort timeframe asc
 ```
 
-**Rule**: Use `fetch dt.entity.*` for topology/metadata, use `timeseries` or `fetch metrics` for performance data.
-
-### Data Discovery
+### Service Performance
 
 ```dql
-// Available entities/record types
-fetch dt.entity.* | summarize count(), by:{entity.type} | limit 100
+// Response time trends
+timeseries avg(dt.service.request.response_time), 
+  percentile(dt.service.request.response_time, 95),
+  from: now() - 6h, interval: 5m,
+  filter: dt.entity.service == "<SERVICE_ID>"
 
-// K8s resources (ALWAYS include aggregation with summarize)
-fetch logs | filter timestamp > now() - 1h | summarize count(), by:{k8s.cluster.name, k8s.namespace.name} | limit 50
-fetch logs | filter k8s.namespace.name == "ns" and timestamp > now() - 1h | summarize count(), by:{k8s.deployment.name}
-
-// Available metrics
-fetch metrics | summarize count(), by:{metric.key} | limit 100
-fetch metrics | filter contains(metric.key, "kubernetes") | summarize count(), by:{metric.key}
-
-// Log fields and values
-fetch logs | limit 5
-fetch logs | summarize count(), by:{loglevel}
-```
-
-### Best Practices & Performance
-
-**Core Principles:**
-1. **Start small, expand gradually** - Limit 10-50 initially, avoid overwhelming context/budget
-2. **Always filter by time** - `timestamp > now() - 1h` (smallest necessary range)
-3. **Filter early** - Indexed fields first (entity IDs, k8s labels, timestamps), then others
-4. **Use aliases** - `summarize cnt = count() | sort cnt desc` enables sorting on aggregations
-5. **Limit aggressively** - Control result size and cost
-
-**Query Cost Hierarchy (Highest to Lowest Impact):**
-
-| Factor | High Cost ❌ | Low Cost ✅ |
-|--------|-------------|------------|
-| **Time Range** | `now() - 7d` | `now() - 1h` |
-| **Aggregations** | `by:{trace.id}` (high cardinality) | `by:{namespace}` (low cardinality) |
-| **Filtering** | `contains(content, "text")` unfiltered | Filter by indexed fields first |
-| **Field Selection** | Default (all fields) | `fields timestamp, content` |
-
-**Efficient Pattern Template:**
-```dql
-fetch <type>
-| filter <indexed_field> == "value" and timestamp > now() - 1h  // Indexed filters first
-| filter <text_search>                                           // Expensive filters last
-| fields <specific>, <fields>                                    // Only needed fields
-| summarize <alias> = <function>(), by:{<low_cardinality>}      // Aggregate early
-| sort <alias> desc | limit 100                                  // Control output
-```
-
-## Time Ranges: Syntax & Cost Trade-offs
-
-**Syntax:**
-```dql
-// Relative (recommended)
-timestamp > now() - 1h | now() - 24h | now() - 7d
-// Absolute
-timestamp > toTimestamp("2024-01-15T00:00:00Z")
-// Timeseries
-timeseries avg(metric), from: now() - 7d, to: now()
-```
-
-**Use Case Quick Reference:**
-
-| Time Range | Cost | Use Case | Strategy |
-|------------|------|----------|----------|
-| `now() - 1h` | Low | Active troubleshooting | Start here, expand if needed |
-| `now() - 6h` | Low-Med | Recent investigation | Pattern identification |
-| `now() - 24h` | Medium | Daily analysis | Error trend analysis |
-| `now() - 7d` | Med-High | Weekly trends | Use `timeseries` + aggregation |
-| `now() - 30d` | High | Historical analysis | Specific filters required |
-| `> 30d` | Very High | Rare investigations | Always aggregate/limit |
-
-## Investigation Workflows
-
-### Workflow 1: Service Degradation (Slow Response Times)
-
-```dql
-// 1. Find recent problems
-fetch events | filter event.kind == "DAVIS_PROBLEM" and contains(affected_entity_ids, "SERVICE")
-  and matchesValue(dt.entity.service_name, "*checkout*") and timestamp > now() - 2h
-| fields timestamp, display_id, event.name, affected_entity_ids
-
-// 2. Service metrics: response time & failures
-timeseries avg(dt.service.request.response_time), percentile(dt.service.request.response_time, 95),
-  sum(dt.service.request.failure_count), from: now() - 6h, interval: 5m,
-  filter: dt.entity.service == "SERVICE-ABC123"
-
-// 3. Error patterns in logs
-fetch logs | filter dt.entity.service == "SERVICE-ABC123" and loglevel == "ERROR" and timestamp > now() - 1h
-| summarize cnt = count(), by:{content} | sort cnt desc | limit 20
-
-// 4. Resource constraints (CPU/memory)
-timeseries avg(dt.kubernetes.container.cpu_usage), avg(dt.kubernetes.container.memory_working_set),
-  from: now() - 2h, interval: 1m, filter: matchesValue(k8s.deployment.name, "*checkout*"), by: {k8s.pod.name}
-
-// 5. Slow traces
-fetch spans | filter dt.entity.service == "SERVICE-ABC123" and timestamp > now() - 1h and duration > 1000000000
-| summarize avgDuration = avg(duration), p95 = percentile(duration, 95), cnt = count(), by:{span.name} | sort p95 desc
-```
-
-### Workflow 2: High Error Rate Analysis
-
-```dql
-// 1. Identify which deployments have errors
-fetch logs | filter k8s.namespace.name == "production" and loglevel == "ERROR" and timestamp > now() - 1h
-| summarize errorCount = count(), by:{k8s.deployment.name} | sort errorCount desc | limit 10
-
-// 2. Error message patterns (use top deployment from step 1)
-fetch logs | filter k8s.deployment.name == "payment-service" and loglevel == "ERROR" and timestamp > now() - 1h
-| summarize cnt = count(), by:{content} | sort cnt desc | limit 20
-
-// 3. When did errors start?
-fetch logs | filter k8s.deployment.name == "payment-service" and loglevel == "ERROR" and timestamp > now() - 6h
-| summarize errorCount = count(), by:{timeframe = bin(timestamp, 5m)} | sort timeframe asc
-
-// 4. Correlate with K8s events
-fetch events | filter k8s.namespace.name == "production" and matchesValue(k8s.deployment.name, "*payment*")
-  and timestamp > now() - 2h | fields timestamp, event.type, event.name, k8s.pod.name | sort timestamp desc
-
-// 5. Which pods are failing?
-fetch logs | filter k8s.deployment.name == "payment-service" and loglevel == "ERROR" and timestamp > now() - 30m
-| summarize errorCount = count(), firstError = min(timestamp), lastError = max(timestamp), by:{k8s.pod.name}
-| sort errorCount desc
-```
-
-### Resource Exhaustion Pattern (OOMKilled/Crashing Pods)
-
-```dql
-// Find OOMKilled pods
-fetch events | filter event.type == "RESOURCE_CONTENTION_EVENT" or contains(event.name, "OOMKilled")
-  and timestamp > now() - 2h | fields timestamp, event.name, k8s.deployment.name, k8s.pod.name
-
-// Memory/CPU usage trends
-timeseries avg(dt.kubernetes.container.memory_working_set), avg(dt.kubernetes.container.cpu_usage),
-  from: now() - 4h, interval: 1m, filter: matchesValue(k8s.deployment.name, "*api*"), by: {k8s.pod.name}
-
-// Compare requests vs actual usage
-fetch dt.entity.cloud_application_instance | filter matchesValue(entity.name, "*api*")
-| summarize avgMemoryUsed = avg(dt.kubernetes.container.memory_working_set),
-    memoryRequest = max(dt.kubernetes.container.requests_memory), memoryLimit = max(dt.kubernetes.container.limits_memory),
-    by:{k8s.deployment.name}
-```
-
-## Troubleshooting Guide
-
-### Syntax Error Quick Reference
-
-| Error | Wrong ❌ | Correct ✅ |
-|-------|---------|-----------|
-| **String quotes** | `'ERROR'` | `"ERROR"` (must use double quotes) |
-| **Missing aggregation** | `summarize by:{ns}` | `summarize count(), by:{ns}` |
-| **Set literal syntax** | `loglevel in {"ERROR", "WARN"}` | `loglevel == "ERROR" or loglevel == "WARN"` (use OR) |
-| **Sorting aggregations** | `sort count() desc` | `summarize cnt = count() \| sort cnt desc` (use alias) |
-| **Missing time filter** | `filter loglevel == "ERROR"` | `filter timestamp > now() - 1h and loglevel == "ERROR"` |
-| **Array access** | `expand tags \| fields key` | `fetch logs \| expand tags \| fields tags[key]` |
-| **Special char fields** | `filter field-name == "x"` | ``filter `field-name` == "x"`` (use backticks) |
-| **Time binning** | `by:{timestamp}` | `by:{timeframe = bin(timestamp, 5m)}` (use alias) |
-| **IN with literals** | `id in ("VAL1", "VAL2")` | `id == "VAL1" or id == "VAL2"` (use OR chain) |
-| **Metrics as fields** | `fetch dt.entity.service \| fields dt.service.request.response_time` | Use `timeseries` or `fetch metrics` for metric data |
-
-### Zero Results Checklist
-
-1. **Widen time range**: `timestamp > now() - 1h` → `now() - 6h`
-2. **Verify field names**: `fetch logs | limit 5` to see available fields
-3. **Check case-sensitivity**: `loglevel == "ERROR"` vs `"Error"`
-4. **Review filter logic**: AND requires all conditions true, OR requires any
-5. **Validate entity IDs**: Format is `SERVICE-ABC123`, not friendly names
-
-### Performance Issues
-
-**Query too slow (>10s)?**
-- ✅ Add time filter: `timestamp > now() - 1h` (biggest impact)
-- ✅ Filter by indexed fields first (entity IDs, k8s labels, timestamps)
-- ✅ Reduce aggregation cardinality: Group by namespace, not trace ID
-- ✅ Specify fields: `fields timestamp, content` vs getting all fields
-- ✅ Limit results: `| limit 100`
-
-**Query Limits Exceeded:**
-- "Result size exceeded" → Add `| limit 1000` or aggregate instead
-- "Query timeout" → Narrow time range, add specific filters, reduce cardinality
-- "Too many groups" → Filter before aggregating on high-cardinality fields
-
-### Common Pattern Fixes
-
-```dql
-// Lookup (not join)
-fetch logs | lookup [fetch dt.entity.service], sourceField:dt.entity.service, lookupField:entity.id
-
-// Nested aggregations (use subquery or multi-step)
-summarize avg(value), by:{namespace} | summarize totalAvg = avg(avg())
-```
-
-## RUM & Frontend Monitoring
-
-**Available Data:** User sessions, actions (load/click), Core Web Vitals, JS errors, XHR/Fetch failures, browser/device/geo metadata
-
-### Key RUM Queries
-
-**Session & Performance Analysis**
-```dql
-// Sessions with errors
-fetch dt.session | filter timestamp > now() - 24h and error.count > 0
-| summarize errorSessions = count(), totalErrors = sum(error.count), by:{app.name} | sort errorSessions desc
-
-// Slow page loads (>3s)
-fetch dt.user_action | filter timestamp > now() - 2h and action.type == "Load" and duration > 3000
-| fields timestamp, app.name, action.name, duration | sort duration desc | limit 100
-
-// Performance by type
-fetch dt.user_action | filter timestamp > now() - 24h
-| summarize avgDuration = avg(duration), p95 = percentile(duration, 95), cnt = count(), by:{action.type, app.name}
+// Slow traces
+fetch spans 
+| filter dt.entity.service == "<SERVICE_ID>" 
+  and timestamp > now() - 1h 
+  and duration > 1000000000
+| summarize avgDuration = avg(duration), 
+    p95 = percentile(duration, 95), 
+    cnt = count(), 
+    by:{span.name} 
 | sort p95 desc
 ```
 
-**Core Web Vitals**
+### Resource Usage
+
 ```dql
-// LCP, CLS, FID trends
-timeseries avg(dt.rum.largest_contentful_paint), avg(dt.rum.cumulative_layout_shift), avg(dt.rum.first_input_delay),
-  from: now() - 7d, interval: 1h, filter: app.name == "MyWebApp"
-```
-**Thresholds:** LCP <2.5s (good), FID <100ms (good), CLS <0.1 (good)
+// Container CPU/Memory trends
+timeseries avg(dt.kubernetes.container.cpu_usage),
+  avg(dt.kubernetes.container.memory_working_set),
+  from: now() - 2h, interval: 1m,
+  filter: matchesValue(k8s.deployment.name, "*<SERVICE>*"),
+  by: {k8s.pod.name}
 
-**JavaScript Errors & Failed Requests**
+// Referencing timeseries results in subsequent pipes
+// Use backticks around the original expression name
+timeseries avg(dt.kubernetes.container.cpu_usage),
+  avg(dt.kubernetes.container.requests_cpu),
+  from: now() - 1h, interval: 1h,
+  by: {k8s.deployment.name}
+| fields k8s.deployment.name,
+    cpuUsage = `avg(dt.kubernetes.container.cpu_usage)`,
+    cpuRequest = `avg(dt.kubernetes.container.requests_cpu)`
+| fieldsAdd utilizationPct = (cpuUsage / cpuRequest) * 100
+| sort utilizationPct desc
+
+// OOMKilled events
+fetch events 
+| filter event.type == "RESOURCE_CONTENTION_EVENT" 
+  or contains(event.name, "OOMKilled")
+  and timestamp > now() - 2h 
+| fields timestamp, event.name, k8s.deployment.name, k8s.pod.name
+```
+
+### Health Check Query
+
 ```dql
-// Top JS errors
-fetch dt.rum.errors | filter timestamp > now() - 24h and error.type == "JavaScript"
-| summarize errorCount = count(), affectedSessions = countDistinct(session.id), by:{error.message}
-| sort errorCount desc | limit 20
-
-// API failure rate by endpoint
-fetch dt.rum.action | filter timestamp > now() - 24h
-| summarize totalCalls = sum(xhr.count), failedCalls = sum(xhr.failure.count), by:{xhr.url}
-| fields xhr.url, totalCalls, failedCalls, failureRate = failedCalls / totalCalls * 100 | sort failureRate desc
+// Service health snapshot
+fetch logs
+| filter k8s.namespace.name == "<NAMESPACE>"
+  and timestamp > now() - 15m
+| summarize logCount = count(), 
+    errorCount = countIf(loglevel == "ERROR"),
+    warnCount = countIf(loglevel == "WARN"),
+    by:{k8s.deployment.name}
+| fields k8s.deployment.name, logCount, errorCount, warnCount,
+    errorRate = errorCount / logCount * 100
+| sort errorRate desc
 ```
 
-**Frontend-Backend Correlation**
+---
+
+## Time Ranges & Query Cost
+
+| Time Range | Cost | Use Case |
+|------------|------|----------|
+| `now() - 1h` | Low | Active troubleshooting |
+| `now() - 6h` | Low-Med | Recent investigation |
+| `now() - 24h` | Medium | Daily analysis |
+| `now() - 7d` | Med-High | Weekly trends (use aggregation) |
+| `now() - 30d` | High | Historical (specific filters required) |
+
+**Performance Tips:**
+1. Always filter by time first
+2. Filter by indexed fields (entity IDs, k8s labels) before text search
+3. Use `fields` to select only needed columns
+4. Use aliases for aggregations: `summarize cnt = count() | sort cnt desc`
+5. Limit results aggressively during development
+
+---
+
+## Production Readiness Analysis
+
+**CRITICAL REQUIREMENT**: When creating or reviewing design documents for features that involve service-to-service communication or performance-sensitive changes, perform a Dynatrace production readiness analysis.
+
+### When to Perform Analysis
+
+- Adding new service-to-service calls (synchronous or asynchronous)
+- Modifying existing service call patterns
+- Adding timeouts, circuit breakers, or retry logic
+- Changes that may impact service latency or throughput
+- Features that depend on external service performance
+
+### Step 1: Identify Affected Services
+
+From the code/design, identify:
+- Which services will be called
+- Which services will make new calls
+- Expected call frequency and patterns
+- Timeout and retry parameters
+
+### Step 2: Gather Current Performance Metrics
+
+**Latency Distribution** (Last 24-48 hours):
 ```dql
-// Backend services involved in failed user actions
-fetch spans | filter timestamp > now() - 1h and trace.id in [
-    fetch dt.user_action | filter error.count > 0 | fields trace.id ]
-| summarize errorSpanCount = count(), by:{dt.entity.service, span.name} | sort errorSpanCount desc
+timeseries avg(dt.service.request.response_time),
+  percentile(dt.service.request.response_time, 50),
+  percentile(dt.service.request.response_time, 90),
+  percentile(dt.service.request.response_time, 95),
+  percentile(dt.service.request.response_time, 99),
+  from: now() - 24h, interval: 1h,
+  filter: dt.entity.service == "<SERVICE_ID>"
 ```
 
-**Additional Patterns:** Geographic analysis (`by:{geo.country, geo.city}`), Browser/device segmentation (`by:{browser.family, device.type}`), Apdex calculation (use `countIf()` with duration thresholds)
+**Request Volume and Error Rate**:
+```dql
+timeseries sum(dt.service.request.count),
+  sum(dt.service.request.failure_count),
+  from: now() - 24h, interval: 1h,
+  filter: dt.entity.service == "<SERVICE_ID>"
+```
+
+**Resource Utilization**:
+```dql
+timeseries avg(dt.kubernetes.container.cpu_usage),
+  avg(dt.kubernetes.container.memory_working_set),
+  from: now() - 24h, interval: 1h,
+  filter: contains(k8s.deployment.name, "<SERVICE_NAME>")
+```
+
+**Service Dependencies**:
+```dql
+fetch dt.entity.service
+| filter id == "<SERVICE_ID>"
+| fields entity.name, calls, called_by
+```
+
+### Step 3: Analyze Compatibility with Design
+
+| Design Parameter | Production Reality | Risk Level |
+|------------------|-------------------|------------|
+| Expected latency | Actual P50/P95/P99 | HIGH if mismatch |
+| Timeout setting | Service P95/P99 | HIGH if timeout < P95 |
+| Expected load | Current request rate | MEDIUM if >30% increase |
+| Circuit breaker threshold | Current error rate | MEDIUM if too sensitive |
+| Resource capacity | Current CPU/Memory | MEDIUM if near limits |
+
+### Step 4: Calculate Impact
+
+**Timeout Rate Estimation**:
+- If timeout < P95: ~5% timeout rate
+- If timeout < P90: ~10% timeout rate
+- If timeout < P50: ~50% timeout rate (CRITICAL)
+
+**Load Impact**:
+- New calls per hour = (calling service requests/hour)
+- Load increase % = (new calls / current calls) × 100
+- If >30% increase: HIGH RISK
+
+**Latency Impact**:
+- New latency = baseline + (dependency avg latency)
+- If new latency > target SLO: HIGH RISK
+
+### Step 5: Risk Assessment
+
+**LOW RISK** ✅:
+- Timeout > P99 of dependency
+- Load increase <10%
+- Fail-open pattern implemented
+- Circuit breaker configured appropriately
+- Target SLOs achievable
+
+**MEDIUM RISK** ⚠️:
+- Timeout between P95 and P99
+- Load increase 10-30%
+- Resilience patterns in place
+- May require monitoring and tuning
+
+**HIGH RISK** ❌:
+- Timeout < P95 of dependency
+- Load increase >30%
+- No resilience patterns
+- Target SLOs not achievable
+- Time-based performance variations
+
+### Step 6: Required Actions
+
+**For HIGH RISK changes**:
+1. **DO NOT PROCEED** with current design
+2. **OPTIMIZE** the dependency service first
+3. **ADJUST** design parameters (timeout, SLOs, etc.)
+4. **IMPLEMENT** alternative approach (caching, async, etc.)
+5. **RE-ANALYZE** after changes
+
+**For MEDIUM RISK changes**:
+1. **ADJUST** design parameters if needed
+2. **ADD** additional monitoring and alerting
+3. **PLAN** gradual rollout (1% → 10% → 50% → 100%)
+4. **PREPARE** rollback procedures
+
+**For LOW RISK changes**:
+1. **PROCEED** with design as planned
+2. **IMPLEMENT** standard monitoring
+3. **DOCUMENT** baseline metrics for comparison
+
+### Example Analysis Output
+
+```markdown
+## Production Readiness Assessment
+
+**Feature**: <FEATURE_NAME>
+**Risk Level**: ❌ HIGH RISK
+
+### Current Metrics
+- <DEPENDENCY_SERVICE> P95: 1300ms
+- Design Timeout: 500ms
+- Expected Timeout Rate: 40%
+
+### Findings
+- Timeout setting incompatible with production performance
+- Circuit breaker will open continuously
+- Feature will only work 4% of the time
+
+### Recommendations
+1. Optimize <DEPENDENCY_SERVICE> (reduce P95 to <400ms)
+2. OR increase timeout to 1500ms (accept higher latency)
+3. OR implement caching layer (bypass dependency)
+
+### Decision
+DO NOT PROCEED until <DEPENDENCY_SERVICE> P95 is optimized.
+```
+
+---
+
+## IDE Workflow Integration
+
+### Code Change → Service Impact
+
+When reviewing code changes that add or modify service calls:
+
+1. **Identify the service being called** from the code (URL, client name, gRPC service)
+2. **Find the Dynatrace entity**: `find_entity_by_name("<SERVICE_NAME>")`
+3. **Gather performance data** using the production readiness queries above
+4. **Compare against design parameters** (timeouts, expected latency)
+5. **Report risk level** with actionable recommendations
+
+### Post-Deployment Monitoring
+
+After deploying a change, monitor these indicators:
+
+```dql
+// Compare error rate before/after deployment
+timeseries sum(dt.service.request.failure_count) / sum(dt.service.request.count) * 100,
+  from: now() - 4h, interval: 5m,
+  filter: dt.entity.service == "<SERVICE_ID>"
+
+// Watch for latency regression
+timeseries percentile(dt.service.request.response_time, 95),
+  from: now() - 4h, interval: 5m,
+  filter: dt.entity.service == "<SERVICE_ID>"
+```
+
+**Rollback Indicators**:
+- P95 latency increased >50% from baseline
+- Error rate increased >2x from baseline
+- Circuit breakers opening
+- Downstream services showing degradation
+
+---
+
+## Troubleshooting Guide
+
+### ⚠️ Most Common Syntax Errors
+
+**#1 - Missing aggregation function in summarize:**
+```dql
+// ❌ WRONG
+| summarize by:{k8s.deployment.name}
+
+// ✅ CORRECT  
+| summarize cnt = count(), by:{k8s.deployment.name}
+```
+
+**#2 - Sorting by function instead of alias:**
+```dql
+// ❌ WRONG
+| summarize count(), by:{namespace}
+| sort count() desc
+
+// ✅ CORRECT
+| summarize cnt = count(), by:{namespace}
+| sort cnt desc
+```
+
+### Other Syntax Errors
+
+| Error | Wrong ❌ | Correct ✅ |
+|-------|---------|-----------|
+| String quotes | `'ERROR'` | `"ERROR"` |
+| Set literal syntax | `loglevel in {"ERROR", "WARN"}` | `loglevel == "ERROR" or loglevel == "WARN"` |
+| Missing time filter | `filter loglevel == "ERROR"` | `filter timestamp > now() - 1h and loglevel == "ERROR"` |
+
+### Zero Results Checklist
+
+1. **Widen time range**: `now() - 1h` → `now() - 6h`
+2. **Verify field names**: `fetch logs | limit 5`
+3. **Check case-sensitivity**: `loglevel == "ERROR"` vs `"Error"`
+4. **Review filter logic**: AND requires all conditions true
+5. **Validate entity IDs**: Format is `SERVICE-ABC123`, not friendly names
+
+### Query Limits Exceeded
+
+- "Result size exceeded" → Add `| limit 1000` or aggregate
+- "Query timeout" → Narrow time range, add specific filters
+- "Too many groups" → Filter before aggregating on high-cardinality fields
+
+---
+
+## Agentic Behavior Guidelines
+
+These guidelines govern how the AI assistant should interact when using Dynatrace tools.
+
+### Query Execution
+
+- **Execute queries for data retrieval** - When user asks for data, metrics, or logs, execute the query
+- **Don't ask permission** - Execute relevant queries directly
+- **Show results first** - Present query results before analysis
+
+### Reviewing User-Provided Queries
+
+When asked to review, fix, or optimize a query:
+
+1. **Analyze the query first** - Identify ALL issues WITHOUT executing the broken query
+2. **Explain what's wrong in detail** - This is the primary deliverable. List each issue:
+   - Syntax errors (quotes, missing functions, etc.)
+   - Performance issues (filter order, missing time range, etc.)
+   - Inefficiencies (unnecessary fields, high cardinality, etc.)
+3. **Provide the corrected query** - Show the fixed version with comments
+4. **Optionally execute** - Verify the corrected version works
+
+**The explanation is more important than execution** - Users asking "what's wrong with this query" want education, not just a working query.
+
+**Never execute a query you know is broken** - Fix it first.
+
+### Advisory Questions
+
+When user asks "how should I...", "what's the best approach...", or "how do I...":
+1. **ALWAYS explain the methodology BEFORE executing any queries** - The user is asking for education, not just results
+2. **Structure your approach** - Break down complex investigations into numbered steps
+3. **Include example queries** - Show correct syntax patterns for each step
+4. **Execution is optional** - Only execute after explaining the approach
+
+**Example for "How do I trace an issue through the stack?":**
+First explain the distributed tracing methodology:
+- Step 1: Check frontend/RUM for user-facing errors
+- Step 2: Extract trace IDs from failed requests
+- Step 3: Query spans for those trace IDs
+- Step 4: Identify all services in the trace path
+- Step 5: Find the slowest or failing span
+Then optionally demonstrate with queries.
+
+### Zero Results Handling
+
+When a query returns 0 records:
+1. Report the result and show the query executed
+2. Suggest possible causes (time range, filters, field names)
+3. **Ask before running exploratory queries** - Don't assume data doesn't exist
+
+### Building on User Context
+
+- **Accept user premises** - If user states facts about their environment, build on them
+- **Don't re-discover** - Avoid running queries to verify what the user already told you
+- **Provide next steps** - Focus on advancing the investigation
+
+### Response Quality
+
+- **Acknowledge problems first** - When fixing errors, explain the issue before the solution
+- **Complete your analysis** - Synthesize findings and provide actionable conclusions
+- **Be direct** - Avoid celebratory language when troubleshooting
