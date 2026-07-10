@@ -2,9 +2,18 @@
 
 Collection of Kiro powers for enhanced AI agent capabilities. Each power provides specialized tools and workflows for specific development tasks.
 
+> This repository contains a subset of available Kiro powers. Additional powers are published and hosted independently by their respective authors. For the complete registry of all published powers, visit [kiro.dev/powers](https://kiro.dev/powers).
+
 Documentation is available at https://kiro.dev/docs/powers/
 
 ## Available powers
+
+### arm-soc-migration
+**Perform Migration between Arm SoC** - Guides migration of code from one Arm SoC to another, with architecture-aware analysis and safe migration practices. Supports common scenarios like AWS Graviton to Raspberry Pi, NXP i.MX8 to NVIDIA Jetson Orin, and more.
+
+**MCP Servers:** arm-mcp-server (Docker)
+
+---
 
 ### aws-agentcore
 **Build an agent with Amazon Bedrock AgentCore** - Build, test, and deploy AI agents using AWS Bedrock AgentCore with local development workflow. Amazon Bedrock AgentCore is an agentic platform for building, deploying, and operating effective agents.
@@ -27,32 +36,80 @@ Documentation is available at https://kiro.dev/docs/powers/
 
 ---
 
-### aws-healthomics
+### aws-graviton-migration
+**Plan and Migration to Graviton** - Analyzes source code to identify compatibilities with Graviton processors (Arm64 architecture). Generates reports with incompatibilities and provides suggestions for minimal required and recommended versions for language runtimes and dependency libraries.
 
-**Create and Manage Bioinformatics Workflows with AWS HealthOmics** - create, migrate, run, debug and identify optimization opportunities for bioinformatics workflows in AWS HealthOmics.
+**MCP Servers:** arm-mcp (Docker)
+
+---
+
+### aws-healthomics
+**AWS HealthOmics** - Create, migrate, run, debug and optimize genomics workflows in AWS HealthOmics. Supports WDL, Nextflow, and CWL workflow languages.
 
 **MCP Servers:** awslabs.aws-healthomics-mcp-server
 
 ---
 
 ### aws-infrastructure-as-code
-**Build AWS infrastructure with CDK and CloudFormation** - Generate well-architected AWS infrastructure with CDK and CloudFormation - access latest documentation, validate templates, and troubleshoot deployments.
+**Build AWS infrastructure with CDK and CloudFormation** - Build well-architected AWS infrastructure with CDK using latest documentation, best practices, and code samples. Validate CloudFormation templates, check resource configuration security compliance, and troubleshoot deployments.
 
 **MCP Servers:** awslabs.aws-iac-mcp-server
 
 ---
 
+### aws-lambda-managed-instances
+**AWS Lambda Managed Instances** - Evaluate, configure, and migrate workloads to AWS Lambda Managed Instances (LMI). Run Lambda functions on EC2 instances in your account while AWS manages provisioning, patching, scaling, routing, and load balancing.
+
+**MCP Servers:** None (Knowledge Base Power)
+
+---
+
+### aws-mcp
+**Work with AWS** - Perform complex, multi-step AWS tasks by combining real-time access to AWS documentation, syntactically correct API calls and executions, and pre-built workflows called Agent SOPs that follow AWS best practices.
+
+**MCP Servers:** aws-mcp
+
+---
+
+### aws-observability
+**AWS Observability** - Comprehensive AWS observability platform combining CloudWatch Logs, Metrics, Alarms, Application Signals (APM), CloudTrail security auditing, Amazon Managed Prometheus (AMP) metric querying, and automated codebase observability gap analysis.
+
+**MCP Servers:** awslabs.cloudwatch-mcp-server, awslabs.cloudwatch-applicationsignals-mcp-server, awslabs.cloudtrail-mcp-server, awslabs.prometheus-mcp-server, awslabs.aws-documentation-mcp-server
+
+---
+
 ### aws-sam
-**Build serverless applications with AWS SAM** - Build, test, and deploy serverless applications using AWS Serverless Application Model (SAM) with local development workflow and MCP tooling.
+**AWS SAM** - An opinionated Kiro Power to aid development with AWS Serverless Application Model (SAM). Includes MCP tooling and common usage patterns for building, testing, and deploying serverless applications.
 
 **MCP Servers:** awslabs.aws-serverless-mcp-server, fetch
 
 ---
 
+### aws-step-functions
+**AWS Step Functions** - Build workflows with AWS Step Functions state machines using the JSONata query language. Covers Amazon States Language (ASL) structure, state types, variables, data transformation, error handling, AWS service integration, and migrating from JSONPath to JSONata.
+
+**MCP Servers:** None (Knowledge Base Power)
+
+---
+
 ### aws-transform
-**Agents modernizing the world's infrastructure and software**, backed by years of AWS expertise. AWS Transform is a full modernization factory — connecting assessment through execution in a single experience, so the manual handoffs and lost context that commonly stall large-scale migrations and ongoing tech debt reduction no longer slow you down. This power brings AWS Transform directly into Kiro. AWS Transform custom is the first supported capability, with more playbooks on the way. Find out more at [aws.amazon.com/transform](https://aws.amazon.com/transform/)
+**AWS Transform** - Migrate, modernize, and upgrade codebases: .NET Framework to .NET 8/10, mainframe COBOL to Java, VMware VMs to EC2, SQL Server/Oracle/MySQL to Aurora, and Java/Python/Node.js version upgrades or AWS SDK migrations. Assess, plan, and execute code transformations from your IDE.
 
 **MCP Servers:** None
+
+---
+
+### aws-transform-agent-toolkit
+**AWS Transform Agent Toolkit** - Build agents to run in AWS Transform. Provides a self-service agent lifecycle from inception to development to production. Build modernization and migration agents with citation-backed AWS Transform documentation search, package agents as containers, deploy to Bedrock AgentCore, and register with AWS Transform.
+
+**MCP Servers:** aws-transform-agent-toolkit
+
+---
+
+### checkout
+**Checkout.com Global Payments** - Access Checkout.com's comprehensive API documentation with intelligent search and detailed operation information for payments, customers, disputes, and more.
+
+**MCP Servers:** checkout-dx (HTTPS)
 
 ---
 
@@ -64,7 +121,7 @@ Documentation is available at https://kiro.dev/docs/powers/
 ---
 
 ### cloudwatch-application-signals
-**Amazon CloudWatch Application Signals** - Monitor service health, analyze SLO compliance, and perform root cause analysis with distributed tracing and audit capabilities.
+**[DEPRECATED] Amazon CloudWatch Application Signals** - This power has been merged into the AWS Observability power. We recommend installing the AWS Observability power for a more comprehensive monitoring experience.
 
 **MCP Servers:** awslabs.cloudwatch-applicationsignals-mcp-server
 
@@ -85,16 +142,23 @@ Documentation is available at https://kiro.dev/docs/powers/
 ---
 
 ### dynatrace
-**Dynatrace Observability** - Query logs, metrics, traces, problems, and security vulnerabilities using DQL (Dynatrace Query Language) and Davis AI.
+**Dynatrace Observability** - Query logs, metrics, traces, problems, and Kubernetes events from Dynatrace using DQL (Dynatrace Query Language) and Davis AI.
 
 **MCP Servers:** dynatrace-mcp-server
 
 ---
 
-### figma
-**Design to Code with Figma** - Connect Figma designs to code components - automatically generate design system rules, map UI components to Figma designs, and maintain design-code consistency.
+### localstack
+**Develop AWS apps with LocalStack** - Build, test, and debug AWS applications locally and in CI/CD using LocalStack. Manage the local cloud environment, deploy infrastructure with CDK/Terraform/SAM, analyze logs, enforce IAM policies, inject chaos faults, and manage state snapshots.
 
-**MCP Servers:** figma
+**MCP Servers:** localstack
+
+---
+
+### migration-to-aws
+**GCP to AWS Migration Advisor** - Migrate workloads from Google Cloud Platform to AWS — including AI and agentic workloads. Runs a 6-phase process: discover GCP resources, clarify requirements, design AWS architecture, estimate costs, generate migration artifacts, and collect feedback.
+
+**MCP Servers:** awsknowledge, awspricing
 
 ---
 
@@ -126,6 +190,20 @@ Documentation is available at https://kiro.dev/docs/powers/
 
 ---
 
+### spark-troubleshooting-agent
+**Troubleshoot Spark applications on AWS** - Troubleshoot Spark applications on AWS EMR, Glue, and SageMaker - analyze failures, identify bottlenecks, get code recommendations.
+
+**MCP Servers:** sagemaker-unified-studio-mcp-troubleshooting, sagemaker-unified-studio-mcp-code-rec
+
+---
+
+### stackgen
+**StackGen Infrastructure as Code** - Design, manage, and deploy cloud infrastructure with StackGen - create appstacks, manage resources, configure environments, and push IaC to Git. Supports AWS, Azure, and GCP.
+
+**MCP Servers:** stackgen (HTTPS)
+
+---
+
 ### strands
 **Build an agent with Strands SDK** - Build AI agents with Strands SDK using Bedrock, Anthropic, OpenAI, Gemini, or Llama models.
 
@@ -144,6 +222,13 @@ Documentation is available at https://kiro.dev/docs/powers/
 **Deploy infrastructure with Terraform** - Build and manage Infrastructure as Code with Terraform - access registry providers, modules, policies, and HCP Terraform workflow management.
 
 **MCP Servers:** terraform (Docker stdio)
+
+---
+
+### zapier
+**Zapier** - Connect 9,000+ apps to your AI workflow — discover, enable, and execute Zapier actions directly from your AI assistant. Supports Agentic and Classic server modes with OAuth authentication.
+
+**MCP Servers:** zapier (HTTPS)
 
 ---
 
