@@ -233,7 +233,15 @@ Documentation is available at https://kiro.dev/docs/powers/
 ---
 
 
+## Disclaimer
+
+These powers are provided as **base templates** for reference and starting points only. Each organization must perform their own due diligence before using them in production environments. You may need additional customization, security review, and configuration specific to your infrastructure, compliance requirements, and operational standards.
+
+The authors and contributors make no guarantees about the accuracy, completeness, or suitability of these templates for any particular use case. Use at your own risk.
+
 ## License
+
+This project is licensed under the [MIT-0 (MIT No Attribution)](LICENSE) license.
 
 Unless otherwise specified by the license in the individual power or the repository that hosts it, Kiro users have a non-exclusive license to access, download, and otherwise use the power for their personal or business purposes.
 
