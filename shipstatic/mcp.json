@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "shipstatic": {
+      "command": "npx",
+      "args": ["-y", "@shipstatic/mcp"],
+      "env": {
+        "SHIP_API_KEY": ""
+      },
+      "disabled": false
+    }
+  }
+}
