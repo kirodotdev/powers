@@ -1,0 +1,12 @@
+{
+  "name": "Snapshot Context",
+  "version": "1.0.0",
+  "description": "Manually trigger a context snapshot to preserve the current session state on demand.",
+  "when": {
+    "type": "userTriggered"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "The user wants to save a manual context snapshot. Follow the steering/snapshot-context.md guide:\n\n1. Detect the current git branch: run `git rev-parse --abbrev-ref HEAD`. If it fails, use 'unknown'.\n2. Sanitize the branch name (replace / \\ : * ? \" < > | with hyphens).\n3. Generate a structured session summary with the same 7-section format as automatic capture. Use 'None captured' for empty sections. Keep it under 150 lines.\n4. Create the directory `.kiro/context-keeper/sessions/` if it doesn't exist.\n5. Write the summary to `.kiro/context-keeper/sessions/{YYYY}-{MM}-{DD}T{HH}-{mm}-{ss}-{sanitized-branch}-manual.md`.\n6. Confirm the save to the user by displaying the file path."
+  }
+}
