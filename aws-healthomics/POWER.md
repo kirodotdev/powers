@@ -27,6 +27,7 @@ Whenever you are asked to perform a task related to any of the following scenari
 - Setting up VPC infrastructure for HealthOmics workflows (subnets, NAT Gateway, security groups, endpoints) -> use `./steering/vpc-setup.md`
 - Managing HealthOmics VPC configurations (creating, listing, getting, or deleting configurations) -> use `./steering/healthomics-configuration.md`
 - Running workflows with VPC connectivity, public internet access, cross-region access, or access to private VPC resources -> use `./steering/vpc-connected-workflow-runs.md`
+- Understanding regional feature availability, GPU instance limitations, or troubleshooting region-specific errors -> use `./steering/regional-capabilities.md`
 
 
 # Onboarding
