@@ -777,9 +777,44 @@ client.publish_agent_version(
 )
 ```
 
+## Agent Visibility Levels
+
+Agents have three visibility levels that control who can access them:
+
+| Visibility | Access Model | Transition |
+|-----------|-------------|-----------|
+| `RESTRICTED` (default) | Only explicitly allowlisted accounts | Starting state for all agents |
+| `AWS_PUBLIC` | All internal AWS accounts get automatic access; external accounts must be allowlisted | `RESTRICTED → AWS_PUBLIC` (self-service, one-way) |
+| `PUBLIC` | All accounts have access (requires Marketplace productId) | `AWS_PUBLIC → PUBLIC` or `RESTRICTED → PUBLIC` (one-way) |
+
+Transitions are **one-way toward broader access** — you cannot narrow visibility once promoted.
+
+### Promoting to AWS_PUBLIC
+
+Only agents with `ownerType: INTERNAL_AGENT` can be promoted to `AWS_PUBLIC`. Use the `update_agent` MCP tool:
+
+```python
+update_agent(name="my-agent", visibility="AWS_PUBLIC")
+```
+
+Or via CLI:
+
+```bash
+aws atxagentregistryexternal update-agent \
+  --name my-agent \
+  --visibility AWS_PUBLIC \
+  --endpoint-url https://iad.prod.agent-registry-external.elastic-gumby.ai.aws.dev \
+  --region us-east-1
+```
+
+After promotion:
+- All internal AWS accounts automatically have access — no `update-publisher-access-control` needed for them
+- External (non-AWS) accounts can still be explicitly allowlisted via `update-publisher-access-control`
+- Attempting to allowlist an internal account on an AWS_PUBLIC agent is a no-op (returns success)
+
 ## UpdatePublisherAccessControl API
 
-Controls which AWS accounts can access your agent. **REQUIRED** to make agents visible, even in same-account scenarios.
+Controls which AWS accounts can access your agent. For `RESTRICTED` agents, this is **REQUIRED** to make agents visible, even in same-account scenarios. For `AWS_PUBLIC` agents, this is only needed to grant access to external (non-AWS) accounts.
 
 ### API Signature
 

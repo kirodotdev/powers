@@ -248,8 +248,8 @@ This power includes an MCP server with search and registration tools:
 - **publish_agent_version** - Publish a new version of an existing agent
   - Copies config from the current (or specified) version, applies optional overrides (runtimeArn, atxAccessRoleArn), and publishes the new version
   - Use after initial registration to iterate on agent versions
-- **list_agent_access_control** - List access control settings for an agent
-- **update_publisher_access_control** - Grant or revoke account access to an agent
+- **list_agent_access_control** - List access control settings for a RESTRICTED or AWS_PUBLIC agent
+- **update_publisher_access_control** - Grant or revoke account access to a RESTRICTED or AWS_PUBLIC agent
 
 ### Debugging Tools
 - **fetch_logs** - Fetch CloudWatch logs for an agent runtime
