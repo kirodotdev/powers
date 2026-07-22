@@ -4,6 +4,10 @@
 
 This document describes region-specific capabilities and limitations for AWS HealthOmics. Not all HealthOmics features are available in all regions.
 
+## Authoritative Source
+
+For the most up-to-date information on supported regions, instance types, and features, refer to the [AWS HealthOmics public documentation](https://docs.aws.amazon.com/omics/latest/dev/memory-and-compute-tasks.html) and the [HealthOmics endpoints and quotas page](https://docs.aws.amazon.com/general/latest/gr/healthomics-quotas.html). IF the information in this document appears inconsistent with what public documentation states, defer to the public documentation.
+
 ## When to Reference This Document
 
 Reference this document when:
