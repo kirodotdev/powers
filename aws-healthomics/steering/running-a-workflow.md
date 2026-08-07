@@ -55,6 +55,42 @@ Behavior to know (Nextflow profiles):
 - Explicit run parameters (in `parameters.json`) override profile-defined parameter values.
 - Recommend pinning `manifest.nextflowVersion` in the workflow when profiles are in use, so profile application is consistent across runs.
 
+### Requester Pays
+
+If a workflow reads from or writes to S3 Requester Pays buckets, the run must opt in. There are two ways to enable it:
+
+**Option 1 — Per-run flag:**
+```bash
+aws omics start-run \
+    --workflow-id <workflow-id> \
+    --role-arn arn:aws:iam::<account>:role/<role> \
+    --output-uri s3://<requester-pays-bucket>/outputs/ \
+    --parameters '{"input_file": "s3://<requester-pays-bucket>/data/file.txt"}' \
+    --requester-pays-enabled
+```
+
+Use `--no-requester-pays-enabled` to explicitly disable (the default).
+
+**Option 2 — Configuration-level (reusable across runs):**
+```bash
+aws omics create-configuration \
+    --name requester-pays-config \
+    --description "Enables S3 Requester Pays access for runs" \
+    --run-configurations '{"requesterPaysEnabled": true}'
+```
+
+Then reference it when starting the run:
+```bash
+aws omics start-run \
+    --workflow-id <workflow-id> \
+    --role-arn arn:aws:iam::<account>:role/<role> \
+    --output-uri s3://<requester-pays-bucket>/outputs/ \
+    --configuration-name requester-pays-config \
+    --parameters '{"input_file": "s3://<requester-pays-bucket>/data/file.txt"}'
+```
+
+Without requester-pays enabled, runs that access Requester Pays buckets will fail with an S3 access error.
+
 ### Handling Failures
 
 IF the workflow run fails:
