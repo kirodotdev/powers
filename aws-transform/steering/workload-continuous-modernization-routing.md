@@ -1,13 +1,16 @@
 # Custom vs continuous modernization Routing
 
 Route customer requests to the correct skill set. continuous modernization supports local, local-parallel,
-new EC2, existing EC2, and Fargate + AWS Batch as compute options; Custom supports local
+new EC2, existing EC2, Fargate + AWS Batch, and the AWS-managed fleet (`--mode aws-managed`, no customer
+infrastructure) as compute options; Custom supports local
 and Fargate + AWS Batch. The compute choice is independent of the Custom-vs-continuous modernization choice;
 pick routing first, then surface compute options.
 
 ## ⚠️ MANDATORY: Permission Consent After Compute Choice
 
-**When the customer chooses a remote compute option (EC2 or Batch/Fargate), the VERY FIRST response to the customer MUST be the permission consent message from the chosen execution skill. Do NOT ask any setup questions (source, analysis type, region, existing instance, etc.) before showing the consent message. If the customer says no, warn them about potential permission errors but continue anyway.**
+**When the customer chooses a *customer-owned* remote compute option (EC2 or Batch/Fargate), the VERY FIRST response to the customer MUST be the permission consent message from the chosen execution skill. Do NOT ask any setup questions (source, analysis type, region, existing instance, etc.) before showing the consent message. If the customer says no, warn them about potential permission errors but continue anyway.**
+
+**The AWS-managed fleet (`--mode aws-managed`) is the exception — and the correct route for "no infrastructure" intent.** When the customer says anything like "no infrastructure", "I don't want to set up / manage / provision anything", "no EC2", "no Batch stack", "just run it on AWS for me", or "fully managed", route to [continuous-modernization-aws-managed-execution](workload-continuous-modernization-aws-managed-execution.md) — do NOT offer EC2/Batch or a provisioning-consent message for these requests. aws-managed needs **no** customer infrastructure, **no** CloudFormation, and **no** permission-consent step; the create call is the submission. Note that Batch/Fargate is **not** the "no infrastructure" option — it still deploys a customer-owned stack. `--mode aws-managed` is a real, shipped mode; never claim only `ec2`/`batch` exist.
 
 ## Prerequisite: workload check
 
@@ -156,6 +159,7 @@ After a Custom transformation completes successfully, present this message:
 | [workload-continuous-modernization-troubleshooting.md](workload-continuous-modernization-troubleshooting.md) | Diagnose setup and command execution failures                                         |
 | [workload-continuous-modernization-ec2-execution.md](workload-continuous-modernization-ec2-execution.md)     | Run remote analysis/remediation on EC2 via `atx ct remote` CLI commands                |
 | [workload-continuous-modernization-batch-execution.md](workload-continuous-modernization-batch-execution.md) | Run remote analysis/remediation on AWS Batch (Fargate) via `atx ct remote` CLI commands |
+| [workload-continuous-modernization-aws-managed-execution.md](workload-continuous-modernization-aws-managed-execution.md) | Run remote analysis on the AWS-managed fleet (`--mode aws-managed`) — no customer infrastructure |
 | [workload-continuous-modernization-schedule.md](workload-continuous-modernization-schedule.md)               | Schedule recurring analyses via `atx ct schedule` CLI commands (analyses only)           |
 | [workload-continuous-modernization-reporting.md](workload-continuous-modernization-reporting.md)             | Generate an HTML report of continuous modernization analyses                                             |
 | [workload-continuous-modernization-security-agent.md](workload-continuous-modernization-security-agent.md)   | Security agent setup (admin) and runtime verification (executor)                      |

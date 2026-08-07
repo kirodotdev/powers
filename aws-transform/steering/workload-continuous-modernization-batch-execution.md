@@ -25,7 +25,7 @@ If the user explicitly opts out of telemetry, omit `--telemetry` for the rest of
 - Analyzing or remediating many repos in parallel (one container per repo)
 - Analyzing one type across many sources or repos in a single run (to run multiple types, submit once per type)
 - One-shot batch jobs with no persistent infrastructure between runs
-- Customer wants AWS-managed compute (no EC2 instance to manage)
+- Customer wants serverless Fargate compute in **their own account** (no EC2 instance to keep running) — note this still deploys a customer-owned Batch stack. For a run with **no customer infrastructure at all**, use [AWS-managed execution](workload-continuous-modernization-aws-managed-execution.md) (`--mode aws-managed`) instead.
 
 For persistent compute with warm containers, use [remote EC2 execution](workload-continuous-modernization-ec2-execution.md) instead.
 
@@ -125,12 +125,14 @@ atx ct remote provision --mode batch \
 ```
 
 Required flags:
+
 - `--mode batch` — required
 - `--vpc <id>` — required
 - `--subnets <ids>` — required (comma-separated, private subnets only)
 - `--securityGroup <sg-id>` — required for Batch
 
 Optional flags:
+
 - `--suffix <name>` — custom stack name suffix (default: no suffix)
 - `--image-uri <uri>` — container image override (default: public AWS Transform — continuous modernization image)
 - `--job-timeout <seconds>` — per-attempt timeout, 60..604800 (default: 43200 = 12h)
@@ -153,6 +155,7 @@ atx ct remote analysis \
 ```
 
 Fan-out options:
+
 - `--type <type>` — exactly ONE analysis type per run (rapid-techdebt-analysis, tech-debt-comprehensive, security, agentic-readiness, modernization-readiness, custom); to run multiple types, submit once per type
 - `--sources src1,src2` — multiple sources
 - `--repos src::repo1,src::repo2` — specific repos (fully qualified)
@@ -161,6 +164,7 @@ Fan-out options:
 - `-g key=value` — configuration for custom transformations
 
 Stack targeting (choose one):
+
 - `--stack-name <stack>` — target the stack by name
 - `--tags env=prod,team=platform` — discover the stack by its resource tags instead of naming it (alternative to `--stack-name`; same tags set at provision time)
 
@@ -183,7 +187,7 @@ Add `--json` for machine-readable output.
 If some jobs in a batch failed:
 
 ```bash
-atx ct remote analysis --resume --batch-name <batch> --mode batch --stack-name <stack>
+atx ct remote analysis --resume-incomplete --batch-name <batch> --mode batch --stack-name <stack>
 ```
 
 Re-submits only the non-completed jobs from the original batch.
@@ -215,6 +219,7 @@ atx ct remote remediation \
 ```
 
 Filter options:
+
 - `--ids <id1,id2>` — specific finding IDs
 - `--sources <src>` / `--repos <src>::<repo>` — by source/repo
 - `--severity high` — exact severity match
@@ -228,6 +233,7 @@ Stack targeting is the same as analysis: pass `--stack-name <stack>` or discover
 ### 8. Get Results
 
 Status output already shows key result info for completed jobs:
+
 - **Analysis**: `resultId` and finding count (e.g., `(3 findings)`)
 - **Remediation**: `resultId` and PR/MR URL (for SCM sources) or S3 output path (for local sources)
 
@@ -257,16 +263,16 @@ S3 buckets (source code, outputs) and Secrets Manager tokens are preserved. VPC/
 
 ## Error Handling
 
-| Error | Cause | Fix |
-|---|---|---|
-| `Stack not deployed` | No Batch infra | Run `atx ct remote provision --mode batch ...` |
-| `Token invalid for source` | Expired/revoked SCM token | Run `atx ct remote credentials --source <src> --token <new> --ack` |
-| `Job count exceeds Lambda batch limit of 250` | Too many repos in one run | Split into multiple submissions |
-| `Batch name already exists` | Duplicate batch name | Use a unique `--batch-name` or omit for auto-generated |
-| `No repos resolved` | Source has no repos or labels don't match | Check `atx ct repository list --source <src>` |
-| `No deployed stack found for tags` | `--tags` matched no deployed stack | Verify tags with `atx ct remote detect --mode batch --tags <k=v>`, or target by `--stack-name` |
-| `--securityGroup is required for --mode batch` | Missing required flag | Add `--securityGroup <sg-id>` |
-| `Public subnet(s) are not allowed` | Provided public subnets | Use private subnets only (with NAT for internet) |
+| Error                                          | Cause                                     | Fix                                                                                            |
+| ---------------------------------------------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `Stack not deployed`                           | No Batch infra                            | Run `atx ct remote provision --mode batch ...`                                                 |
+| `Token invalid for source`                     | Expired/revoked SCM token                 | Run `atx ct remote credentials --source <src> --token <new> --ack`                             |
+| `Job count exceeds Lambda batch limit of 250`  | Too many repos in one run         | Split into multiple submissions                                                                |
+| `Batch name already exists`                    | Duplicate batch name                      | Use a unique `--batch-name` or omit for auto-generated                                         |
+| `No repos resolved`                            | Source has no repos or labels don't match | Check `atx ct repository list --source <src>`                                                  |
+| `No deployed stack found for tags`             | `--tags` matched no deployed stack        | Verify tags with `atx ct remote detect --mode batch --tags <k=v>`, or target by `--stack-name` |
+| `--securityGroup is required for --mode batch` | Missing required flag                     | Add `--securityGroup <sg-id>`                                                                  |
+| `Public subnet(s) are not allowed`             | Provided public subnets                   | Use private subnets only (with NAT for internet)                                               |
 
 ## Limits
 
