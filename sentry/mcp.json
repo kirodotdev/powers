@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "Sentry": {
+      "url": "https://mcp.sentry.dev/mcp",
+      "autoApprove": [
+        "find_organizations",
+        "find_projects",
+        "find_teams",
+        "find_releases",
+        "search_issues",
+        "search_events",
+        "search_issue_events",
+        "get_issue_details",
+        "get_issue_tag_values",
+        "get_trace_details",
+        "search_docs"
+      ]
+    }
+  }
+}
