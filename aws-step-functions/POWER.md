@@ -33,7 +33,7 @@ Load the appropriate steering file based on what the user is working on:
 - **Service integrations**, **Lambda invoke**, **DynamoDB**, **SNS**, **SQS**, **SDK integrations**, **Resource ARN**, **sync**, **async** → see `service-integrations.md`
 - **Migrating from JSONPath to JSONata**, **migration**, **JSONPath to JSONata**, **InputPath**, **Parameters**, **ResultSelector**, **ResultPath**, **OutputPath**, **intrinsic functions**, **Iterator**, **payload template** → see `migrating-from-jsonpath-to-jsonata.md`
 - **Validation**, **linting**, **testing**, **TestState**, **test state**, **mock**, **mocking**, **unit test**, **inspection level**, **DEBUG**, **TRACE**, **validate state**, **test in isolation** → see `validation-and-testing.md`
-- **Architecture patterns**, **examples**, **polling**, **saga**, **compensation**, **scatter-gather**, **semaphore**, **lock**, **human-in-the-loop**, **escalation**, **Express to Standard** → see `architecture-patterns.md`
+- **Architecture patterns**, **examples**, **polling**, **saga**, **compensation**, **scatter-gather**, **semaphore**, **lock**, **human-in-the-loop**, **escalation**, **Express to Standard**, **agent**, **harness** → see `architecture-patterns.md`
 - **Data transformation**, **JSONata expressions**, **filtering**, **aggregation**, **string operations**, **$reduce**, **$lookup**, **$toMillis**, **$partition**, **$parse**, **$hash**, **$uuid** → see `transforming-data.md`
 - **State input/output**, **$states**, **Assign**, **Output**, **Arguments**, **variable scope**, **variable limits**, **evaluation order**, **passing data between states** → see `processing-state-inputs-and-outputs.md`
 
