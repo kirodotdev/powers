@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "agent-bus": {
+      "command": "npx",
+      "args": ["-y", "kiro-power-agent-bus"],
+      "disabled": false,
+      "autoApprove": [
+        "agent_post_message",
+        "agent_read_messages",
+        "agent_signal",
+        "agent_wait_signal",
+        "agent_list_agents"
+      ]
+    }
+  }
+}
