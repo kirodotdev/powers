@@ -10,7 +10,7 @@ The parent `estimate.md` determines pricing source before loading this file.
 
 **Price lookup order for each AWS service in `aws-design.json`:**
 
-1. **`steering/cached-prices.md` (primary)** — Read once. **Before using, check staleness:** compute `days_since_cache = today − cache "Last updated" date`. If `days_since_cache > 30`, set `pricing_source: "cached_stale"` for all AI model prices and prepend a warning to the estimate output: "Pricing cache is more than 30 days old — AI model prices may have changed. Verify via the AWS Pricing MCP server or aws.amazon.com/bedrock/pricing." Infrastructure prices (Fargate, RDS, S3, etc.) remain reliable; only AI model prices need the stale flag. If `days_since_cache ≤ 30`, use the price directly and set `pricing_source: "cached"`.
+1. **`cached-prices.md` (primary)** — Read once. **Before using, check staleness:** compute `days_since_cache = today − cache "Last updated" date`. If `days_since_cache > 30`, set `pricing_source: "cached_stale"` for all AI model prices and prepend a warning to the estimate output: "Pricing cache is more than 30 days old — AI model prices may have changed. Verify via the AWS Pricing MCP server or aws.amazon.com/bedrock/pricing." Infrastructure prices (Fargate, RDS, S3, etc.) remain reliable; only AI model prices need the stale flag. If `days_since_cache ≤ 30`, use the price directly and set `pricing_source: "cached"`.
 2. **MCP with recipes (secondary)** — If a service is NOT in cached-prices.md and MCP is available, use the Pricing Recipes table below. Set `pricing_source: "live"`.
 3. **Cache after MCP failure** — If MCP was attempted but failed, and the service IS in the cache, use the cached price. Set `pricing_source: "cached_fallback"`.
 4. **Unavailable** — If a service is NOT in the cache AND MCP failed, set `pricing_source: "unavailable"`. Add to `services_with_missing_fallback` and warn the user.
@@ -36,21 +36,22 @@ If all validations pass, proceed to Part 1.
 Only use these recipes when a service is NOT in `cached-prices.md` and MCP is available.
 Do NOT call get_pricing_service_codes, get_pricing_service_attributes, or get_pricing_attribute_values — go directly to get_pricing.
 
-| AWS Service          | service_code      | filters                                                                                                              | output_options                                                                                                                                     |
-| -------------------- | ----------------- | -------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Fargate              | AmazonECS         | `[{"Field":"productFamily","Value":"Compute"}]`                                                                      | `{"pricing_terms":["OnDemand"],"product_attributes":["usagetype","location"],"exclude_free_products":true}`                                        |
-| Aurora PostgreSQL    | AmazonRDS         | `[{"Field":"databaseEngine","Value":"Aurora PostgreSQL"},{"Field":"deploymentOption","Value":"Single-AZ"}]`          | `{"pricing_terms":["OnDemand"],"product_attributes":["instanceType","databaseEngine","deploymentOption","location"],"exclude_free_products":true}` |
-| RDS PostgreSQL       | AmazonRDS         | `[{"Field":"databaseEngine","Value":"PostgreSQL"},{"Field":"deploymentOption","Value":"Multi-AZ"}]`                  | `{"pricing_terms":["OnDemand"],"product_attributes":["instanceType","databaseEngine","deploymentOption","location"],"exclude_free_products":true}` |
-| Aurora MySQL         | AmazonRDS         | `[{"Field":"databaseEngine","Value":"Aurora MySQL"},{"Field":"deploymentOption","Value":"Single-AZ"}]`               | `{"pricing_terms":["OnDemand"],"product_attributes":["instanceType","databaseEngine","deploymentOption","location"],"exclude_free_products":true}` |
-| Aurora Serverless v2 | AmazonRDS         | `[{"Field":"usagetype","Value":["Aurora:ServerlessV2Usage","Aurora:ServerlessV2IOOptimizedUsage"],"Type":"ANY_OF"}]` | `{"pricing_terms":["OnDemand"],"product_attributes":["usagetype","databaseEngine","location"],"exclude_free_products":true}`                       |
-| S3                   | AmazonS3          | `[{"Field":"storageClass","Value":"General Purpose"}]`                                                               | `{"pricing_terms":["OnDemand"],"product_attributes":["storageClass","volumeType","location"],"exclude_free_products":true}`                        |
-| ALB                  | AWSELB            | `[{"Field":"productFamily","Value":"Load Balancer-Application"}]`                                                    | `{"pricing_terms":["OnDemand"],"product_attributes":["productFamily","location"],"exclude_free_products":true}`                                    |
-| NAT Gateway          | AmazonEC2         | `[{"Field":"productFamily","Value":"NAT Gateway"}]`                                                                  | `{"pricing_terms":["OnDemand"],"product_attributes":["productFamily","location","group"],"exclude_free_products":true}`                            |
-| Lambda               | AWSLambda         | `[{"Field":"group","Value":"AWS-Lambda-Duration"}]`                                                                  | `{"pricing_terms":["OnDemand"],"product_attributes":["group","location","usagetype"],"exclude_free_products":true}`                                |
-| Secrets Manager      | AWSSecretsManager | `[]`                                                                                                                 | `{"pricing_terms":["OnDemand"],"exclude_free_products":true}`                                                                                      |
-| CloudWatch Logs      | AmazonCloudWatch  | `[{"Field":"usagetype","Value":"DataProcessing-Bytes"}]`                                                             | `{"pricing_terms":["OnDemand"],"product_attributes":["productFamily","location","usagetype"],"exclude_free_products":true}`                        |
-| ElastiCache Redis    | AmazonElastiCache | `[{"Field":"cacheEngine","Value":"Redis"},{"Field":"instanceType","Value":"cache.t4g","Type":"CONTAINS"}]`           | `{"pricing_terms":["OnDemand"],"product_attributes":["instanceType","cacheEngine","location"],"exclude_free_products":true}`                       |
-| DynamoDB             | AmazonDynamoDB    | `[]`                                                                                                                 | `{"pricing_terms":["OnDemand"],"product_attributes":["group","location"],"exclude_free_products":true}`                                            |
+| AWS Service          | service_code      | filters                                                                                                                                                                                                                                  | output_options                                                                                                                                     |
+| -------------------- | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Fargate              | AmazonECS         | `[{"Field":"productFamily","Value":"Compute"}]`                                                                                                                                                                                          | `{"pricing_terms":["OnDemand"],"product_attributes":["usagetype","location"],"exclude_free_products":true}`                                        |
+| Aurora PostgreSQL    | AmazonRDS         | `[{"Field":"databaseEngine","Value":"Aurora PostgreSQL"},{"Field":"deploymentOption","Value":"Single-AZ"}]`                                                                                                                              | `{"pricing_terms":["OnDemand"],"product_attributes":["instanceType","databaseEngine","deploymentOption","location"],"exclude_free_products":true}` |
+| RDS PostgreSQL       | AmazonRDS         | `[{"Field":"databaseEngine","Value":"PostgreSQL"},{"Field":"deploymentOption","Value":"Multi-AZ"}]`                                                                                                                                      | `{"pricing_terms":["OnDemand"],"product_attributes":["instanceType","databaseEngine","deploymentOption","location"],"exclude_free_products":true}` |
+| Aurora MySQL         | AmazonRDS         | `[{"Field":"databaseEngine","Value":"Aurora MySQL"},{"Field":"deploymentOption","Value":"Single-AZ"}]`                                                                                                                                   | `{"pricing_terms":["OnDemand"],"product_attributes":["instanceType","databaseEngine","deploymentOption","location"],"exclude_free_products":true}` |
+| Aurora Serverless v2 | AmazonRDS         | `[{"Field":"usagetype","Value":["Aurora:ServerlessV2Usage","Aurora:ServerlessV2IOOptimizedUsage"],"Type":"ANY_OF"}]`                                                                                                                     | `{"pricing_terms":["OnDemand"],"product_attributes":["usagetype","databaseEngine","location"],"exclude_free_products":true}`                       |
+| S3                   | AmazonS3          | `[{"Field":"storageClass","Value":"General Purpose"}]`                                                                                                                                                                                   | `{"pricing_terms":["OnDemand"],"product_attributes":["storageClass","volumeType","location"],"exclude_free_products":true}`                        |
+| ALB                  | AWSELB            | `[{"Field":"productFamily","Value":"Load Balancer-Application"}]`                                                                                                                                                                        | `{"pricing_terms":["OnDemand"],"product_attributes":["productFamily","location"],"exclude_free_products":true}`                                    |
+| NAT Gateway          | AmazonEC2         | `[{"Field":"productFamily","Value":"NAT Gateway"}]`                                                                                                                                                                                      | `{"pricing_terms":["OnDemand"],"product_attributes":["productFamily","location","group"],"exclude_free_products":true}`                            |
+| Lambda               | AWSLambda         | `[{"Field":"group","Value":"AWS-Lambda-Duration"}]`                                                                                                                                                                                      | `{"pricing_terms":["OnDemand"],"product_attributes":["group","location","usagetype"],"exclude_free_products":true}`                                |
+| Secrets Manager      | AWSSecretsManager | `[]`                                                                                                                                                                                                                                     | `{"pricing_terms":["OnDemand"],"exclude_free_products":true}`                                                                                      |
+| CloudWatch Logs      | AmazonCloudWatch  | `[{"Field":"usagetype","Value":"DataProcessing-Bytes"}]`                                                                                                                                                                                 | `{"pricing_terms":["OnDemand"],"product_attributes":["productFamily","location","usagetype"],"exclude_free_products":true}`                        |
+| ElastiCache Redis    | AmazonElastiCache | `[{"Field":"cacheEngine","Value":"Redis"},{"Field":"instanceType","Value":"cache.t4g","Type":"CONTAINS"}]`                                                                                                                               | `{"pricing_terms":["OnDemand"],"product_attributes":["instanceType","cacheEngine","location"],"exclude_free_products":true}`                       |
+| EC2 (Graviton/x86)   | AmazonEC2         | `[{"Field":"instanceType","Value":"<m7g.xlarge or x86 equivalent>"},{"Field":"operatingSystem","Value":"Linux"},{"Field":"tenancy","Value":"Shared"},{"Field":"preInstalledSw","Value":"NA"},{"Field":"capacitystatus","Value":"Used"}]` | `{"pricing_terms":["OnDemand"],"product_attributes":["instanceType","location"],"exclude_free_products":true}`                                     |
+| DynamoDB             | AmazonDynamoDB    | `[]`                                                                                                                                                                                                                                     | `{"pricing_terms":["OnDemand"],"product_attributes":["group","location"],"exclude_free_products":true}`                                            |
 
 **Important notes on MCP filters:**
 
@@ -68,11 +69,59 @@ Do NOT call get_pricing_service_codes, get_pricing_service_attributes, or get_pr
 Determine the current GCP monthly infrastructure costs. Use the best available source:
 
 1. **`billing-profile.json` (preferred)** — Use actual billing data as the GCP baseline. Highest confidence (±5%).
-2. **`gcp-resource-inventory.json` (fallback)** — Estimate costs from discovered resource configurations. Wider range (±20-30%).
+2. **`gcp-resource-inventory.json` (fallback)** — Derive costs from discovered
+   resource sizing using `gcp-infra-pricing-cache.md` — never
+   from remembered GCP prices. Wider range (±20-30%). Procedure:
+   - For each inventory resource, apply the matching rate-card derivation
+     (Cloud SQL tier decoding × HA multiplier + disk; Memorystore GB × tier
+     band; GCE/GKE-node machine types × 730; GKE cluster fee). Config field
+     names may be capture-shaped (`settings.tier`, `settings.dataDiskSizeGb`,
+     `memorySizeGb`) or Terraform-shaped (`tier`, `disk_size`) — resolve
+     either.
+   - Resources the rate card marks NOT derivable (Cloud Run, Functions,
+     Pub/Sub, buckets, Autopilot, egress) are EXCLUDED from the total with
+     reason `"usage_based"`; name each in `warnings[]` with: "usage-based —
+     not derivable from sizing; provide a billing export for the full
+     baseline." (Exclusion reason enum: `usage_based`, `no_standing_charge`,
+     `unpriced_gcp` — nothing else.)
+   - A sized resource whose rate is missing from the card → `"unpriced_gcp"`,
+     excluded, warned. Never guess a rate. When `settings.dataDiskType` is
+     absent, assume `PD_SSD` (the Cloud SQL default) and say so in the
+     derivation entry. When `settings.backupConfiguration.enabled` is true,
+     add a backup-storage line using the card's backup rate against the
+     provisioned disk size as an upper bound, labeled "(backup upper bound)".
+   - No-standing-charge resources (VPC networks/subnets, service accounts,
+     IAM, secrets at trivial volume) are excluded with reason
+     `"no_standing_charge"` — NOT the usage-based warning.
+   - Set `current_costs.source: "inventory_estimate"` (the value
+     `schema-estimate-infra.md` already enumerates) and
+     `current_costs.accuracy: "±20-30%"`.
+   - Shape: `current_costs.breakdown` stays the schema's category-keyed map
+     (`compute` / `database` / `cache` / `storage` / ...); record the
+     per-resource arithmetic in an additive `current_costs.derivation[]`
+     array (address, resolved config, calculation string, monthly), and the
+     exclusions in `current_costs.excluded_resources[]` +
+     `current_costs.warnings[]`.
+   - `baseline_note` (mandatory): "Derived from discovered resource sizing ×
+     GCP list rates — not a bill. Excludes usage-based services (Cloud Run,
+     bandwidth, storage volume), sustained-use/committed-use discounts, and
+     credits; your invoice may differ materially."
 3. **`preferences.json` → `gcp_monthly_spend`** — User-provided monthly spend from clarification.
 4. **Ask the user** — If none of the above are available, ask: "I need your current GCP monthly spend to produce a meaningful cost comparison. What is your approximate GCP monthly infrastructure cost?" Use the user's answer. If the user declines or is unsure, present AWS costs without a GCP comparison and note: "GCP baseline unavailable — AWS costs shown without comparison."
 
 Present the GCP baseline as a total and per-service breakdown, noting which source was used.
+
+**Baseline-quality display label (derived from `current_costs.source` — no new field):**
+
+| `current_costs.source` | Display label                                                                                   |
+| ---------------------- | ----------------------------------------------------------------------------------------------- |
+| `"billing_data"`       | "Measured from your GCP billing (±5%)"                                                          |
+| `"inventory_estimate"` | "Estimated from resource configs (±20–30%) — standing charges only; excludes usage-based costs" |
+| `"preferences"`        | "Your stated spend band from Clarify (midpoint used)"                                           |
+| `"user_provided"`      | "Your stated figure (unverified)"                                                               |
+| `"unavailable"`        | "No GCP baseline — AWS costs shown without comparison"                                          |
+
+**Not-comparable rule (hard):** Never present an inventory-only GCP figure side-by-side with a user spend band (or vice versa) as if they measure the same thing — an inventory estimate captures standing charges for discovered resources, not the full bill. When both exist and disagree by more than the accuracy band, show both, labeled, with one line: "These measure different things — the billing figure (or your stated band) is the decision baseline; the inventory figure only covers discovered resources." Every GCP-vs-AWS comparison row states its baseline label.
 
 ### CUD-Aware Baseline (when billing data available)
 
@@ -88,7 +137,7 @@ This ensures the comparison is GCP list price vs. AWS on-demand (both uncommitte
 
 ## Part 2: Calculate Projected AWS Costs
 
-**Security baseline coverage (always required):** Add a `security_baseline` entry to `projected_costs.breakdown` with `service: "AWS Security Baseline (Tier 1)"`, low/mid/high estimates of $3/$15/$30 per month, `accuracy: "±25%"`, and a `components` sub-object breaking down CloudTrail S3 storage (~$1.50/mo mid), GuardDuty (~~$13/mo mid after free trial), AWS Budgets ($0), and the free controls. If `preferences.json.compliance` contains any of `soc2`, `pci`, `hipaa`, `fedramp`, also add a sibling `security_baseline_compliance` entry with low/mid/high estimates of $3/$14/$25 per month, `accuracy: "±25%"`, `emission_reason` field citing the declared compliance values, and a `components` sub-object breaking down AWS Config (~$6/mo mid continuous), Config S3 storage (~~ $0.50/mo mid), Security Hub + FSBP (~$7/mo mid after free trial), and extra standards (free). Per-unit rates are grounded in the AWS Pricing API for us-east-1 as of 2026-05-04 (Config pricing effective 2025-09-01, Security Hub effective 2026-03-01). Cite source as `steering/cached-prices.md § Security Baseline` or live `get_pricing` calls for `AmazonGuardDuty`, `AWSConfig`, and `AWSSecurityHub` service codes. Both line items are added as flat additives to each tier total (Premium/Balanced/Optimized) rather than being tier-dependent.
+**Security baseline coverage (always required):** Add a `security_baseline` entry to `projected_costs.breakdown` with `service: "AWS Security Baseline (Tier 1)"`, low/mid/high estimates of $3/$15/$30 per month, `accuracy: "±25%"`, and a `components` sub-object breaking down CloudTrail S3 storage (~$1.50/mo mid), GuardDuty (~~$13/mo mid after free trial), AWS Budgets ($0), and the free controls. If `preferences.json.compliance` contains any of `soc2`, `pci`, `hipaa`, `fedramp`, also add a sibling `security_baseline_compliance` entry with low/mid/high estimates of $3/$14/$25 per month, `accuracy: "±25%"`, `emission_reason` field citing the declared compliance values, and a `components` sub-object breaking down AWS Config (~$6/mo mid continuous), Config S3 storage (~~ $0.50/mo mid), Security Hub + FSBP (~$7/mo mid after free trial), and extra standards (free). Per-unit rates are grounded in the AWS Pricing API for us-east-1 as of 2026-05-04 (Config pricing effective 2025-09-01, Security Hub effective 2026-03-01). Cite source as `cached-prices.md § Security Baseline` or live `get_pricing` calls for `AmazonGuardDuty`, `AWSConfig`, and `AWSSecurityHub` service codes. Both line items are added as flat additives to each tier total (Premium/Balanced/Optimized) rather than being tier-dependent.
 
 For each service in `aws-design.json`, calculate monthly cost using rates from `cached-prices.md`. Track `pricing_source` per service.
 
@@ -128,7 +177,7 @@ Show calculation breakdown per service: rate × quantity = cost. Present all 3 t
 
 ## Part 2B: Observability Cost Estimation (CloudWatch)
 
-GCP Cloud Operations Suite has generous free tiers (50 GB/month logging free, 150M metric samples free, alerting free, profiling free). AWS CloudWatch charges from the first GB and first custom metric. This section ensures observability costs are not a surprise post-migration.
+GCP Cloud Operations includes a larger free tier for logging (50 GB/month), metrics (150M samples), alerting, and profiling. CloudWatch also has an always-free tier (5 GB logs, 10 custom metrics, 10 alarms, 1M API requests/month — see [AWS CloudWatch pricing](https://aws.amazon.com/cloudwatch/pricing/)), but allowances are smaller. This section estimates costs **above** those free-tier limits so observability is not a surprise post-migration.
 
 **Relationship to Part 2 "Supporting" line item:** The observability entry produced by this section REPLACES any CloudWatch/log/metric portion that would otherwise appear in the "Supporting" row of Part 2. Do NOT include CloudWatch log ingestion, metrics, or alarms in the Supporting line item — they are fully covered here. Supporting retains only Secrets Manager and any non-observability per-unit charges.
 
@@ -218,11 +267,14 @@ Set `observability.tracing_source: "heuristic"`.
 
 Default estimate uses Standard log class ($0.50/GB) for all logs. Infrequent Access ($0.25/GB) is an optimization opportunity surfaced in Step 6, not the baseline assumption.
 
+**Always-free tier (apply before billing):** 5 GB logs (ingestion + archive combined), 10 custom metrics, 10 alarms, 1M API requests/month. Subtract these allowances from derived volumes before applying rates.
+
 ```
-log_ingestion_cost    = monthly_log_gb × $0.50
-log_storage_cost      = monthly_log_gb × $0.03 × retention_months (default: 1)
-custom_metrics_cost   = custom_metrics_count × $0.30  (flat rate; valid for ≤10K metrics at startup scale)
-alarms_cost           = alarm_count × $0.10
+billable_log_gb       = max(0, monthly_log_gb - 5)
+log_ingestion_cost    = billable_log_gb × $0.50
+log_storage_cost      = billable_log_gb × $0.03 × retention_months (default: 1)
+custom_metrics_cost   = max(0, custom_metrics_count - 10) × $0.30  (flat rate; valid for ≤10K metrics at startup scale)
+alarms_cost           = max(0, alarm_count - 10) × $0.10
 tracing_cost          = max(0, monthly_spans - 100_000) / 1_000_000 × $5.00  (honors X-Ray 100K/month free tier)
 dashboard_cost        = max(0, dashboards - 3) × $3.00  (default: 0 — assume ≤3)
 
@@ -249,7 +301,7 @@ Add an `observability` entry to `projected_costs.breakdown`. This entry REPLACES
     "tracing": <tracing_cost>
   },
   "volume_source": "<billing|heuristic>  (reflects log volume source — the largest cost component; metrics are always heuristic regardless of this field)",
-  "note": "GCP Cloud Operations includes 50 GB/month free logging, free alerting, and free profiling. CloudWatch charges from the first GB. Tracing is significantly more expensive on X-Ray ($5/M) vs Cloud Trace ($0.20/M). Actual costs depend on log verbosity and retention policy."
+  "note": "GCP Cloud Operations includes 50 GB/month free logging, free alerting, and free profiling. CloudWatch always-free tier includes 5 GB logs, 10 custom metrics, and 10 alarms per month. This estimate assumes workload volume above those limits (especially custom metrics). X-Ray tracing is more expensive than Cloud Trace at scale ($5/M vs $0.20/M). Actual costs depend on log verbosity and retention."
 }
 ```
 
@@ -257,7 +309,7 @@ Add an `observability` entry to `projected_costs.breakdown`. This entry REPLACES
 
 In Part 3 (Cost Comparison), if observability costs exceed $20/month, add a callout:
 
-> **Observability cost note:** Your GCP Cloud Operations costs may appear low or zero due to generous free tiers (50 GB/month logging, 150M metric samples, free alerting). The CloudWatch estimate of $X/month reflects the same workload without those free tiers. Consider:
+> **Observability cost note:** Your GCP Cloud Operations costs may appear low or zero due to generous free tiers (50 GB/month logging, 150M metric samples, free alerting). CloudWatch also has always-free allowances (5 GB logs, 10 metrics, 10 alarms), but they are narrower than GCP's. The CloudWatch estimate of $X/month reflects this workload **above those limits**. Consider:
 >
 > - Reducing log verbosity (WARN-only for production services) to lower ingestion costs
 > - Using CloudWatch Logs Infrequent Access class for non-critical logs ($0.25/GB — 50% cheaper than Standard)
@@ -266,11 +318,29 @@ In Part 3 (Cost Comparison), if observability costs exceed $20/month, add a call
 
 ### Estimation rules
 
-- Do NOT emit observability costs as $0 — even minimal apps produce logs on AWS
-- Floor: $5/month (absolute minimum for any running Fargate + RDS workload)
+- Do NOT emit observability costs as $0 without running Step 4 — apply CloudWatch always-free allowances first
+- After free-tier adjustments, use the computed total (no artificial floor for small dev stacks within billable limits)
 - If tracing is not detected in source, do NOT add X-Ray costs (don't upsell)
 - Container Insights is NOT included by default — add only if source uses Cloud Monitoring with per-container metrics or if production-tier observability is required
 - The observability line item REPLACES CloudWatch entries in the "Supporting" row — never double-count
+
+---
+
+## Part 2C: Architecture Comparison (Graviton vs x86)
+
+_Run only when_ `preferences.json` → `design_constraints.cpu_architecture.value` is `graviton` or `mixed` (i.e., at least one service targets Graviton). Skip entirely for `x86`.
+
+**Load** `graviton.md` (savings model) and `schema-graviton.md` (the `architecture_comparison` schema).
+
+Model **only the hourly price discount** — never the performance uplift. For the Balanced tier:
+
+1. Sum the Balanced-tier monthly cost of all Graviton-targeted compute (EC2, Fargate, Lambda, and Graviton-family managed services) using `cached-prices.md` Graviton rows. For any family/size not cached, use the EC2 (Graviton/x86) recipe above. This is `graviton_monthly` (the compute portion).
+2. Re-price the **same mapping** on the x86 equivalents (use the `x86 equivalent` column in `cached-prices.md § EC2`, x86 Fargate/Lambda rates, and the x86 managed-service families). This is `x86_equivalent_monthly`.
+3. Compute `savings_amount = x86_equivalent_monthly − graviton_monthly` and `savings_percent = savings_amount / x86_equivalent_monthly × 100` (one decimal).
+
+Emit an `architecture_comparison` block in `estimation-infra.json` per the `schema-graviton.md` schema. This is **not** a fourth pricing tier — Graviton is the architecture within the Balanced/Premium/Optimized tiers, and the Balanced tier totals already reflect Graviton pricing when selected.
+
+**Report consistency:** the migration report must render these exact figures (no recomputation in the report layer). Numeric agreement is currently a **manual self-check** — the post-write report validator (`validate-migration-report.md`, added by PR #78) is a structural/readability gate and explicitly does not audit dollar figures. Rendering the Graviton savings in the report and adding an automated `architecture_comparison` numeric assertion to `validate-migration-report.py` are tracked as a **follow-up** that lands on top of PR #78 (see `graviton.md` → "Report rendering").
 
 ---
 
@@ -328,16 +398,34 @@ This section covers **GCP vendor/network charges** for outbound data during migr
 
 Set `billing_data_available: true` in the output `migration_cost_considerations` object.
 
-### IF billing data is NOT available (`billing-profile.json` does not exist):
+### IF billing data is NOT available but the inventory carries database/disk sizes:
 
-**Omit GCP data transfer fee estimates.** Without billing data, there is no grounding for egress projections. Instead, include only this note in the output:
+Provisioned sizes are an UPPER BOUND on one-time migration egress (actual data
+≤ provisioned; #149's sizing caveat applies). Present a bounded estimate, never
+a point figure:
 
 Set `migration_cost_considerations` to:
 
 ```json
 {
+  "categories": [
+    "GCP data transfer egress (upper bound): ≤ <sum of provisioned DB disk + known storage GB> GB × $0.12/GB ≈ ≤ $<N> one-time"
+  ],
+  "billing_data_available": false,
+  "baseline_available": true,
+  "note": "Upper bound from PROVISIONED sizes (actual data is typically smaller). Object-storage volume is unknown without billing data — a billing export tightens this to measured volumes."
+}
+```
+
+### IF neither billing data nor any sized inventory resource exists:
+
+**Omit GCP data transfer fee estimates.** There is no grounding for egress projections. Set `migration_cost_considerations` to:
+
+```json
+{
   "categories": [],
   "billing_data_available": false,
+  "baseline_available": false,
   "note": "Data transfer cost estimates require GCP billing data. Re-run discovery with a GCP billing export to see GCP egress fee projections."
 }
 ```
@@ -494,16 +582,54 @@ For dev-tier databases (< $50/month on-demand), emit percent-only guidance witho
 
 ## Part 7: Recommendation
 
-Present 3 paths:
+Present 3 execution paths:
 
 1. **Migrate with Optimizations (Best ROI)** — optimized service choices, monthly cost, projected annual savings
 2. **Phased Migration (Lower Risk)** — cluster-by-cluster per design evaluation order, validate each before proceeding
-3. **Stay on GCP (Lowest Cost)** — only if AWS is more expensive and costs are the sole metric
+3. **Stay on GCP** — when the evidence favors staying: AWS materially more expensive without offsetting operational benefit, deep GCP team investment with no AWS-specific need, or migration cost/risk exceeding the projected benefit on this stack. **Do not gate "stay" on "cost is the sole metric"** — any decisive factor suffices.
 
 Include migrate/stay decision factors:
 
 - **Migrate if:** operational efficiency matters, AWS-specific services needed, batch workloads (Spot savings), long-term AWS strategy, growing infrastructure
-- **Stay if:** cost is the only metric and AWS is more expensive, team deeply experienced with GCP, no need for AWS-specific services
+- **Stay if:** AWS is more expensive without an offsetting benefit for this stack, team deeply experienced with GCP, no need for AWS-specific services
+
+### Decision outcome (write alongside `path`)
+
+The `path` says how a migration would run; `outcome` says whether to run it now. Derive `outcome` from the trigger table, then write both.
+
+**`defer_for_evidence` is expected to be RARE.** AWS almost always has the services, and the AWS-side estimate can almost always be produced — so when in doubt, prefer `conditional_go` with named conditions. Defer only when a responsible verdict is genuinely impossible, not merely incomplete.
+
+**Hard triggers — any one forces `outcome: "defer_for_evidence"`:**
+
+| # | Trigger                                                                                                                                                                                                                                                                                                                     | Evidence to name in `defer` next_steps / `would_flip_if`            |
+| - | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| 1 | Deferred services (e.g. BigQuery) that the user must cut over in the **same window** as app infra AND those services are a **material share of spend or workload** — a verdict on the designed slice would misrepresent the migration                                                                                       | Specialist engagement outcome / analytics target architecture       |
+| 2 | GovCloud-class compliance ambiguity: `compliance` contains `"unknown"` AND signals suggest FedRAMP/government requirements (gov data, agency customer, ITAR hints). GovCloud vs commercial changes regions, service catalog, and pricing wholesale — a commercial-region verdict could be flatly wrong, not just incomplete | Compliance confirmation from the user's legal/compliance owner      |
+| 3 | The user's **only** stated motivation is cost savings AND no spend signal exists at all (no billing, Q3 declined/unknown) — a "migrate to save money" verdict would have zero evidence for its premise                                                                                                                      | Any spend signal: billing export (preferred) or a confirmed Q3 band |
+
+**Soft triggers — never force defer; add each firing trigger to `conditions[]` (outcome becomes `conditional_go` instead of `go`) and to `would_flip_if[]`:**
+
+| # | Trigger                                                                                                                                                            | Condition wording (adapt to stack)                                                                    |
+| - | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------- |
+| 4 | No billing baseline on a cost-motivated ask, but a Q3 spend band exists                                                                                            | "Validate the savings figure against your actual GCP bill — comparison uses your stated band"         |
+| 5 | Compliance unknown with non-GovCloud regulated signals (e.g. possible HIPAA — AWS supports it; architecture and ~$25/mo of controls change, the decision survives) | "Confirm compliance requirements — controls and region preferences would be added, verdict unchanged" |
+| 6 | Active CUDs without an expiration-aligned plan (`cud_status` is `long_remaining`/`unknown_expiry`)                                                                 | "Confirm CUD expiration and overlap cost before committing a start date"                              |
+| 7 | Unresolved multi-region HA vs cost conflict (Q6=Catastrophic but Q1 not Global, or user wavered)                                                                   | "Confirm whether global infrastructure is required — it dominates the cost delta"                     |
+| 8 | `availability` applied by default, never user-confirmed                                                                                                            | "Confirm database availability — Multi-AZ assumption roughly doubles the database line"               |
+| 9 | Pricing staleness beyond the ±15–25% band                                                                                                                          | "Refresh pricing (cache stale) before treating the dollar delta as decision-grade"                    |
+
+**Outcome derivation:**
+
+```
+IF any hard trigger fired          -> outcome: "defer_for_evidence"
+ELSE IF path == "stay"             -> outcome: "stay"
+ELSE IF any soft trigger fired     -> outcome: "conditional_go" (conditions[] = fired soft triggers)
+ELSE                               -> outcome: "go"
+```
+
+Complexity alone (complex stack, many clusters) selects `path: "migrate_phased"` — it does **not** move `outcome` away from go/conditional_go. Populate `decision_basis` (measured / assumed / unknown) from constraint provenance: `chosen_by: "extracted"` or billing → measured; `"default"` → assumed; `["unknown"]` values and absent evidence → unknown. Populate `would_flip_if[]` with the 1–3 changes most likely to alter the outcome, each with its direction.
+
+**Presenting a defer (lead with what IS established):** a defer verdict must open with what the assessment did determine — "AWS can host this stack; the AWS-side estimate is $X–$Y/mo" (and the designed-slice mapping) — before naming the one piece of missing evidence and how to obtain it. Never present defer as "we can't tell you anything"; it means "everything is known except one named thing, and that thing blocks a responsible verdict."
 
 ### Persist recommendation to estimation-infra.json
 
@@ -513,6 +639,8 @@ Part 7 MUST write the following `recommendation` block to `estimation-infra.json
 "recommendation": {
   "path": "migrate_optimized|migrate_phased|stay",
   "path_label": "Migrate with Optimizations|Phased Migration|Stay on GCP",
+  "outcome": "go|conditional_go|defer_for_evidence|stay",
+  "outcome_label": "Go|Go, with conditions|Defer — get evidence|Stay on GCP",
   "roi_justification": "string — one-sentence ROI case from Part 5",
   "confidence": "high|medium|low",
   "migrate_if": [
@@ -520,6 +648,17 @@ Part 7 MUST write the following `recommendation` block to `estimation-infra.json
   ],
   "stay_if": [
     "string — each factor that favors staying for THIS stack"
+  ],
+  "conditions": [
+    "string — REQUIRED non-empty when outcome is conditional_go; one entry per fired soft trigger"
+  ],
+  "decision_basis": {
+    "measured": ["string — evidence from billing/Terraform/code"],
+    "assumed": ["string — defaulted constraints feeding this estimate"],
+    "unknown": ["string — unconfirmed inputs (e.g. compliance unknown)"]
+  },
+  "would_flip_if": [
+    "string — 1-3 changes most likely to alter the outcome, with direction"
   ],
   "next_steps": [
     "string — actionable items from Part 7"
@@ -537,25 +676,28 @@ Part 7 MUST write the following `recommendation` block to `estimation-infra.json
 
 Use `path` for machine consumption; `path_label` for display in report and chat.
 
-**Required fields:** `path`, `path_label`, `confidence`, `migrate_if` (non-empty array), `stay_if` (non-empty array), `next_steps` (non-empty array). `roi_justification` is optional (omit when `path` is `"stay"`).
+**Required fields:** `path`, `path_label`, `outcome`, `outcome_label`, `confidence`, `migrate_if` (non-empty array), `stay_if` (non-empty array), `next_steps` (non-empty array). `conditions` is required non-empty when `outcome` is `"conditional_go"`. `decision_basis` and `would_flip_if` are required (arrays may be empty when nothing applies). `roi_justification` is optional (omit when `path` is `"stay"`). Readers of pre-extension artifacts must tolerate absent v2 fields (`outcome`, `conditions`, `decision_basis`, `would_flip_if`) and fall back to `path`.
 
 Tailor `migrate_if` and `stay_if` to THIS stack (deferred services, AI cost delta, CUD lock-in, team GCP depth, etc.) — do not copy the generic Part 7 bullets verbatim unless they apply.
+
+**BigQuery / deferred analytics:** Exclude from TCO totals and mark **`Deferred — specialist engagement`** in design, but **do not** treat BigQuery as a default reason to stay on GCP. Use `migrate_if` bullets such as engaging the AWS account team for analytics **in parallel** with phased infra migration. Use `stay_if` for BigQuery only when the user **must** cut over analytics in the **same window** as app infra and cannot run a phased analytics track with specialist planning.
 
 ---
 
 ## Output
 
-Read `steering/schema-estimate-infra.md` for the `estimation-infra.json` schema and validation checklist, then write `estimation-infra.json` to `$MIGRATION_DIR/`.
+Read `schema-estimate-infra.md` for the `estimation-infra.json` schema and validation checklist, then write `estimation-infra.json` to `$MIGRATION_DIR/`.
 
 ## Completion Handoff Gate (Fail Closed)
 
-Load `steering/handoff-gates.md`. **Re-read from disk** before checking.
+Load `handoff-gates.md`. **Re-read from disk** before checking.
 
 Before returning control to `estimate.md`, require:
 
-- `estimation-infra.json` exists and passes `steering/schema-estimate-infra.md` validation.
+- `estimation-infra.json` exists and passes `schema-estimate-infra.md` validation.
 - `recommendation.path` is one of `migrate_optimized`, `migrate_phased`, or `stay`
 - `recommendation.path_label` is non-empty
+- `recommendation.outcome` is one of `go`, `conditional_go`, `defer_for_evidence`, `stay`; `conditions` non-empty when `conditional_go`; `outcome: "stay"` only with `path: "stay"`
 - `recommendation.migrate_if` and `recommendation.stay_if` are non-empty arrays (Part 7 MUST persist `recommendation`)
 
 **On FAIL:** Emit `GATE_FAIL | phase=estimate | field=<path> | reason=missing`. **Do NOT patch `estimation-infra.json` to pass the gate.** STOP — do not return control to `estimate.md` for phase completion.
@@ -567,13 +709,15 @@ Before returning control to `estimate.md`, require:
 After writing `estimation-infra.json`, present a concise summary to the user:
 
 1. **Pricing source and accuracy**: State whether prices came from cache or live API, and the accuracy range (±5-10% for infrastructure from cache/live, ±15-25% if cache is stale). Example: "Estimates based on cached AWS pricing (2026-03-07), accuracy ±5-10%."
-2. GCP baseline vs AWS projected (balanced tier) — one-line comparison
-3. Three-tier table: **Premium**, **Balanced**, **Optimized** with monthly totals. Under or beside each label, use the **short subtitles**: Premium — _Highest resilience / highest monthly estimate in this model_; Balanced — _Default scenario; compare GCP to this first_; Optimized — _Lower monthly estimate; reservations / Spot / storage trade-offs assumed_. Add a one-line **How to read**: three figures are **pricing scenarios** for the same architecture (high → mid → low); **not** three Terraform stacks. When Terraform is generated later, it aligns with **Balanced**.
-4. Per-service cost breakdown (balanced tier, 1 line per service)
+2. GCP baseline vs estimated AWS monthly cost (balanced tier) — one-line comparison, **with the baseline-quality display label from Part 1** (e.g. "GCP baseline $165/mo — measured from your billing (±5%)")
+3. Three-tier table: **Premium**, **Balanced**, **Optimized** with estimated monthly costs. Under or beside each label, use the **short subtitles**: Premium — _Highest resilience / highest monthly estimate in this model_; Balanced — _Default scenario; compare GCP to this first_; Optimized — _Lower monthly estimate; reservations / Spot / storage trade-offs assumed_. Add a one-line **How to read**: three figures are **estimated monthly costs** for the same architecture (high → mid → low); **not** three Terraform stacks. When Terraform is generated later, it aligns with **Balanced**.
+4. Per-service estimated monthly cost breakdown (balanced tier, 1 line per service)
 5. **If billing data available**: Estimated GCP data transfer egress fees. **If billing data NOT available**: "Data transfer cost estimates require GCP billing data."
-6. Monthly and annual savings (or increase) vs GCP per tier
-7. Top 2-3 optimization opportunities with savings amounts
-8. **Recommendation:** `recommendation.path_label` with one-line ROI justification when present
+6. Estimated monthly and annual savings (or increase) vs GCP per tier
+7. Top 2-3 optimization opportunities with estimated savings amounts
+8. **Recommendation:** `recommendation.outcome_label` first ("Go, with conditions"), then `path_label` as the execution shape, one-line ROI justification when present. When `conditional_go`: list `conditions[]`. When `defer_for_evidence`: name the missing evidence and how to get it. Close with `would_flip_if[]` (1–3 bullets) so the user knows what to watch.
+
+**Cost labeling rule:** All dollar figures presented to the user MUST be labeled as "estimated monthly costs" or prefixed with "Est." — never present raw dollar amounts as if they are exact. This applies to chat output, report tables, and summary lines.
 
 Keep it under 25 lines. The user can ask for details or re-read `estimation-infra.json` at any time.
 
