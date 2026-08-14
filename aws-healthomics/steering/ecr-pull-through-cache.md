@@ -17,7 +17,7 @@ This SOP defines how you, the agent, configure ECR Pull-Through Caches and Conta
 ## Prerequisites
 
 - AWS credentials configured with appropriate IAM permissions for ECR and HealthOmics.
-- For Docker Hub: a Docker Hub access token (obtain from https://docs.docker.com/security/access-tokens/).
+- For Docker Hub: a Docker Hub access token (obtain from https://docs.docker.com/security/access-tokens/). This is required, not optional — WHERE it is unavailable, see [Using ECR Public Instead of Docker Hub](#using-ecr-public-instead-of-docker-hub).
 
 ## MCP Tools Reference
 
@@ -65,6 +65,46 @@ aws secretsmanager create-secret \
     --region us-east-1
 ```
 
+The Docker Hub credential is not optional. `CreatePullThroughCacheForHealthOmics` with `upstream_registry: docker-hub` and no `credential_arn` is rejected before anything is created:
+
+```
+Credential ARN is required for Docker Hub pull-through cache.
+Please provide a Secrets Manager ARN containing Docker Hub credentials.
+```
+
+IF the user cannot supply Docker Hub credentials, DO NOT stop — check ECR Public first, per [Using ECR Public Instead of Docker Hub](#using-ecr-public-instead-of-docker-hub).
+
+### Using ECR Public Instead of Docker Hub
+
+ECR Public needs no credentials, and many images that a legacy workflow names on Docker Hub are also published there. WHERE an equivalent exists, an `ecr-public` cache reaches it without a Docker Hub secret.
+
+The repository path differs between the two registries, so the Docker Hub name cannot be reused as-is. Resolve the ECR Public path first:
+
+```bash
+aws ecr-public describe-registries --region us-east-1 >/dev/null   # confirms access
+# Search the gallery for the image, then read the pull URI it lists:
+#   https://gallery.ecr.aws/?searchTerm=<image name>
+```
+
+Then confirm it through the cache before editing the workflow:
+
+```
+CheckContainerAvailability(
+    repository_name="ecr-public/ubuntu/ubuntu",   # note: not "library/ubuntu"
+    image_tag="20.04",
+    initiate_pull_through=true,
+)
+```
+
+A successful response reports `healthomics_accessible: "accessible"` and populates the cache, so the first run does not pay the pull.
+
+Two cautions:
+
+- **Treat this as a change of image identity, not of transport.** The repository is different, so it is URI replacement rather than a registry map entry — see the decision table in Phase 1 of the [WDL migration SOP](./migration-guide-for-wdl.md). Redirecting a Docker Hub URI to an ECR Public repository through a registry map would hide the substitution from anyone reading the workflow.
+- **Verify the tag and the contents.** ECR Public tags do not always match Docker Hub's, and an image published under the same name is not guaranteed to carry the same tools. Confirm the binaries the task's command block invokes are present.
+
+IF no ECR Public equivalent exists, the options are a Docker Hub secret (Step 2) or `CloneContainerToECR` from a registry you can already reach (Step 6).
+
 ### Step 3: Create Pull-Through Cache Rules
 
 1. Call `ListPullThroughCacheRules` to check for existing rules. IF a valid cache already exists for the upstream registry, reuse it — DO NOT create another.
@@ -80,7 +120,7 @@ This tool automatically:
 
 | Registry | upstream_registry | credential_arn | Notes |
 |----------|------------------|----------------|-------|
-| Docker Hub | `docker-hub` | Required | Use secret ARN from Step 2 |
+| Docker Hub | `docker-hub` | Required | Use secret ARN from Step 2. Omitting it fails the call — see [Using ECR Public Instead of Docker Hub](#using-ecr-public-instead-of-docker-hub) when credentials are unavailable |
 | Quay.io | `quay` | Optional | Only needed for private repos |
 | ECR Public | `ecr-public` | Not needed | Public access |
 
