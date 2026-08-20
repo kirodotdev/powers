@@ -4,7 +4,7 @@
 
 ## Prerequisites
 
-1. Read `$MIGRATION_DIR/.phase-status.json`. If missing, invalid, or `phases.clarify` is not exactly `"completed"`: **STOP**. Output: "Phase 2 (Clarify) not completed or phase state is missing/invalid. Run `steering/clarify.md` until Clarify finishes and `.phase-status.json` shows `phases.clarify`: `completed`."
+1. Read `$MIGRATION_DIR/.phase-status.json`. If missing, invalid, or `phases.clarify` is not exactly `"completed"`: **STOP**. Output: "Phase 2 (Clarify) not completed or phase state is missing/invalid. Run `clarify.md` until Clarify finishes and `.phase-status.json` shows `phases.clarify`: `completed`."
 2. Read `$MIGRATION_DIR/preferences.json`. If missing: **STOP**. Output: "Phase 2 (Clarify) not completed. Run Phase 2 first."
 
 Check which discovery artifacts exist in `$MIGRATION_DIR/`:
@@ -64,7 +64,7 @@ Before marking Design complete, enforce route output gates (fail closed):
 
 ## Completion Handoff Gate (Fail Closed)
 
-Load `steering/handoff-gates.md`. **Re-read from disk** each active route artifact before checking.
+Load `handoff-gates.md`. **Re-read from disk** each active route artifact before checking.
 
 **Re-entry guard:** If `estimation-infra.json` (or sibling estimate artifacts) exists and `phases.estimate` is `"completed"`: STOP unless the user explicitly confirms re-running Design. Emit `GATE_FAIL | phase=design | field=estimation-infra.json | reason=stale_downstream`.
 
@@ -72,7 +72,40 @@ Load `steering/handoff-gates.md`. **Re-read from disk** each active route artifa
 
 **On PASS:** Emit `HANDOFF_OK | phase=design | artifacts=<comma-separated active design files>`.
 
-After `HANDOFF_OK`, use the Phase Status Update Protocol (read-merge-write) to update `.phase-status.json` — **in the same turn** as the output message below:
+### Inner workshop reprice — skip state transition
+
+When Design is invoked from `workshop-refresh.md` (inner reprice): rewrite the
+active design artifact(s) (`aws-design.json` and siblings as applicable), then
+**return to the workshop loop**. Do **not** emit `HANDOFF_OK`, do **not** set
+`phases.design` to `"in_progress"` or re-stamp `"completed"`, do **not** change
+`current_phase`, and do **not** treat Estimate as stale for a Generate reset
+unless the user is already past Generate (see workshop-refresh stale-Generate
+guard). Leave `phases.design` and `phases.estimate` as `"completed"` and
+`current_phase` at `"estimate"` while `phases.workshop` is `"in_progress"`.
+
+### Design summary card (outer runs only — before the phase-status update)
+
+After outer-run `HANDOFF_OK`, present a compact card built from the design artifact(s) so the user sees what Design decided before costs arrive. Chat only — not a file:
+
+```
+### Your AWS architecture at a glance
+
+| GCP service | AWS target | How we chose this |
+| ----------- | ---------- | ----------------- |
+| [top 3-5 PRIMARY mappings] | [aws_service] | [Standard pairing / Tailored to your setup / Estimated from billing only] |
+
+[If any resource is "Deferred — specialist engagement":]
+Deferred (specialist engagement): [service names] — excluded from automated design and TCO.
+
+What Estimate answers next: your GCP baseline vs estimated AWS monthly cost
+(three scenarios), per-service breakdown, and the migrate/stay recommendation.
+```
+
+Use the user-facing vocabulary from `design-ref-fast-path.md` for "How we chose this" (**Standard pairing** / **Tailored to your setup** / **Estimated from billing only**) — never raw `deterministic`/`inferred` enum values. Cap the table at 5 rows ("+ N more in the design artifact"). Skip this card entirely on inner workshop reprices.
+
+After the card, use the Phase Status Update Protocol
+(read-merge-write) to update `.phase-status.json` — **in the same turn** as the
+output message below:
 
 - Set `phases.design` to `"completed"`
 - Set `current_phase` to `"estimate"`
@@ -81,16 +114,16 @@ Output to user: "AWS Architecture designed. Proceeding to Phase 4: Estimate Cost
 
 ## Reference Files
 
-Sub-design files may reference rubrics in the `steering/design-ref-*.md` files:
+Sub-design files may reference rubrics, which are the flat design-ref files:
 
-- `steering/design-ref-index.md` — GCP type → rubric file lookup
-- `steering/design-ref-fast-path.md` — Direct (table) mappings vs rubric path; **User-facing vocabulary** for presenting `confidence` to users (**Standard pairing** / **Tailored to your setup** / **Estimated from billing only**)
-- `steering/design-ref-compute.md` — Compute service rubric
-- `steering/design-ref-database.md` — Database service rubric
-- `steering/design-ref-storage.md` — Storage service rubric
-- `steering/design-ref-networking.md` — Networking service rubric
-- `steering/design-ref-messaging.md` — Messaging service rubric
-- `steering/design-ref-ai.md` — AI/ML service rubric
+- `design-ref-index.md` — GCP type → rubric file lookup
+- `design-ref-fast-path.md` — Direct (table) mappings vs rubric path; **User-facing vocabulary** for presenting `confidence` to users (**Standard pairing** / **Tailored to your setup** / **Estimated from billing only**)
+- `design-ref-compute.md` — Compute service rubric
+- `design-ref-database.md` — Database service rubric
+- `design-ref-storage.md` — Storage service rubric
+- `design-ref-networking.md` — Networking service rubric
+- `design-ref-messaging.md` — Messaging service rubric
+- `design-ref-ai.md` — AI/ML service rubric
 
 ## Scope Boundary
 

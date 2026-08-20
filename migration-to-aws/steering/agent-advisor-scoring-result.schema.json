@@ -1,0 +1,73 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$comment": "scoring-result.json (the FILE clarify writes) — the flat fields mirror the primary agent unit, plus a non-empty units{} map whose values are each a scored per-unit result. agent-advisor is scoped to agentic systems (clarify scope gate), so there is always >=1 scored agent unit — no zero-agent variant.",
+  "$defs": {
+    "scoredUnit": {
+      "type": "object",
+      "required": ["verdict", "scores", "eliminated", "model_recommendation"],
+      "properties": {
+        "verdict": {
+          "enum": ["agentcore", "lambda_microvms", "ecs", "eks", "lambda", "co_recommend", "no_viable_runtime"]
+        },
+        "scores": { "type": "object", "additionalProperties": { "type": "integer" } },
+        "eliminated": { "type": "object", "additionalProperties": { "type": "string" } },
+        "deployment_model": { "type": ["string", "null"], "enum": ["harness", "framework_on_runtime", null] },
+        "agentcore_services": { "type": "array", "items": { "type": "string" } },
+        "model_recommendation": {
+          "type": "object",
+          "required": ["model", "reasoning"],
+          "properties": {
+            "model": { "type": "string" },
+            "reasoning": { "type": "string" },
+            "migration_from": { "type": "string" },
+            "pricing_note": { "type": "string" }
+          }
+        },
+        "assumptions_used": { "type": "array", "items": { "type": "string" } },
+        "warnings": { "type": "array", "items": { "type": "string" } },
+        "co_recommend": { "type": "array", "items": { "type": "string" } },
+        "blocking_constraints": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  },
+  "type": "object",
+  "required": [
+    "verdict",
+    "scores",
+    "eliminated",
+    "deployment_model",
+    "agentcore_services",
+    "model_recommendation",
+    "assumptions_used",
+    "warnings",
+    "units"
+  ],
+  "properties": {
+    "verdict": {
+      "enum": ["agentcore", "lambda_microvms", "ecs", "eks", "lambda", "co_recommend", "no_viable_runtime"]
+    },
+    "scores": { "type": "object", "additionalProperties": { "type": "integer" } },
+    "eliminated": { "type": "object", "additionalProperties": { "type": "string" } },
+    "deployment_model": { "type": ["string", "null"], "enum": ["harness", "framework_on_runtime", null] },
+    "agentcore_services": { "type": "array", "items": { "type": "string" } },
+    "model_recommendation": {
+      "type": "object",
+      "required": ["model", "reasoning"],
+      "properties": {
+        "model": { "type": "string" },
+        "reasoning": { "type": "string" },
+        "migration_from": { "type": "string" },
+        "pricing_note": { "type": "string" }
+      }
+    },
+    "assumptions_used": { "type": "array", "items": { "type": "string" } },
+    "warnings": { "type": "array", "items": { "type": "string" } },
+    "co_recommend": { "type": "array", "items": { "type": "string" } },
+    "blocking_constraints": { "type": "array", "items": { "type": "string" } },
+    "units": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": { "$ref": "#/$defs/scoredUnit" }
+    }
+  }
+}

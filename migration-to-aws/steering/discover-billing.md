@@ -172,7 +172,7 @@ Write `$MIGRATION_DIR/billing-profile.json` with the following structure:
 }
 ```
 
-Load `steering/schema-discover-billing.md` and validate the output against the `billing-profile.json` schema.
+Load `schema-discover-billing.md` and validate the output against the `billing-profile.json` schema.
 
 After generating the output file, the parent `discover.md` handles the phase status update — do not update `.phase-status.json` here.
 
