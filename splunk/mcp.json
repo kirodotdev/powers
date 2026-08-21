@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "splunk": {
+      "command": "npx",
+      "args": ["-y", "@splunk/mcp-server"],
+      "env": {
+        "SPLUNK_URL": "https://YOUR_SPLUNK_INSTANCE.splunkcloud.com:8089",
+        "SPLUNK_TOKEN": "YOUR_SPLUNK_AUTH_TOKEN"
+      },
+      "disabled": false,
+      "autoApprove": []
+    }
+  }
+}

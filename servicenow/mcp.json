@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "servicenow": {
+      "command": "npx",
+      "args": ["-y", "@servicenow/mcp-server"],
+      "env": {
+        "SERVICENOW_INSTANCE_URL": "https://YOUR_INSTANCE.service-now.com",
+        "SERVICENOW_USERNAME": "YOUR_USERNAME",
+        "SERVICENOW_PASSWORD": "YOUR_PASSWORD"
+      },
+      "disabled": false,
+      "autoApprove": []
+    }
+  }
+}
