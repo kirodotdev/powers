@@ -1,9 +1,51 @@
 {
   "mcpServers": {
     "stackgen": {
-      "url": "https://cloud.stackgen.com/api/mcp/sse",
-      "disabled": false,
-      "disabledTools": []
+      "command": "stackgen",
+      "args": [
+        "mcp"
+      ],
+      "env": {
+        "STACKGEN_URL": "https://cloud.stackgen.com",
+        "STACKGEN_TOKEN": ""
+      },
+      "autoApprove": [
+        "me",
+        "get_stackgen_projects",
+        "get_appstacks",
+        "create_appstack",
+        "get_supported_resource_types",
+        "get_resource_type_configurations",
+        "add_resource_to_appstack",
+        "bulk_add_resources_to_appstack",
+        "get_appstack_resources",
+        "get_resource_configurations",
+        "update_resource",
+        "delete_resource",
+        "get_possible_resource_connections",
+        "connect_resources",
+        "get_current_violations",
+        "scan_configuration",
+        "get_env_profiles",
+        "create_env_profile",
+        "update_env_profile",
+        "delete_env_profile",
+        "list-available-secrets",
+        "create_appstack_action_run",
+        "get_action_run",
+        "get_action_run_logs",
+        "destroy_deployment",
+        "detect-drift",
+        "create_snapshot",
+        "get_snapshots",
+        "restore_snapshot",
+        "list_template_appstacks",
+        "get_module_versions",
+        "create_appstack_tf_variables",
+        "get_appstack_tf_variables",
+        "list-git-configuration",
+        "push-appstack-to-git"
+      ]
     }
   }
 }

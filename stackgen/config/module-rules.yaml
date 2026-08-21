@@ -1,0 +1,221 @@
+# Module Quality Rules Configuration
+# Update this file to change what the agent enforces when creating modules.
+# The module-authoring steering file reads these rules dynamically.
+
+version: "1.0"
+
+# Maximum variables a module should expose (developer-facing)
+max_variables: 15
+ideal_variable_range: [3, 8]
+
+# Maximum attributes in a single object variable before splitting
+max_object_attributes: 8
+
+# Minimum variable_groups threshold (group when variable count exceeds this)
+variable_group_threshold: 5
+
+rules:
+  variables:
+    V01:
+      description: "Every variable has an explicit type (no implicit any)"
+      severity: error
+    V02:
+      description: "Every variable has a description"
+      severity: error
+    V03:
+      description: "Optional variables have a default; required ones don't"
+      severity: warning
+    V04:
+      description: "No huge object inputs — split objects with too many attributes into individual variables"
+      severity: warning
+      config:
+        max_attributes: 8
+    V05:
+      description: "Sensitive fields (password, secret, key, token in name) marked sensitive = true"
+      severity: error
+      config:
+        sensitive_keywords: ["password", "secret", "key", "token", "credential", "api_key"]
+    V06:
+      description: "Finite-domain variables have validation blocks or stackgen.yaml options"
+      severity: warning
+      config:
+        finite_domain_keywords: ["region", "instance_type", "billing_mode", "engine", "tier", "environment"]
+    V07:
+      description: "No 'any' type unless justified"
+      severity: warning
+    V08:
+      description: "Variable count ceiling — flag modules exceeding max"
+      severity: warning
+      config:
+        max_count: 15
+    V09:
+      description: "Naming: snake_case, no provider prefixes (no aws_, gcp_, azure_ prefix)"
+      severity: error
+      config:
+        banned_prefixes: ["aws_", "gcp_", "azure_", "oci_"]
+
+  outputs:
+    O01:
+      description: "Every output has a description"
+      severity: error
+    O02:
+      description: "Sensitive outputs marked sensitive = true"
+      severity: error
+      config:
+        sensitive_keywords: ["password", "secret", "key", "token", "credential"]
+    O03:
+      description: "Outputs exist for connectable attributes (arn, id, endpoint, url)"
+      severity: warning
+      config:
+        expected_outputs: ["arn", "id", "endpoint"]
+
+  stackgen_yaml:
+    S01:
+      description: "File exists at .stackgen/stackgen.yaml"
+      severity: error
+    S02:
+      description: "Every exposed TF variable has a corresponding entry with label and description"
+      severity: error
+    S03:
+      description: "Finite-value variables use ui_control: dropdown/select with options"
+      severity: warning
+    S04:
+      description: "Sensitive variables use ui_control: password"
+      severity: warning
+    S05:
+      description: "representation block is complete (icon, labels, node template)"
+      severity: error
+    S06:
+      description: "Variables organized into variable_groups when count exceeds threshold"
+      severity: warning
+      config:
+        threshold: 5
+    S07:
+      description: "type in yaml matches variables.tf type"
+      severity: error
+    S08:
+      description: "Connectable outputs have connections metadata defined"
+      severity: warning
+
+  cross_cutting:
+    X01:
+      description: "Low ratio of exposed variables to internal complexity (good abstraction)"
+      severity: info
+    X02:
+      description: "Use optional() inside objects instead of forcing full object input"
+      severity: warning
+    X03:
+      description: "No dead locals (declared, never referenced)"
+      severity: warning
+    X04:
+      description: "Org semantics (encryption, tags, compliance) in locals, not exposed as variables"
+      severity: info
+
+  # Industry-standard Terraform module rules (from HashiCorp, AWS IA, Google Cloud)
+  structure:
+    T01:
+      description: "Module contains main.tf, variables.tf, outputs.tf (standard file layout)"
+      severity: error
+    T02:
+      description: "No provider blocks inside the module — providers are inherited from the root module"
+      severity: error
+    T03:
+      description: "Use for_each over count for dynamic resources (avoids index-based state issues)"
+      severity: warning
+    T04:
+      description: "Prefer 'attachment' resources over embedded attributes (e.g., aws_security_group_rule over inline ingress)"
+      severity: warning
+    T05:
+      description: "Use name_prefix over name where available (allows Terraform to manage uniqueness)"
+      severity: info
+    T06:
+      description: "All taggable resources accept a tags variable and merge with internal default tags"
+      severity: warning
+      config:
+        tags_variable_name: "tags"
+        tags_type: "map(string)"
+        tags_default: "{}"
+    T07:
+      description: "Resource meta names are contextual and snake_case (not generic like 'this' or 'self')"
+      severity: warning
+    T08:
+      description: "No hardcoded AWS account IDs, regions, or ARNs — use variables or data sources"
+      severity: error
+    T09:
+      description: "terraform fmt applied — all HCL properly formatted"
+      severity: error
+    T10:
+      description: "Disruptive optional attributes use default = null so Terraform omits them when unset"
+      severity: warning
+
+  security:
+    SEC01:
+      description: "Encryption enabled by default on all storage resources (S3, RDS, EBS, DynamoDB)"
+      severity: error
+      config:
+        resources: ["aws_s3_bucket", "aws_rds_cluster", "aws_rds_instance", "aws_ebs_volume", "aws_dynamodb_table"]
+    SEC02:
+      description: "Public access blocked by default (only enabled via explicit opt-in variable)"
+      severity: error
+    SEC03:
+      description: "IAM policies follow least privilege — no wildcard (*) actions or resources in defaults"
+      severity: error
+    SEC04:
+      description: "Security groups have no 0.0.0.0/0 ingress rules by default"
+      severity: error
+    SEC05:
+      description: "Logging/monitoring enabled by default (CloudWatch, access logs, flow logs)"
+      severity: warning
+    SEC06:
+      description: "Deletion protection enabled by default on stateful resources (RDS, DynamoDB, S3)"
+      severity: warning
+    SEC07:
+      description: "Backup/versioning enabled by default on data resources"
+      severity: warning
+
+# Terraform registry URLs for research when creating modules
+registries:
+  - name: "Terraform AWS Provider Docs"
+    url: "https://registry.terraform.io/providers/hashicorp/aws/latest/docs"
+    search_pattern: "site:registry.terraform.io/providers/hashicorp/aws"
+    use_for: "Resource arguments, attributes, usage examples"
+  - name: "Terraform AWS Modules (community)"
+    url: "https://registry.terraform.io/namespaces/terraform-aws-modules"
+    search_pattern: "site:registry.terraform.io/modules/terraform-aws-modules"
+    use_for: "Well-structured module patterns and composition"
+  - name: "AWS IA Modules (official)"
+    url: "https://registry.terraform.io/namespaces/aws-ia"
+    search_pattern: "site:registry.terraform.io/modules/aws-ia"
+    use_for: "AWS official reference architectures"
+  - name: "Terraform Azure Provider"
+    url: "https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs"
+    search_pattern: "site:registry.terraform.io/providers/hashicorp/azurerm"
+    use_for: "Azure resource definitions"
+  - name: "Terraform GCP Provider"
+    url: "https://registry.terraform.io/providers/hashicorp/google/latest/docs"
+    search_pattern: "site:registry.terraform.io/providers/hashicorp/google"
+    use_for: "GCP resource definitions"
+
+# Web search queries to use when building a module
+search_templates:
+  - "terraform {provider} {resource_type} module best practice"
+  - "terraform {resource_type} variables.tf example"
+  - "site:registry.terraform.io {resource_type}"
+
+# Default stackgen.yaml icon mappings (common AWS resources)
+icon_mapping:
+  s3: "aws-s3-bucket"
+  ec2: "aws-ec2-instance"
+  ecs: "aws-ecs"
+  rds: "aws-rds"
+  lambda: "aws-lambda-function"
+  dynamodb: "aws-dynamodb-table"
+  sqs: "aws-sqs-queue"
+  sns: "aws-sns-topic"
+  vpc: "aws-vpc"
+  alb: "aws-alb"
+  ecr: "aws-ecr"
+  cloudwatch: "aws-cloudwatch"
+  iam: "aws-iam"
+  elasticache: "aws-elasticache"
+  bedrock: "aws-bedrock"
