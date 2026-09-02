@@ -1,7 +1,7 @@
 ---
 name: "databricks"
 displayName: "Databricks AI Dev Kit"
-description: "Comprehensive Databricks development toolkit with 44 MCP tools (180+ operations) and expert guidance for building data pipelines, ML workflows, dashboards, jobs, and applications on Databricks platform."
+description: "Comprehensive Databricks development toolkit: expert guidance for building data pipelines, ML workflows, dashboards, jobs and applications on the Databricks platform, plus an optional MCP server adding 44 live tools (180+ operations)."
 keywords: ["databricks", "spark", "delta", "mlflow", "unity catalog", "pipelines", "jobs", "sql", "data engineering", "machine learning"]
 author: "Databricks"
 ---
@@ -10,7 +10,12 @@ author: "Databricks"
 
 ## Overview
 
-The Databricks AI Dev Kit Power provides comprehensive access to the Databricks Lakehouse platform through 44 MCP tools (180+ operations) and expert steering files for every Databricks capability — pipelines, jobs, dashboards, ML, governance, and apps.
+The Databricks AI Dev Kit Power provides comprehensive access to the Databricks Lakehouse platform through expert steering files for every Databricks capability — pipelines, jobs, dashboards, ML, governance, and apps — plus an optional MCP server adding 44 live tools (180+ operations).
+
+The steering files are the default and work on their own. The MCP server is optional and
+is installed separately (Step 1b); upstream marks it deprecated. Until it is installed and
+enabled, the tools documented under [Available MCP Servers](#available-mcp-servers) are
+not present, and the Power ships with its `mcp.json` entry `disabled: true`.
 
 **Key capabilities:**
 - **SQL & Compute**: Execute SQL on warehouses, run Python/Scala on clusters, manage compute lifecycle
@@ -20,7 +25,7 @@ The Databricks AI Dev Kit Power provides comprehensive access to the Databricks 
 - **Genie Spaces**: Natural-language data exploration over governed datasets
 - **Agent Bricks**: Build Knowledge Assistants (RAG) and Multi-Agent Supervisors
 - **Vector Search**: Semantic search and RAG with managed indexes
-- **Model Serving**: Deploy ML models, AI agents, and pay-per-token Foundation Model APIs (FMAPI) to scalable endpoints; route through AI Gateway for guardrails, fallbacks, and rate limiting
+- **Model Serving**: Deploy ML models, AI agents, and pay-per-token Foundation Model APIs (FMAPI) to scalable endpoints; route through Unity AI Gateway for guardrails, fallbacks, and rate limiting
 - **MLflow**: Track experiments, evaluate models, instrument tracing, query metrics
 - **Lakebase**: Provisioned and autoscale managed PostgreSQL for OLTP workloads
 - **Databricks Apps**: Full-stack web applications on the Lakehouse
@@ -41,6 +46,21 @@ The Databricks AI Dev Kit Power provides comprehensive access to the Databricks 
 > 3. **Recommend OAuth U2M (Option A)** as the first fix for interactive use. It auto-refreshes hourly and avoids the long-lived-secret expiry that typically causes these errors.
 >
 > **No-credentials default.** When no Databricks credentials are detected on first run, the agent's default recommendation is **Option A — OAuth U2M via the Databricks CLI**, since it's the safest interactive flow and covers the most common use case (a single human developer on a workstation).
+>
+> **Never report the MCP server as working without checking that it can start.** A
+> populated `mcp.json` entry proves only that the file was written, not that the server
+> runs. Reading the config and inferring "configured, therefore working" is wrong, and it
+> leads the user to enable an entry that cannot spawn. Before describing the server as
+> available, confirm the interpreter exists:
+>
+> ```bash
+> ls "$HOME/.ai-dev-kit/.venv/bin/python" 2>/dev/null || echo "MCP_SERVER_NOT_INSTALLED"
+> ```
+>
+> If that prints `MCP_SERVER_NOT_INSTALLED`, say so plainly and point the user at
+> [Step 1b](#step-1b-install-the-mcp-server-optional). Do not offer to pick a profile and
+> flip `disabled` to `false` — the failure is at `spawn`, before any profile is read, so
+> enabling it only adds an `ENOENT` to the log. The skills remain fully usable meanwhile.
 
 ## Available Steering Files
 
@@ -651,11 +671,20 @@ AS SELECT * FROM cloud_files('/Volumes/main/raw/orders', 'json');
 3. Check upstream sources for schema drift
 
 ### Error: "Installer ran but `~/.ai-dev-kit/.venv/bin/python` is missing"
-**Cause:** Installer non-zero exit can be misleading; sometimes the genuine failure is a missing prerequisite.
-**Solution:**
-1. Verify `uv` and `git` are installed and on `PATH`
-2. Re-run with `--force` and watch for the line that mentions `uv venv` failing
-3. Check disk space in `$HOME`
+**Cause:** In almost every case this is not a failed install. `install.sh` is now
+skills-only and never builds that venv — only `databricks-mcp-server/mcp_install.sh`
+does. If you ran Step 1 and skipped Step 1b, the venv is absent because nothing was
+asked to create it.
+
+**Solution:** Run Step 1b. Note two details that make this fail silently otherwise:
+1. `mcp_install.sh` cannot be piped from `curl`. It resolves its own location from
+   `BASH_SOURCE[0]`, so under `bash <(curl …)` it computes `PARENT_DIR=/dev` and exits
+   with `MCP setup script not found at /dev/fd/setup.sh`. Run it from a clone.
+2. Its default venv location is `<clone>/.venv`, which is **not** the path this Power's
+   `mcp.json` references. Pass `--venv-dir "$HOME/.ai-dev-kit/.venv"` explicitly.
+
+Only if Step 1b itself fails is a prerequisite likely at fault — check that `uv` and
+`git` are on `PATH` and that `$HOME` has disk space.
 
 ### Warning: "SKILL.md not for skill: …databricks-app-apx/SKILL.md"
 **Cause:** The upstream `databricks-solutions/apx` repository ships `SKILL.md` with a frontmatter `name:` field (`apx`) that doesn't match the directory name (`databricks-app-apx`) the installer creates. Kiro flags the mismatch but loads the skill anyway.
@@ -669,7 +698,7 @@ AS SELECT * FROM cloud_files('/Volumes/main/raw/orders', 'json');
 - **uv** — Python package manager ([install](https://docs.astral.sh/uv/getting-started/installation/))
 - **git** — Version control
 - **Databricks workspace** — AWS, Azure, or GCP
-- **Databricks CLI** (optional, for OAuth login) — [install](https://docs.databricks.com/en/dev-tools/cli/install.html)
+- **Databricks CLI v1.0.0+** — [install](https://docs.databricks.com/en/dev-tools/cli/install.html). No longer optional: `install.sh` delegates skill installation to `databricks aitools`, so the installer fails without it.
 - **jq** (recommended) — Steps 2.5 / 2.6 / 2.7 below use `jq` for idempotent `mcp.json` edits. Each step also includes a non-`jq` fallback, but installing `jq` (`brew install jq` on macOS, `apt install jq` on Linux) makes the onboarding flow fully scriptable.
 
 ### Install at a glance
@@ -679,6 +708,7 @@ The flow has three install-bug workarounds (Steps 2.5 / 2.6 / 2.7) that look opt
 | Step | What it does | Why it's there |
 |------|--------------|----------------|
 | 1 | Snapshot `~/.kiro/skills`, then run the official installer | Snapshot lets Step 2 know exactly which skills the installer added |
+| 1b | *(optional)* Install the MCP server via its own installer | `install.sh` is skills-only now; nothing else creates `~/.ai-dev-kit/.venv` |
 | 2 | Diff the post-install state, write a `.skill-manifest.txt`, move skills into the Power's `steering/` directory | Manifest-driven move beats glob-based cleanup — safe with upstream additions and other tools |
 | 2.5 | Add the top-level `mcpServers` key to `~/.kiro/settings/mcp.json` if missing | Kiro's schema requires it; fresh installs error out without this |
 | 2.6 | Remove the standalone `mcpServers.databricks` entry the installer writes | Otherwise Kiro launches two copies of the same MCP server |
@@ -699,10 +729,17 @@ ls -1 "$HOME/.kiro/skills" 2>/dev/null | sort > /tmp/kiro-skills-before.txt
 bash <(curl -sL https://raw.githubusercontent.com/databricks-solutions/ai-dev-kit/main/install.sh) --tools kiro --global --silent
 ```
 
-> The installer may exit non-zero even on success. Verify with:
+> The installer may exit non-zero even on success. Verify the skills landed with:
 > ```bash
-> ls ~/.ai-dev-kit/.venv/bin/python && ls ~/.ai-dev-kit/repo/databricks-mcp-server/run_server.py && ls ~/.kiro/skills/ | head -5
+> ls ~/.kiro/skills/ | head -5
 > ```
+
+> **`install.sh` no longer installs the MCP server.** It is skills-only and delegates
+> to `databricks aitools`; its own header now reads *"The (deprecated, optional) MCP
+> server has its own installer."* Do not check for `~/.ai-dev-kit/.venv/bin/python`
+> here — that path is built only by Step 1b below, and expecting it at this point is
+> what produces the "installer ran but the venv is missing" symptom in
+> [Troubleshooting](#error-installer-ran-but-ai-dev-kitvenvbinpython-is-missing).
 
 **Installer flags:**
 - `--tools kiro` — Configure for Kiro only
@@ -710,7 +747,43 @@ bash <(curl -sL https://raw.githubusercontent.com/databricks-solutions/ai-dev-ki
 - `--silent` — Non-interactive (defaults: all skills, DEFAULT profile)
 - `--profile PROFILE_NAME` — Use a specific Databricks CLI profile
 - `--force` — Reinstall even if up to date
-- `--skills-only` — Skip MCP server setup
+- `--skills-only` — No longer meaningful for MCP: this installer is skills-only regardless. Retained for compatibility.
+
+### Step 1b: Install the MCP Server (optional)
+
+Skip this if you only want the skills — they work on their own, and every capability in
+the [Skill Catalog](#skill-catalog-34-skills) is available without the MCP server. Do
+this if you want the live tools listed under [Available MCP Servers](#available-mcp-servers).
+
+The MCP server ships its own installer, and it must be run from a checkout rather than
+piped from `curl`:
+
+```bash
+# Clone into the layout this Power's mcp.json references
+git clone --depth 1 https://github.com/databricks-solutions/ai-dev-kit.git "$HOME/.ai-dev-kit/repo"
+
+# --venv-dir is required: the default is <clone>/.venv, which is not the path referenced
+# by mcp.json. Without it the server still fails with ENOENT.
+bash "$HOME/.ai-dev-kit/repo/databricks-mcp-server/mcp_install.sh" \
+  --tools kiro --global --venv-dir "$HOME/.ai-dev-kit/.venv"
+```
+
+Verify:
+
+```bash
+ls "$HOME/.ai-dev-kit/.venv/bin/python"
+```
+
+The MCP server connects when Kiro launches, not when a chat session starts, so quit Kiro
+fully (`Cmd+Q` on macOS) and reopen. Confirm in the **Kiro - MCP Logs** output channel:
+
+```
+[databricks] Connected with transport
+[databricks] mcp.connect.ok
+```
+
+An `ENOENT` line naming `.venv/bin/python` instead means the venv is missing or its path
+does not match `mcp.json`; see [Troubleshooting](#error-installer-ran-but-ai-dev-kitvenvbinpython-is-missing).
 
 ### Step 2: Build a Manifest, Then Copy Skills to the Power's Steering Directory
 
@@ -842,7 +915,7 @@ After fixing, reload Kiro to clear the validation error before continuing to Ste
 
 ### Step 2.6: Remove the Standalone `databricks` Entry the Installer Wrote
 
-> **⚠️ Agent behavior (REQUIRED):** Step 1's installer (`install.sh`) writes a top-level `mcpServers.databricks` entry to `~/.kiro/settings/mcp.json`. That entry was designed for users running ai-dev-kit *without* a Kiro Power — for our flow it is a duplicate registration of the same MCP server the Power owns. Leaving both entries in place causes Kiro to launch two copies of the server (same binary, two different env blocks), which can confuse tool routing.
+> **⚠️ Agent behavior (REQUIRED):** Applies only if you ran the optional [Step 1b](#step-1b-install-the-mcp-server-optional). `mcp_install.sh` writes a top-level `mcpServers.databricks` entry to `~/.kiro/settings/mcp.json`. That entry was designed for users running ai-dev-kit *without* a Kiro Power — for our flow it is a duplicate registration of the same MCP server the Power owns. (Step 1's `install.sh` no longer writes any MCP entry; it is skills-only. If you skipped Step 1b there is nothing to remove and this step is a no-op.) Leaving both entries in place causes Kiro to launch two copies of the server (same binary, two different env blocks), which can confuse tool routing.
 >
 > The agent MUST delete the top-level `mcpServers.databricks` entry after the installer runs, leaving only the Power's entry under `powers.mcpServers.power-databricks-databricks`.
 
@@ -907,6 +980,16 @@ Reload Kiro to drop the now-removed standalone server connection. The Power's en
 > Error connecting to MCP server: spawn ~/.ai-dev-kit/.venv/bin/python ENOENT
 > ```
 >
+> **`${HOME}` is not an alternative.** Kiro does expand `${VAR}` in MCP config,
+> including in `powers.mcpServers`, but the expansion is gated on the
+> `kiroAgent.mcpApprovedEnvVars` setting: any variable not on that list is left
+> as a literal string and only recorded for an unapproved-variable warning. That
+> setting is per-user, so a Power published in the catalog cannot add `HOME` to
+> it, and `${HOME}` would ship broken for anyone who has not approved it by hand.
+> This is also why the `env` block's `${DATABRICKS_CONFIG_PROFILE}` does resolve:
+> the installer's onboarding gets that variable onto the approved list. Expanding
+> the tilde to an absolute path at install time, as below, is the reliable fix.
+>
 > The agent MUST replace `~` with the absolute home path in both `command` and every entry in `args` before the server can launch.
 
 **Idempotent fix command:**
@@ -963,6 +1046,28 @@ The Power ships with a baseline `mcp.json` that uses an env-var reference for th
 > 1. **Check for existing credentials** in two locations:
 >    - The top-level `mcpServers` block in `~/.kiro/settings/mcp.json` (e.g., from a prior installation or another Databricks-using Power)
 >    - Profiles in `~/.databrickscfg`
+>
+>    **Read these with a command that cannot emit a secret. Do not `cat` either file.**
+>    A bare `cat ~/.databrickscfg` prints every `token` and `client_secret` in the
+>    file straight into the chat transcript, which defeats rule 2 below no matter how
+>    carefully rule 2 is worded. Enumerate the fields you need instead:
+>
+>    ```bash
+>    # Profile names, hosts, auth types and client_ids only.
+>    # `token` and `client_secret` are never selected, so they cannot be echoed.
+>    awk '/^\[/{p=$0} /^[[:space:]]*(host|auth_type|client_id)[[:space:]]*=/{print p, $0}' \
+>      ~/.databrickscfg 2>/dev/null || echo "NO_DATABRICKSCFG"
+>    ```
+>
+>    ```bash
+>    # MCP config without env values, which can hold a PAT
+>    python3 -c 'import json,os;d=json.load(open(os.path.expanduser("~/.kiro/settings/mcp.json")));\
+>    print([(k,v.get("command") or v.get("url"),v.get("disabled")) for k,v in (d.get("mcpServers") or {}).items()])' \
+>      2>/dev/null || echo "NO_MCP_JSON"
+>    ```
+>
+>    When a fingerprint is genuinely needed for rule 2, extract just that field and
+>    slice it — never print the whole file and trim afterwards.
 > 2. **Show the user enough to identify the credentials, but never the full secret.** The user needs to recognize *which* credential they are looking at — show identifiers and short prefix/suffix fingerprints — but the bulk of the secret must not be echoed.
 >
 >    | Display this | Hide this |
@@ -1473,7 +1578,7 @@ This will not touch skills installed by other tools or other Powers, even if the
 
 ### Power packaging
 
-This Power's manifest (`POWER.md`, `mcp.json`, `steering/`) is published by community contributors (see Contributors below) under the same license terms as the [kirodotdev/powers](https://github.com/kirodotdev/powers) catalog.
+This Power's manifest (`POWER.md`, `mcp.json`, `steering/`) is published under the same license terms as the [kirodotdev/powers](https://github.com/kirodotdev/powers) catalog. See Contributors below.
 
 ### Upstream Databricks AI Dev Kit
 
@@ -1481,7 +1586,7 @@ The MCP server and skills installed by this Power are sourced from the [databric
 
 ### Trademarks
 
-"Databricks", "Databricks AI Dev Kit", "Unity Catalog", "Delta Lake", "Mosaic AI", "Agent Bricks", "Genie", "Lakebase", and other Databricks product names referenced in this Power are trademarks of Databricks, Inc., used here for descriptive purposes to identify the upstream product this Power integrates with. This Power is not authored, endorsed, or maintained by Databricks, Inc.; it is a community-published integration that calls Databricks's public installer.
+"Databricks", "Databricks AI Dev Kit", "Unity Catalog", "Unity AI Gateway", "Delta Lake", "Agent Bricks", "Genie", "Lakebase", "MLflow", "Databricks Apps", and other Databricks product names referenced in this Power are trademarks of Databricks, Inc.
 
 "Amazon Web Services", "AWS", and "Kiro" are trademarks of Amazon.com, Inc. or its affiliates.
 
@@ -1492,7 +1597,7 @@ The MCP server and skills installed by this Power are sourced from the [databric
 
 ### Support
 
-- **Power packaging / installation issues** — [github.com/venkatavaradhanv/databricks/issues](https://github.com/venkatavaradhanv/databricks/issues)
+- **Power packaging / installation issues** — [github.com/kirodotdev/powers/issues](https://github.com/kirodotdev/powers/issues)
 - **MCP server, skills, or installer issues** — [github.com/databricks-solutions/ai-dev-kit/issues](https://github.com/databricks-solutions/ai-dev-kit/issues)
 - **Databricks platform support** — [help.databricks.com](https://help.databricks.com)
 - **Privacy** — [databricks.com/legal/privacynotice](https://www.databricks.com/legal/privacynotice)
