@@ -170,11 +170,12 @@ profile it landed on:
 - A value as low as 1 minute is accepted, but only allows roughly one capacity-search cycle
   before advancing — this is USUALLY too aggressive for anything but a deliberately fast
   first-choice profile.
-- For scarce accelerator types (e.g. `nvidia-l40s`), RECOMMEND >= 20 minutes so the profile
-  gets a fair chance before advancing (see rule 9 above).
+- RECOMMEND >= 20 minutes so the profile gets a fair chance before advancing (see rule 9
+  above). Shortening trades faster fallback for lower odds of securing that profile — this
+  applies regardless of accelerator type, since there's no signal for current capacity.
 - The sum of every profile's wait window SHOULD stay well under the run's overall timeout
-  (maximum 7 days) — a long fallback list with generous per-profile timeouts can otherwise
-  consume most of the run's time budget before a task even starts.
+  (default maximum 7 days) — a long fallback list with generous per-profile timeouts can
+  otherwise consume most of the run's time budget before a task even starts.
 
 ## Region Behavior
 
