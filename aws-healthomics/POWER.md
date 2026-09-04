@@ -16,6 +16,7 @@ Whenever you are asked to perform a task related to any of the following scenari
 
 - Creating a workflow from a remote Git repository URL (GitHub, GitLab, Bitbucket) -> use `./steering/git-integration.md` (takes precedence over workflow-development.md)
 - Creating a new WDL, Nextflow or CWL workflow from local files -> use `./steering/workflow-development.md`
+- Configuring a task to automatically fall back across GPU types or to CPU using `omicsResourceFallbackOrder` -> use `./steering/resource-fallback.md`
 - Running a deployed HealthOmics workflow -> use `./steering/running-a-workflow.md`
 - Submitting, monitoring, or managing batch runs (multiple samples/runs at once) -> use `./steering/batch-runs.md`
 - Onboarding an existing WDL workflow ensuring compatibility with HealthOmics -> use `./steering/migration-guide-for-wdl.md`
