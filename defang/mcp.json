@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "defang": {
+      "command": "defang",
+      "args": ["mcp", "serve"]
+    }
+  }
+}
