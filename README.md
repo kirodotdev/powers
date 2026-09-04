@@ -8,12 +8,6 @@ Documentation is available at https://kiro.dev/docs/powers/
 
 ## Available powers
 
-### arm-soc-migration
-**Perform Migration between Arm SoC** - Guides migration of code from one Arm SoC to another, with architecture-aware analysis and safe migration practices. Supports common scenarios like AWS Graviton to Raspberry Pi, NXP i.MX8 to NVIDIA Jetson Orin, and more.
-
-**MCP Servers:** arm-mcp-server (Docker)
-
----
 
 ### aws-agentcore
 **Build an agent with Amazon Bedrock AgentCore** - Build, test, and deploy AI agents using AWS Bedrock AgentCore with local development workflow. Amazon Bedrock AgentCore is an agentic platform for building, deploying, and operating effective agents.
@@ -225,17 +219,13 @@ Documentation is available at https://kiro.dev/docs/powers/
 
 ---
 
-### zapier
-**Zapier** - Connect 9,000+ apps to your AI workflow — discover, enable, and execute Zapier actions directly from your AI assistant. Supports Agentic and Classic server modes with OAuth authentication.
+### appwrite
+**Appwrite Backend Platform** - Build and manage Appwrite Cloud or self-hosted backends with databases, authentication, storage, functions, messaging, sites, and current documentation.
 
-**MCP Servers:** zapier (HTTPS)
+**MCP Servers:** appwrite-cloud (OAuth, enabled), appwrite-self-hosted (uvx, disabled)
 
 ---
 
-
-## License
-
-Unless otherwise specified by the license in the individual power or the repository that hosts it, Kiro users have a non-exclusive license to access, download, and otherwise use the power for their personal or business purposes.
 
 ## Security
 
