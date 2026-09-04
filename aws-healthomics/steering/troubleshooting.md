@@ -30,6 +30,28 @@ IF a workflow fails to reach `ACTIVE` status, check these causes in order:
     4. IF the previous run used a Run Cache you MUST reference that when starting the new run. Otherwise, you MAY create a Run Cache for this run.
     5. Start a new run of the workflow/ workflow version using identical or modified inputs and Run Cache as appropriate.
 
+## Common Run Failure Patterns
+
+The table below maps error messages observed against the service to the causes worth investigating first. Treat a row as a starting point, not a diagnosis: the same message can arise from more than one cause, and the ordering reflects which is most common rather than which is certain. IF the first action does not resolve it, call `DiagnoseAHORunFailure` and work from the engine and task logs.
+
+| Error message pattern | Investigate in this order | First action |
+| --- | --- | --- |
+| `couldn't construct <Type> from "..."` | 1. Struct passed as a JSON-encoded string rather than an object 2. Field name does not match the struct definition 3. Required field absent | Pass the value as a JSON object. See [Parameter Types](./running-a-workflow.md#parameter-types). |
+| `IAM role is invalid or inaccessible` | 1. Role ARN wrong or role deleted 2. Trust policy does not allow `omics.amazonaws.com` 3. Role belongs to another account | `aws iam get-role --role-name <name>`, then read `AssumeRolePolicyDocument`. |
+| `S3 bucket not located in <region>` | 1. Output bucket is in a different region than the run | `aws s3api get-bucket-location --bucket <name>`. A `null` LocationConstraint means `us-east-1`. Use a bucket in the run's region. |
+| `S3 access denied for s3://...` | 1. Role lacks `s3:PutObject` on the output prefix 2. Bucket policy denies the role 3. Object is SSE-KMS encrypted and the role lacks key access | Check the role's policies for S3 write on that prefix, then the bucket policy, then the KMS key policy. |
+| `has an invalid structure. Provide a valid ECR image URI` | 1. Task names a public registry and no container registry map was attached at workflow creation 2. Map attached but missing an entry for that registry | Re-create the workflow with `container_registry_map`, or replace the URI in the definition with a private ECR URI. The map is set at creation and cannot be added to an existing workflow. |
+| `Container image ... not found` | 1. Tag does not exist in ECR 2. Pull-through cache not yet populated 3. Repository policy does not grant HealthOmics pull access | `CheckContainerAvailability` with `initiate_pull_through: true`, then `ListECRRepositories` to confirm accessibility. |
+| `command not found` in a task log | 1. Image lacks a tool the command block invokes | The image exists but does not carry the tool. Use a multi-tool image — see Phase 1 of the [WDL migration SOP](./migration-guide-for-wdl.md). |
+| `Invalid zip file` on the workflow, not the run | 1. Definition source was a bare `.wdl`/`.nf`/`.cwl` file rather than a ZIP 2. Archive is corrupt | Package with `PackageAHOWorkflow`. See [Deploying a Workflow](./workflow-development.md#step-1-packaging). |
+
+Several of these are knowable before a run starts. `ValidateAHORunReadiness` checks the role, output location, input objects and container accessibility in one call — see [Pre-Run Validation](./running-a-workflow.md#pre-run-validation). PREFER it over discovering these one failed run at a time.
+
+Two properties of run failures shape how to read them:
+
+- **The message names where execution stopped, not what is misconfigured.** A missing container registry map surfaces as a task-level image URI error partway through the run, after earlier tasks have already consumed billed compute.
+- **Input errors arrive after PENDING.** Parameters are validated by the engine, not by `StartRun`, so a mistyped parameter costs the same minutes as a real workflow defect before it reports.
+
 ## VPC Connected Workflow Run Failures
 
 IF a workflow run using VPC networking fails with connectivity-related errors:

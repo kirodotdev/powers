@@ -98,6 +98,9 @@ This SOP defines how you, the agent, create and deploy genomics workflows for AW
 - You MUST use the `PackageAHOWorkflow` tool to create a zip package of the workflow.
 - You MUST use file paths or S3 paths to reference input files to the package AND the output path.
 - For large workflows with more than ~15 files output to S3 is recommended.
+- HealthOmics requires the definition to be a ZIP archive. A bare `.wdl`/`.nf`/`.cwl` file is packaged automatically WHERE `definition_source` is a file path or S3 URI, so a single-file workflow can be passed directly. This does NOT extend to a workflow with imports: only the named file is packaged, and the missing dependencies surface as import resolution errors at creation. Package anything with imports.
+- The automatic packaging keeps the original filename and produces a single top-level entry, so `path_to_main` is not required — the file does not have to be named `main.wdl`.
+- Inline definition content is left as-is, since that input is expected to be a ZIP already. A file with a `.zip` extension is also left as-is, so a corrupt archive reports as one rather than being wrapped again.
 
 ### Step 2. Deploy to HealthOmics
 - Call `CreateAHOWorkflow` to create the new workflow.
