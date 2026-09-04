@@ -1,0 +1,12 @@
+{
+  "name": "Capture Session Context",
+  "version": "1.0.0",
+  "description": "Automatically captures a structured summary of the session when it ends, updates project memory, and cleans up old files.",
+  "when": {
+    "type": "agentStop"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "A session just ended. Follow the steering/capture-context.md guide to capture the session context:\n\n1. Detect the current git branch: run `git rev-parse --abbrev-ref HEAD`. If it fails, use 'unknown'.\n2. Sanitize the branch name for filenames (replace / \\ : * ? \" < > | with hyphens, collapse consecutive hyphens, trim leading/trailing hyphens).\n3. Generate a structured session summary with these 7 sections in order: Session Metadata, Key Decisions, Files Modified, Architectural Patterns, User Preferences, Unresolved Questions, Next Steps. Use 'None captured' for empty sections. Keep it under 150 lines.\n4. Create the directory `.kiro/context-keeper/sessions/` if it doesn't exist.\n5. Write the summary to `.kiro/context-keeper/sessions/{YYYY}-{MM}-{DD}T{HH}-{mm}-{ss}-{sanitized-branch}.md`.\n6. Update project memory: follow steering/project-memory-update.md to append new learnings to `.kiro/context-keeper/project-memory.md` (create with empty headings if missing).\n7. Cleanup: if more than 20 files in the sessions directory, delete the oldest (lexicographically smallest) to bring count to 20."
+  }
+}
