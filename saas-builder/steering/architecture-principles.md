@@ -69,6 +69,48 @@ inclusion: always
 - Load test with realistic multi-tenant traffic patterns
 - Frontend: Manual testing preferred, focus on tenant-specific UI variations
 
+## Ingress Patterns and Edge Security
+
+**Multi-Tenant Distribution Strategy**:
+- Share configuration across tenants for operational efficiency
+- Allow tenant-specific customization (domains, certificates, security overrides)
+- Use connection groups for DNS routing
+
+**Tiered Service Model for CDN**:
+- Basic: Single multi-tenant distribution, platform subdomains, wildcard certificate, pooled origin
+- Premium: Same multi-tenant distribution, custom vanity domains, tenant certificates, dedicated origins, Origin Shield, enhanced WAF WebACL protections
+- Enterprise: custom vanity domains, tenant certificates, dedicated origins, Origin Shield, custom WAF WebACL
+
+**Certificate Strategy**:
+- Use HTTP ACM validation for automatic renewal (Route53 and ACM)
+- Wildcard certificates for platform subdomains (cost-effective)
+- Tenant-specific certificates for custom domains (optional)
+
+**DNS Ownership Models**:
+- Platform-managed: Full control, automated validation, operational overhead
+- Tenant-managed: Tenant controls DNS, zero platform cost, manual coordination
+- Hybrid: Platform subdomains + optional custom domains
+
+## Security & DDoS Protection
+
+**Defense in Depth**:
+- Use AWS WAF with CloudFront to provide for application layer protections
+- AWS Shield Standard for network/transport layer DDoS
+- Rate limiting at multiple layers (WAF, API Gateway, application)
+- Geo-blocking and IP reputation filtering
+- API Gateway (request, input validation, access control, usage plans)
+
+**Positive Security Model WAF**:
+- Default deny for APIs (explicit allow for known good patterns)
+- Default allow for websites (explicit block for known bad patterns)
+- Use managed rule groups for OWASP Top 10 protection
+- Layer rules: non-terminating (count/challenge) before terminating (block/allow)
+
+**Tenant-Specific Security**:
+- Shared Web ACL for Basic tier (cost-effective)
+- Enhanced rules for Premium tier (higher rate limits)
+- Dedicated Web ACL for Enterprise tier (custom policies)
+
 ## Dependency Management
 - Minimize third-party libraries - prefer AWS SDKs and built-in language features
 - Pin versions to avoid breakages
