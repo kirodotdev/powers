@@ -198,7 +198,7 @@ Documentation is available at https://kiro.dev/docs/powers/
 ---
 
 ### stackgen
-**Aiden for Infrastructure** - Design, manage, and deploy cloud infrastructure with StackGen - create appstacks, manage resources, configure environments, and push IaC to Git. Supports AWS, Azure, and GCP.
+**Aiden for InfraOps** - Design, manage, and deploy cloud infrastructure with StackGen - create appstacks, manage resources, configure environments, and push IaC to Git. Supports AWS, Azure, and GCP.
 
 **MCP Servers:** stackgen (CLI stdio)
 
