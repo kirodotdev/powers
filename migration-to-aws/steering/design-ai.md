@@ -22,11 +22,11 @@ Read `$MIGRATION_DIR/preferences.json` → `ai_constraints` (if present). If abs
 
 **Load source-specific design reference based on `ai_source`:**
 
-- `"gemini"` → load `steering/design-ref-ai-gemini-to-bedrock.md`
-- `"openai"` → load `steering/design-ref-ai-openai-to-bedrock.md`
-- `"anthropic"` → load `steering/design-ref-ai-anthropic-to-bedrock.md` (Anthropic SDK → Bedrock Converse API client swap; do NOT use design-ref-ai-openai-to-bedrock.md for Anthropic SDK users)
+- `"gemini"` → load `design-ref-ai-gemini-to-bedrock.md`
+- `"openai"` → load `design-ref-ai-openai-to-bedrock.md`
+- `"anthropic"` → load `design-ref-ai-anthropic-to-bedrock.md` (Anthropic SDK → Bedrock Converse API client swap; do NOT use design-ref-ai-openai-to-bedrock.md for Anthropic SDK users)
 - `"both"` → load both `design-ref-ai-gemini-to-bedrock.md` and `design-ref-ai-openai-to-bedrock.md`
-- `"other"` or absent → load `steering/design-ref-ai.md` (traditional ML rubric — Vision API, Speech API, Document AI, custom models only; do NOT use for Anthropic SDK users)
+- `"other"` or absent → load `design-ref-ai.md` (traditional ML rubric — Vision API, Speech API, Document AI, custom models only; do NOT use for Anthropic SDK users)
 
 ---
 
@@ -46,7 +46,7 @@ Call `get_regional_availability` from the `awsknowledge` MCP server for:
 - Note in user summary with alternative region suggestion
 - Do NOT block the design — proceed with the recommendation and flag the constraint
 
-**If MCP call fails after 3 attempts:** Use the static table in `steering/ai-migration-guardrails.md` as fallback. Add `"regional_validation": "fallback_static"` to output metadata.
+**If MCP call fails after 3 attempts:** Use the static table in `ai-migration-guardrails.md` as fallback. Add `"regional_validation": "fallback_static"` to output metadata.
 
 ---
 
@@ -56,15 +56,15 @@ Call `get_regional_availability` from the `awsknowledge` MCP server for:
 
 If `agentic_profile.is_agentic == true`:
 
-1. Load `steering/ai-migration-guardrails.md` (shared warnings — load once, do not reload in sub-files)
+1. Load `ai-migration-guardrails.md` (shared warnings — load once, do not reload in sub-files)
 2. Read `preferences.json` → `ai_constraints.agentic.migration_approach`
 3. Route based on approach:
 
 | `migration_approach` | Action                                                                                                                                                                                                                                                                                                                                                    |
 | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `"retarget"`         | Continue with standard model-swap design below (Parts 1–6). The existing framework stays; only the model layer changes. Load `steering/retarget-gotchas.md` for framework-specific migration pitfalls to include in the code migration plan (Part 5).                                                                                            |
-| `"harness"`          | Load `steering/design-ref-harness.md`. If file does not exist: continue with standard model-swap design, add note to user summary: "AgentCore Harness design reference not yet available. Proceeding with model-layer migration only. For Harness guidance, see https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/harness.html" |
-| `"strands"`          | Load `steering/design-ref-agentic-to-agentcore.md`.                                                                                                                                                                                                                                                                                         |
+| `"retarget"`         | Continue with standard model-swap design below (Parts 1–6). The existing framework stays; only the model layer changes. Load `retarget-gotchas.md` for framework-specific migration pitfalls to include in the code migration plan (Part 5).                                                                                            |
+| `"harness"`          | Load `design-ref-harness.md`. If file does not exist: continue with standard model-swap design, add note to user summary: "AgentCore Harness design reference not yet available. Proceeding with model-layer migration only. For Harness guidance, see https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/harness.html" |
+| `"strands"`          | Load `design-ref-agentic-to-agentcore.md`.                                                                                                                                                                                                                                                                                         |
 | `"undecided"`        | Treat as `"retarget"` (safest default). Note in user summary: "No migration approach selected — defaulting to retarget (keep framework, swap model layer). Re-run Clarify to select a different approach."                                                                                                                                                |
 
 **Regardless of approach:** Continue with Parts 1–6 below for model selection and mapping. The agentic design ref (Harness/Strands) adds agent infrastructure on top of the model-layer design — it does not replace it.
@@ -149,7 +149,7 @@ Overall assessment = weakest across all models. If any `"recommend_stay"`, flag 
 
 **Model comparison table** (include in output and user summary): Model, Provider, Max Context, Input/Output Price per 1M, Price Comparison, Streaming, Function Calling, Assessment.
 
-**Quota risk assessment** (per `steering/bedrock-quotas.md`):
+**Quota risk assessment** (per `bedrock-quotas.md`):
 
 After selecting models, assess quota risk based on `ai_token_volume` from `preferences.json`:
 
@@ -230,7 +230,7 @@ For each capability in `integration.capabilities_summary` that is `true`, check 
 | Batch Processing  | BatchPredictionJob      | Batch Inference (async)          | Partial |
 | Fine-tuning       | Vertex AI tuning        | Bedrock Custom Model             | Partial |
 | Grounding / RAG   | Vertex AI Search & RAG  | Bedrock Knowledge Bases          | Full    |
-| Agents            | Vertex AI Agent Builder | Bedrock Agents                   | Full    |
+| Agents            | Vertex AI Agent Builder | Bedrock AgentCore (Harness)      | Full    |
 
 Record `capability_gaps[]` for any Partial or None parity.
 
@@ -291,7 +291,7 @@ For each detected `integration.pattern` and `ai_source`, generate before/after m
 
 **Mantle (OpenAI-compatible endpoints):** If `ai_source = "openai"` and `integration.pattern = "direct_sdk"`, prefer the Mantle path as the primary migration option. Mantle provides OpenAI-compatible Chat Completions and Responses APIs on Bedrock — the existing OpenAI SDK code works with zero changes, only environment variable updates. Check [Mantle regional availability](https://docs.aws.amazon.com/bedrock/latest/userguide/bedrock-mantle.html) — if the target region does not have Mantle, fall back to the boto3 Converse API path. Record `migration_path: "mantle"` or `migration_path: "converse"` in `aws-design-ai.json` → `ai_architecture.code_migration`.
 
-**Mantle throughput caveat (medium/high volume):** Mantle runs on a shared 10,000 RPM account limit. For workloads with `ai_token_volume = "medium"` or `"high"`, add a note in the design summary: "Mantle is subject to a shared 10K RPM account limit. At medium/high volume, monitor for 429s and consider migrating to `bedrock-runtime` (Converse API) for dedicated throughput." See `steering/ai-migration-guardrails.md` for the full risk table.
+**Mantle throughput caveat (medium/high volume):** Mantle runs on a shared 10,000 RPM account limit. For workloads with `ai_token_volume = "medium"` or `"high"`, add a note in the design summary: "Mantle is subject to a shared 10K RPM account limit. At medium/high volume, monitor for 429s and consider migrating to `bedrock-runtime` (Converse API) for dedicated throughput." See `ai-migration-guardrails.md` for the full risk table.
 
 **gpt-oss migration path:** If `ai_source = "openai"` and the user wants to preserve OpenAI model architecture while consolidating on AWS, offer `gpt-oss` on Bedrock as a fourth migration path alongside Mantle, Converse API, and framework swap. Record `migration_path: "gpt-oss"` in `aws-design-ai.json` → `ai_architecture.code_migration`. The gpt-oss path uses the Converse API with the gpt-oss Bedrock model ID — it is not an OpenAI-compatible endpoint. Note the Claude 4.7+ output TPM cap (2M) if the user is migrating from a high-output OpenAI workload.
 
@@ -344,7 +344,7 @@ Write `aws-design-ai.json` to `$MIGRATION_DIR/`.
 - [ ] Every `bedrock_models[]` entry has pricing (`source_provider_price`, `bedrock_price`, `price_comparison`)
 - [ ] `capability_mapping` covers every `true` capability from `capabilities_summary`
 - [ ] `code_migration.primary_pattern` matches `integration.pattern`
-- [ ] All model IDs use current Bedrock identifiers (Active status per `steering/ai-model-lifecycle.md`)
+- [ ] All model IDs use current Bedrock identifiers (Active status per `ai-model-lifecycle.md`)
 - [ ] No Legacy model is used as `bedrock_models[].aws_model_id` unless no Active alternative exists (with EOL date noted)
 - [ ] `honest_assessment` logic is consistent (weakest model drives overall)
 - [ ] `regional_warnings` is present (empty array `[]` if no issues; populated if any service unavailable in target region)

@@ -8,7 +8,7 @@ Before running any sub-estimate file, determine the pricing source.
 
 ### Step 0a: Load Pricing Cache
 
-Read `steering/cached-prices.md`. Check the `Last updated` date in the header:
+Read `cached-prices.md`. Check the `Last updated` date in the header:
 
 - If <= 90 days old: **Cached prices are the primary source.** No MCP calls needed for services listed in the cache. Proceed to Step 1.
 - If > 90 days old: Cache is stale. Attempt MCP (Step 0b) for fresh prices; use stale cache as fallback.
@@ -37,7 +37,7 @@ This prevents silent failures — the user sees the pricing constraint upfront, 
 
 Each sub-estimate file uses this lookup order per service:
 
-1. **`steering/cached-prices.md`** (primary) — Cached prices (±5-25% accuracy). Set `pricing_source: "cached"`. Used first because it requires zero API calls and covers most common services.
+1. **`cached-prices.md`** (primary) — Cached prices (±5-25% accuracy). Set `pricing_source: "cached"`. Used first because it requires zero API calls and covers most common services.
 2. **MCP API** (secondary) — Real-time pricing for services NOT in cached-prices.md (±5-10% accuracy, more precise). Set `pricing_source: "live"`. Only called when the cache lacks the needed service or model. **Region note:** The `.mcp.json` sets `AWS_REGION=us-east-1` as the MCP server default, but each `get_pricing()` call accepts a `region` parameter that overrides it. Always pass the user's target region (from `preferences.json`) in MCP queries.
 3. **Cache after MCP failure** — If MCP was attempted but failed (timeout, error), and the service IS in the cache, use the cached price. Set `pricing_source: "cached_fallback"`. This distinguishes intentional cache use from MCP failure recovery.
 4. **Unavailable** — If a service is NOT in the cache AND MCP is unavailable, set `pricing_source: "unavailable"` for that service. Add the service to `services_with_missing_fallback` and display a warning to the user: "Pricing unavailable for [service] — not in cache and MCP unreachable. Exclude from totals or provide a manual estimate."
@@ -117,7 +117,7 @@ Before marking Estimate complete, enforce route output gates (fail closed):
 
 ## Completion Handoff Gate (Fail Closed)
 
-Load `steering/handoff-gates.md`. **Re-read from disk** each active estimate artifact before checking.
+Load `handoff-gates.md`. **Re-read from disk** each active estimate artifact before checking.
 
 **Re-entry guard:** If `generation-infra.json` (or sibling generation artifacts) exists and `phases.generate` is not `"pending"`: STOP unless the user explicitly confirms re-running Estimate. Emit `GATE_FAIL | phase=estimate | field=generation-infra.json | reason=stale_downstream`.
 
@@ -131,20 +131,64 @@ Load `steering/handoff-gates.md`. **Re-read from disk** each active estimate art
 
 **On PASS:** Emit `HANDOFF_OK | phase=estimate | artifacts=<comma-separated active estimate files>`.
 
-After `HANDOFF_OK`, use the Phase Status Update Protocol (read-merge-write) to update `.phase-status.json` — **in the same turn** as the output message below:
+### Inner workshop reprice — skip state transition
 
-- Set `phases.estimate` to `"completed"`
-- Set `current_phase` to `"generate"`
+When Estimate is invoked from `workshop-refresh.md` (inner reprice): write the
+estimate artifact(s), present a brief summary, then **return to the workshop
+loop**. Do **not** emit `HANDOFF_OK`, do **not** update `.phase-status.json`, do
+**not** offer the what-if workshop below.
 
-Output to user: "Cost estimation complete. Proceeding to Phase 5: Generate Migration Artifacts."
+### Outer Estimate — deferred Generate advance
+
+After outer-run `HANDOFF_OK`, use the Phase Status Update Protocol
+(read-merge-write) — **in the same turn** as the summary:
+
+1. Set `phases.estimate` to `"completed"`
+2. Ensure `phases.workshop` exists (seed `"pending"` if missing)
+3. **Do not** set `current_phase` to `"generate"` yet — leave `current_phase` at
+   `"estimate"` until the workshop sidebar is resolved (entered then exited,
+   or declined)
+4. Offer the what-if workshop below (infra route only)
+
+### Post-Estimate: What-If Workshop Offer
+
+When `gcp-resource-inventory.json` + `aws-design.json` + `estimation-infra.json`
+exist, offer:
+
+```
+Estimate complete. Before Generate, want to see how the numbers move if you
+change something? I can reprice scenarios side by side in about a minute each,
+without re-running discovery — for example: a different AWS region, cheaper
+single-AZ database for staging, Kubernetes (EKS) instead of Fargate, or
+ARM-based (Graviton) compute.
+
+[A] Enter what-if workshop
+[B] Proceed toward Generate
+```
+
+**Data-justified scenario hint (add one line when applicable):** if a material
+assumption was defaulted rather than confirmed — most commonly `availability`
+(Multi-AZ, ~2x database cost) — append: "Suggestion: we assumed [assumption];
+comparing a [alternative] scenario would bound that assumption before you
+commit." Suggest at most one.
+
+- **A** → Load `workshop.md`. Keep
+  `current_phase: estimate`; set `phases.workshop` → `"in_progress"`.
+- **B** → Mark `phases.workshop` → `"completed"`. Set `current_phase` →
+  `"generate"`. Continue with Feedback/Generate sidebars in `gcp-orchestrator.md`.
+
+For AI-only / billing-only runs (no infra inventory), skip the workshop offer and
+set `phases.workshop` → `"completed"`, `current_phase` → `"generate"`.
 
 ## Reference Files
 
-- `steering/cached-prices.md` — Cached AWS + source provider pricing (±5-25%, primary source)
+- `cached-prices.md` — Cached AWS + source provider pricing (±5-25%, primary source)
 
 ## Scope Boundary
 
 **This phase covers financial analysis ONLY.**
+
+**Cost labeling rule (applies to ALL sub-estimate files):** All dollar figures presented to the user in chat summaries, report tables, and metric boxes MUST be labeled as "estimated monthly costs" or prefixed with "Est." — never present raw dollar amounts as if they are exact. This includes the Present Summary output, migration report content, and any user-facing cost references.
 
 FORBIDDEN — Do NOT include ANY of:
 

@@ -38,7 +38,7 @@ For each billing service, attempt lookup in order:
 
 **2a. Fast-path lookup:**
 
-1. Look up `gcp_service_type` in `steering/design-ref-fast-path.md` → Direct Mappings table
+1. Look up `gcp_service_type` in `design-ref-fast-path.md` → Direct Mappings table
 2. If found: assign AWS service
 3. Enrich with SKU hints:
    - If `top_skus` mention "PostgreSQL" → **RDS PostgreSQL** or **Aurora PostgreSQL** per `design_constraints.availability` in `preferences.json` (same Q6 gate as `design-infra.md` step 7b). Default to **RDS PostgreSQL single-AZ** when availability unknown (billing-only path has no HA signal — do not assume Multi-AZ).
@@ -69,7 +69,7 @@ If found: assign the Default AWS Target. Set rationale to: "Billing heuristic: [
 
 **Set `human_expertise_required`**: If `gcp_service_type` is `google_bigquery_dataset` (or billing rows clearly represent BigQuery analytics), set `human_expertise_required: true` and `aws_service` to **`Deferred — specialist engagement`** (same rules as `design-infra.md` BigQuery gate). For all other services, set `human_expertise_required: false`. This field is REQUIRED on every service in the output.
 
-**Preferred AWS target check**: **Skip** when `aws_service` is **`Deferred — specialist engagement`**. Otherwise verify the assigned `aws_service` aligns with the Preferred AWS Target Services table in `steering/design-ref-fast-path.md`. If a non-preferred service is selected (e.g., App Runner for containerized workloads), substitute the preferred alternative (e.g., Fargate). Add a note to the rationale: "Preferred target: [alternative] selected for stronger ecosystem integration."
+**Preferred AWS target check**: **Skip** when `aws_service` is **`Deferred — specialist engagement`**. Otherwise verify the assigned `aws_service` aligns with the Preferred AWS Target Services table in `design-ref-fast-path.md`. If a non-preferred service is selected (e.g., App Runner for containerized workloads), substitute the preferred alternative (e.g., Fargate). Add a note to the rationale: "Preferred target: [alternative] selected for stronger ecosystem integration."
 
 **2c. If not found in either table:** proceed to Step 3.
 

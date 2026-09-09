@@ -75,10 +75,10 @@ Detailed checklists live in each phase file. Minimum gates:
 | **clarify**  | `preferences.json` valid; Cloud SQL in inventory → `design_constraints.availability.value` set                    |
 | **design**   | Active route artifacts present (existing gates)                                                                   |
 | **estimate** | Active route artifacts present; infra route → `recommendation.path` + non-empty `migrate_if` / `stay_if`          |
-| **generate** | Load `steering/validate-artifacts.md` before report; report pre-write sanity (see `generate-artifacts-report.md`)   |
+| **generate** | Load `validate-artifacts.md` before report; report pre-write sanity (see `generate-artifacts-report.md`)   |
 
 ---
 
-## Orchestrator rule (POWER.md)
+## Orchestrator rule (gcp-orchestrator.md)
 
 The top-level skill MUST NOT load the next phase until the previous phase's output includes `HANDOFF_OK | phase=<previous>`. A phase completion message without `HANDOFF_OK` is not valid handoff.

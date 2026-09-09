@@ -1,37 +1,63 @@
-# Terraform Validation Protocol (Shared Reference)
+# Terraform Validation Protocol (shared)
 
-> Canonical definition of the `fmt → init → validate → fix-and-retry → offline-fallback` protocol used by any phase that emits Terraform. Referenced by `steering/generate-artifacts-infra.md` Step 6 and reusable by future artifact generators.
+> Canonical definition of the `fmt → init → validate → policy → fix-and-retry → offline-fallback`
+> protocol for any phase that emits a `terraform/` directory. This document is **descriptive
+> and caller-driven**: it specifies the mechanics and the report shape, but the **caller** (a
+> migration skill's Generate phase) owns execution, the fix-and-retry edits, the user prompt,
+> and any run-state decisions.
 
-## When to Use
+## Ownership boundary (important)
 
-Any step that writes a `terraform/` directory and wants to block phase completion on HCL-level defects while still degrading gracefully when the provider registry is unreachable.
+This protocol is part of the read-only `tf-best-practices` unit. Neither this document nor the
+policy checker it invokes may:
+
+- edit `.tf` files — the **caller** applies fixes (Stage D is a description of what the caller
+  does, not an action this unit performs),
+- read/write run-state (e.g. a phase-status file) — that is interpreter/caller territory,
+- decide phase completion or prompt the user — caller policy.
+
+The protocol's only durable output is `validation-report.json`. Where the caller writes it,
+whether validation failure blocks the phase, and how the terminal status maps to run-state are
+**all caller decisions**. The pseudocode below uses "the caller advances / stops" deliberately —
+this unit never advances a state machine.
+
+## When to use
+
+Any step that writes a `terraform/` directory and wants to check it for format, HCL-level, and
+policy defects while degrading gracefully when the provider registry is unreachable.
 
 ## Protocol
 
-Working directory: the `terraform/` directory under test. All commands run non-interactively (`-input=false -no-color` where supported).
+Working directory: the `terraform/` directory under test. All commands run non-interactively
+(`-input=false -no-color` where supported). `$TERRAFORM_DIR` is the caller-supplied path.
 
 ### Stage A — Format
 
-1. `terraform fmt -recursive` (auto-apply).
-2. `terraform fmt -recursive -check`. If non-zero, enter the Fix-and-Retry loop targeting fmt failures. On success, advance to Stage B.
+1. `terraform fmt -recursive` (auto-apply — a caller action).
+2. `terraform fmt -recursive -check`. If non-zero, enter the Fix-and-Retry loop targeting fmt
+   failures. On success, advance to Stage B.
 
 ### Stage B — Initialize (no backend)
 
 1. `terraform init -backend=false -input=false -no-color`, capturing stderr.
 2. On non-zero exit, run the **Offline Detection** algorithm below on the captured stderr.
-   - If classified network-unavailable: set `validation_status = "passed_degraded_offline"`, emit warning, SKIP Stage C, proceed to Stage E. Do NOT enter the retry loop.
+   - If classified network-unavailable: set `validation_status = "passed_degraded_offline"`,
+     emit warning, SKIP Stage C, **proceed to Stage F (policy still runs)**, then Stage E. Do
+     NOT enter the retry loop.
    - Otherwise: enter the Fix-and-Retry loop targeting init failures.
 3. On success, advance to Stage C.
 
 ### Stage C — Validate
 
 1. `terraform validate -json`, capturing stdout.
-2. On non-zero exit, parse `.diagnostics[]` and enter the Fix-and-Retry loop targeting validate failures.
-3. On success, set `validation_status = "passed"` and advance to Stage E.
+2. On non-zero exit, parse `.diagnostics[]` and enter the Fix-and-Retry loop targeting validate
+   failures.
+3. On success, set `validation_status = "passed"` and advance to Stage F (Stage D remains
+   available for policy retries).
 
-### Stage D — Fix-and-Retry Loop
+### Stage D — Fix-and-Retry Loop (caller-executed)
 
-Attempt budget: **3 attempts per batch**. Hardcoded. Not configurable via `preferences.json`.
+Attempt budget: **3 attempts per batch**. Hardcoded.
 
 Per attempt:
 
@@ -39,31 +65,59 @@ Per attempt:
    - fmt: the diff shown by `fmt -recursive -check` (list of files that would change).
    - init: the stderr captured from `terraform init`.
    - validate: the JSON diagnostics array from `terraform validate -json`.
-2. **Group errors by file path.** For each file, open it once, apply all targeted edits for that file, close. Never rewrite a file wholesale; only edit the lines/blocks reported.
-3. Re-run only the failing command (fmt -check, init, or validate).
+   - policy: the `violations[]` from the policy checker's `--json` verdict (or `POLICY_FAIL`
+     stderr lines).
+2. **Group errors by file path.** For each file, open it once, apply all targeted edits for that
+   file, close. Never rewrite a file wholesale; only edit the lines/blocks reported. (These
+   edits are performed by the **caller** — this unit does not touch `.tf`.)
+3. Re-run only the failing command (fmt -check, init, validate, or the policy checker).
 4. If it passes, exit the loop and return to the calling stage's success path.
-5. If the same `(file, line, summary)` reappears on consecutive attempts, emit a "same error recurring" signal in the attempt log — this is a warning only; continue to the next attempt.
+5. If the same `(file, line, summary)` reappears on consecutive attempts, emit a "same error
+   recurring" signal in the attempt log — warning only; continue.
 
-On the 3rd consecutive failure in a batch, prompt the user:
+On the 3rd consecutive failure in a batch, the caller prompts the user:
 
 ```
 Terraform validation failed after 3 automated fix attempts.
 Last error: <one-line summary>
 [retry] attempt 3 more fixes
 [skip]  proceed with warning (validation_status = skipped_user_continue)
-[abort] stop, do NOT write .phase-status.json
+[abort] stop
 Choose [retry/skip/abort]:
 ```
 
-User choices:
+User choices (caller applies its own run-state policy on each):
 
-- **retry** — reset the per-batch attempt counter to 0, grant 3 more attempts, continue. The cumulative `attempts` field in `validation-report.json` is NOT reset (it keeps incrementing).
-- **skip** — set `validation_status = "skipped_user_continue"`, emit warning, proceed to Stage E. Phase Completion is allowed.
-- **abort** — set `validation_status = "skipped_user_abort"`, write `validation-report.json` with that status, STOP. **Do NOT write to `.phase-status.json`.** The caller (generate.md) relies on seeing no completion signal.
+- **retry** — reset the per-batch counter to 0, grant 3 more attempts. Cumulative `attempts`
+  is NOT reset.
+- **skip** — set `validation_status = "skipped_user_continue"`, emit warning, proceed to
+  Stage E. (Whether the caller then allows phase completion is a caller decision.)
+- **abort** — set `validation_status = "skipped_user_abort"`, write `validation-report.json`
+  with that status, and STOP. The caller MUST NOT record a completion signal (do not advance
+  run-state). This unit does not touch run-state itself.
+
+### Stage F — Policy validation (mandatory when `terraform/` exists)
+
+1. Run the read-only policy checker:
+
+   ```bash
+   python3 "$STEERING/tf-validate-terraform-policy.py" "$TERRAFORM_DIR" --json "$VERDICT_PATH"
+   ```
+
+2. On non-zero exit, parse the verdict's `violations[]` (each carries `file`, `line`, `rule`,
+   `fix_hint`) and enter Stage D Fix-and-Retry targeting policy violations.
+3. On success (`POLICY_OK`), advance to Stage E.
+4. If Stage C was skipped due to offline fallback, **still run Stage F** — the policy check is
+   static and needs no provider init.
+
+Record the policy outcome in `validation-report.json` `policy_status` (see schema). A policy
+failure MUST be visible in the report — it must never be masked by a `passed_degraded_offline`
+top-level status.
 
 ### Stage E — Emit validation-report.json
 
-Write `$MIGRATION_DIR/validation-report.json` following the schema in the **Report Schema** section below.
+Write `validation-report.json` (path chosen by the caller, e.g. `$MIGRATION_DIR/`) per the
+schema below.
 
 ## Offline Detection
 
@@ -80,7 +134,7 @@ FUNCTION isNetworkUnavailable(init_stderr)
 
   haystack ← toLowerCase(init_stderr)
 
-  FOR EACH p IN patterns DO              // first-match-wins; order does not matter for correctness
+  FOR EACH p IN patterns DO              // first-match-wins
     IF contains(haystack, toLowerCase(p)) THEN
       RETURN true
     END IF
@@ -92,96 +146,30 @@ END FUNCTION
 
 **Rules**:
 
-- **Source stream**: stderr of `terraform init` only. Do not read stdout for classification (terraform writes progress to stdout, errors to stderr).
-- **Case sensitivity**: case-insensitive. Lowercase both the haystack and the patterns before comparing.
-- **Match semantics**: first-match-wins. Any pattern hit short-circuits to `true`. Full-stderr scan, not per-line.
-- **Empty stderr**: treat as non-network failure. The retry loop runs. This prevents silent offline-fallback when terraform fails for an unrelated reason (e.g., a panic) and produces no stderr.
+- **Source stream**: stderr of `terraform init` only.
+- **Case sensitivity**: case-insensitive.
+- **Match semantics**: first-match-wins; full-stderr scan.
+- **Empty stderr**: treat as non-network failure so the retry loop runs (prevents silent
+  offline-fallback when terraform fails for an unrelated reason with no stderr).
 
-## Fix-and-Retry Algorithm (pseudocode)
+## Report Schema (v2)
 
-```
-FUNCTION fixAndRetry(stage, initial_error_output)
-  INPUT:
-    stage ∈ {"fmt", "init", "validate"}
-    initial_error_output — captured output from the failing command
-  OUTPUT:
-    terminal_status ∈ {"passed", "skipped_user_continue", "skipped_user_abort"}
-    cumulative_attempts (int)
-
-  cumulative_attempts ← 0
-  last_error_output ← initial_error_output
-  recurring_errors ← ∅
-
-  LOOP                                // outer loop: retry user choice may re-enter
-    batch_attempt ← 0
-    last_batch_errors ← ∅
-
-    WHILE batch_attempt < 3 DO
-      batch_attempt ← batch_attempt + 1
-      cumulative_attempts ← cumulative_attempts + 1
-
-      errors ← parseErrors(stage, last_error_output)
-      errors_by_file ← groupBy(errors, e → e.file)
-
-      FOR EACH (file, file_errors) IN errors_by_file DO
-        applyTargetedEdits(file, file_errors)    // LLM edits only reported sites
-      END FOR
-
-      (exit_code, new_output) ← run(stage)       // rerun only the failing command
-
-      IF exit_code = 0 THEN
-        // advance the caller to the next stage; this function returns "passed"
-        // once the caller reaches Stage C success. For fmt/init this means
-        // success at the current stage; the caller chains into the next.
-        RETURN ("passed", cumulative_attempts)
-      END IF
-
-      // Detect recurring errors for logging (warning signal, not a control-flow change)
-      new_errors_set ← set of (file, line, summary) from parseErrors(stage, new_output)
-      recurring ← last_batch_errors ∩ new_errors_set
-      IF recurring ≠ ∅ THEN
-        emitWarning("same error recurring: " + recurring)
-        recurring_errors ← recurring_errors ∪ recurring
-      END IF
-      last_batch_errors ← new_errors_set
-      last_error_output ← new_output
-    END WHILE
-
-    choice ← promptUser("retry/skip/abort")
-
-    IF choice = "retry" THEN
-      // reset per-batch counter; outer loop continues for 3 more attempts
-      CONTINUE
-    ELSE IF choice = "skip" THEN
-      RETURN ("skipped_user_continue", cumulative_attempts)
-    ELSE IF choice = "abort" THEN
-      writeValidationReport(status="skipped_user_abort", attempts=cumulative_attempts, ...)
-      STOP_WITHOUT_PHASE_STATUS_WRITE()   // MUST NOT update .phase-status.json
-    END IF
-  END LOOP
-END FUNCTION
-```
-
-**Key contract points**:
-
-- The cumulative `attempts` counter in `validation-report.json` counts every rerun across all batches, including after a user `retry`. It never resets.
-- The per-batch counter (triggering the user prompt) resets to 0 on `retry`.
-- On `abort`, the function terminates the whole run without touching `.phase-status.json`. The calling phase (`generate.md`) must see the absence of a completion write and NOT advance the state machine.
-- "Progress" vs "same error recurring": progress is when `exit_code == 0` OR when `last_batch_errors \ new_errors_set ≠ ∅` (at least one error disappeared). A fully-overlapping error set across consecutive attempts triggers the warning but does not change control flow.
-
-## Report Schema
+v2 adds `policy_status` so the policy verdict is durably recorded independently of the
+fmt/init/validate outcome. A policy failure is visible even when the top-level `status` is
+`passed_degraded_offline`.
 
 ```json
 {
-  "$schema": "validation-report/v1",
-  "status": "passed | passed_degraded_offline | skipped_user_continue | skipped_user_abort",
+  "$schema": "validation-report/v2",
+  "status": "passed | passed_degraded_offline | skipped_user_continue | skipped_user_abort | policy_failed",
+  "policy_status": "POLICY_OK | POLICY_FAIL | not_run",
   "attempts": 0,
   "errors_found": [
     {
       "file": "string (relative to terraform/)",
       "line": "integer (1-based, 0 if unknown)",
       "severity": "error | warning",
-      "summary": "string (≤200 chars, first line of diagnostic)"
+      "summary": "string (≤200 chars)"
     }
   ],
   "errors_fixed": [
@@ -190,63 +178,54 @@ END FUNCTION
       "line": "integer",
       "severity": "error | warning",
       "summary": "string",
-      "attempt": "integer (1-indexed; which retry attempt repaired it)"
+      "attempt": "integer (1-indexed)"
+    }
+  ],
+  "policy_violations": [
+    {
+      "rule": "string (e.g. alb_http_redirect)",
+      "file": "string",
+      "line": "integer",
+      "severity": "error | warning",
+      "summary": "string",
+      "fix_hint": "string"
     }
   ],
   "offline_fallback_used": false,
-  "timestamp": "ISO 8601 UTC (e.g., 2026-02-26T15:35:22Z)",
-  "terraform_version": "string (output of `terraform version -json | .terraform_version`; empty string if unavailable)"
+  "timestamp": "ISO 8601 UTC",
+  "terraform_version": "string (empty if unavailable)"
 }
 ```
 
 **Field rules**:
 
-- `status`: MUST match one of the four enum values. MUST equal the terminal `validation_status`.
-- `attempts`: integer ≥ 0. Counts total fix-and-retry attempts across all batches (a `retry` user choice that grants 3 more attempts continues to increment this counter; it does NOT reset). Value 0 means fmt/init/validate all passed on first try.
-- `errors_found`: every distinct diagnostic emitted across all attempts, deduplicated by `(file, line, summary)`.
-- `errors_fixed`: subset of `errors_found` that did not reappear after the indicated `attempt`.
+- `status`: one of the enum values; equals the terminal `validation_status`. `policy_failed`
+  is used when the fmt/init/validate stages passed (or offline-skipped) but policy did not and
+  the user did not `skip`/`abort`.
+- `policy_status`: `POLICY_OK` / `POLICY_FAIL` from Stage F, or `not_run` if Stage F did not
+  execute (e.g. no `terraform/` produced). MUST reflect the last policy run — never inferred
+  from `status`.
+- `policy_violations`: the verdict's `violations[]` when `policy_status == POLICY_FAIL`
+  (deduped); empty otherwise.
+- `attempts`: total fix-and-retry attempts across all batches (never resets on `retry`).
+- `errors_found` / `errors_fixed`: fmt/init/validate diagnostics, deduped by
+  `(file, line, summary)`.
 - `offline_fallback_used`: `true` iff `status == "passed_degraded_offline"`.
-- `terraform_version`: populated by parsing `terraform version -json`; if that command fails, fall back to empty string (never crash on this).
+- `terraform_version`: from `terraform version -json`; empty string if unavailable (never crash).
 
-**Example** (passed after 2 retry attempts repaired a missing brace and an unresolved reference):
+**Example** (validate passed first try; policy caught an HTTP-forward ALB, caller fixed it):
 
 ```json
 {
-  "$schema": "validation-report/v1",
+  "$schema": "validation-report/v2",
   "status": "passed",
-  "attempts": 2,
-  "errors_found": [
-    {
-      "file": "vpc.tf",
-      "line": 47,
-      "severity": "error",
-      "summary": "Missing close brace on resource \"aws_subnet\" \"private_a\""
-    },
-    {
-      "file": "compute.tf",
-      "line": 12,
-      "severity": "error",
-      "summary": "Reference to undeclared resource aws_security_group.app"
-    }
-  ],
-  "errors_fixed": [
-    {
-      "file": "vpc.tf",
-      "line": 47,
-      "severity": "error",
-      "summary": "Missing close brace on resource \"aws_subnet\" \"private_a\"",
-      "attempt": 1
-    },
-    {
-      "file": "compute.tf",
-      "line": 12,
-      "severity": "error",
-      "summary": "Reference to undeclared resource aws_security_group.app",
-      "attempt": 2
-    }
-  ],
+  "policy_status": "POLICY_OK",
+  "attempts": 1,
+  "errors_found": [],
+  "errors_fixed": [],
+  "policy_violations": [],
   "offline_fallback_used": false,
-  "timestamp": "2026-02-26T15:37:04Z",
+  "timestamp": "2026-07-15T15:37:04Z",
   "terraform_version": "1.9.5"
 }
 ```

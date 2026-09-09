@@ -10,14 +10,14 @@ The parent `estimate.md` selects the pricing mode before loading this file.
 
 **Price lookup order:**
 
-1. **`steering/cached-prices.md` (primary)** — Look up Bedrock model pricing and source provider pricing by table. Set `pricing_source: "cached"`.
+1. **`cached-prices.md` (primary)** — Look up Bedrock model pricing and source provider pricing by table. Set `pricing_source: "cached"`.
 2. **MCP (secondary)** — If a model is NOT in cached-prices.md and MCP is available, query `get_pricing("AmazonBedrock", ...)` with model filter and the user's target region. Set `pricing_source: "live"`.
 3. **Cache after MCP failure** — If MCP was attempted but failed, and the model IS in the cache, use the cached price. Set `pricing_source: "cached_fallback"`.
 4. **Unavailable** — If a model is NOT in the cache AND MCP failed, set `pricing_source: "unavailable"` and warn the user.
 
 For typical migrations (Claude, Llama, Nova, Mistral, DeepSeek, Gemma, OpenAI gpt-oss, Gemini source pricing), ALL prices are in `cached-prices.md`. Zero MCP calls needed.
 
-**Model lifecycle:** When building the model comparison table, check `steering/ai-model-lifecycle.md` and apply the 90-day exclusion rule:
+**Model lifecycle:** When building the model comparison table, check `ai-model-lifecycle.md` and apply the 90-day exclusion rule:
 
 - **Excluded** (≤90 days to EOL): omit entirely from `model_comparison`, `recommended_model`, and `backup_model`.
 - **Legacy** (>90 days to EOL): include in `model_comparison` with `(Legacy — EOL YYYY-MM-DD)` annotation. Do not select as `recommended_model` unless no Active alternative exists.
@@ -99,7 +99,7 @@ From `ai-workload-profile.json`, record non-monetary factors in `migration_cost_
 - `integration.pattern = "direct_sdk"` → moderate SDK and API pattern changes
 - `integration.pattern = "rest_api"` → higher endpoint, auth, and parsing changes
 - `summary.total_models_detected` > 3 → multi-model coordination
-- `quota_risk = "high"` (from `aws-design-ai.json`) → Bedrock quota increase required before migration; allow 1–5 business days (see `steering/bedrock-quotas.md`)
+- `quota_risk = "high"` (from `aws-design-ai.json`) → Bedrock quota increase required before migration; allow 1–5 business days (see `bedrock-quotas.md`)
 
 Do **not** repeat these as "costs" in the user-facing summary.
 
@@ -207,7 +207,7 @@ All cost values are numbers, not strings. Output must be valid JSON.
 - [ ] `recommendation.path` is one of: `migrate_optimized`, `migrate_phased`, `stay`
 - [ ] If Design `honest_assessment` = `recommend_stay`, then `recommendation.path` = `stay`
 - [ ] `model_comparison` includes ALL viable Bedrock models, not just recommended
-- [ ] Legacy models in `model_comparison` are annotated with EOL dates (per `steering/ai-model-lifecycle.md`)
+- [ ] Legacy models in `model_comparison` are annotated with EOL dates (per `ai-model-lifecycle.md`)
 - [ ] `recommended_model` is an Active model (not Legacy) unless no Active alternative exists
 - [ ] Every model has `capabilities_match` checked against `ai_capabilities_required`
 - [ ] `recommended_model.rationale` references user's priority, preference, and volume
@@ -229,12 +229,14 @@ If this gate fails: STOP and output: "estimate-ai did not produce a valid `estim
 After writing `estimation-ai.json`, present under 25 lines:
 
 1. **Pricing source and accuracy**: State whether prices came from cache or live API, and the accuracy range (±15-25% for AI models from cache, ±5-10% from live API). Example: "AI model estimates based on cached pricing (2026-03-07), accuracy ±15-25%."
-2. Current GCP AI spend vs projected Bedrock cost (recommended model)
-3. Model comparison table: model name, monthly cost, vs source provider %, capabilities match
-4. Recommended model with cost breakdown
+2. Current GCP AI spend vs estimated monthly Bedrock cost (recommended model)
+3. Model comparison table: model name, estimated monthly cost, vs source provider %, capabilities match
+4. Recommended model with estimated monthly cost breakdown
 5. If migration increases cost: flag honestly with non-cost justification
-6. Top 2-3 optimization opportunities with potential savings
+6. Top 2-3 optimization opportunities with potential estimated monthly savings
 7. Optimized projection
+
+**Cost labeling rule:** All dollar figures presented to the user MUST be labeled as "estimated monthly costs" or prefixed with "Est." — never present raw dollar amounts as if they are exact.
 
 ## Generate Phase Integration
 

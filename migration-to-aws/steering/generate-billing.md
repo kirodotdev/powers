@@ -52,7 +52,7 @@ If any required file is missing: **STOP**. Output: "Missing required artifact: [
 
 ## Part 2: Complexity-Scaled Timeline
 
-> **Before building the timeline, load `steering/migration-complexity.md` and classify the migration tier using the inputs from `aws-design-billing.json`, `billing-profile.json`, and `preferences.json`.**
+> **Before building the timeline, load `migration-complexity.md` and classify the migration tier using the inputs from `aws-design-billing.json`, `billing-profile.json`, and `preferences.json`.**
 
 Use the **Billing-Only Path** stage templates from `migration-complexity.md` for the determined tier. The three tiers produce different timelines:
 
@@ -119,7 +119,7 @@ Full conservative plan with extended discovery and parallel-run phases. For migr
 
 ## Part 3: Risk Assessment
 
-Risks are scaled by complexity tier. Use the **Risk Scaling by Tier** table in `steering/migration-complexity.md` to set probability values. The table below shows risk templates — replace the probability column with the tier-appropriate value.
+Risks are scaled by complexity tier. Use the **Risk Scaling by Tier** table in `migration-complexity.md` to set probability values. The table below shows risk templates — replace the probability column with the tier-appropriate value.
 
 ### Standard Risks
 
@@ -145,7 +145,7 @@ For each service in `aws-design-billing.json.services[]`, generate a migration s
 ```
 Service: [gcp_service] → [aws_service]
 Monthly Cost: $[monthly_cost] (GCP) → $[aws_mid] estimated (AWS)
-How chosen: Estimated from billing only (JSON: billing_inferred) — see steering/design-ref-fast-path.md User-facing vocabulary
+How chosen: Estimated from billing only (JSON: billing_inferred) — see design-ref-fast-path.md User-facing vocabulary
 
 Steps:
 1. [ ] Determine actual configuration (instance size, storage, etc.)
@@ -205,7 +205,7 @@ Action Required:
 
 ## Part 5: Success Criteria
 
-Thresholds scaled by complexity tier. Simpler migrations have fewer unknowns and tighter targets. Use the **Success Criteria Scaling by Tier > Billing-Only Path** table in `steering/migration-complexity.md`.
+Thresholds scaled by complexity tier. Simpler migrations have fewer unknowns and tighter targets. Use the **Success Criteria Scaling by Tier > Billing-Only Path** table in `migration-complexity.md`.
 
 | Criteria                    | Small                      | Medium                     | Large                      |
 | --------------------------- | -------------------------- | -------------------------- | -------------------------- |
@@ -222,7 +222,7 @@ Apply the column matching the determined complexity tier.
 
 Generate `generation-billing.json` in `$MIGRATION_DIR/` with the following schema.
 
-The example below shows a **small** tier migration. Adjust `complexity_tier`, `complexity_inputs`, `total_weeks`, `approach`, phases, risk probabilities, success metric thresholds, and `estimated_total_effort_hours` according to the determined tier (see Part 2, Part 3, Part 5, and `steering/migration-complexity.md`).
+The example below shows a **small** tier migration. Adjust `complexity_tier`, `complexity_inputs`, `total_weeks`, `approach`, phases, risk probabilities, success metric thresholds, and `estimated_total_effort_hours` according to the determined tier (see Part 2, Part 3, Part 5, and `migration-complexity.md`).
 
 ```json
 {

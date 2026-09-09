@@ -104,6 +104,52 @@ Complete inventory of discovered GCP resources with classification, dependencies
   - `signals_found[]` — array of detection signals with method, pattern, confidence, evidence
   - `ai_services[]` — list of AI services detected (vertex_ai, bigquery_ml, etc.)
 
+### Live discovery extensions (present when `discover-live.md` ran)
+
+Live gcloud discovery produces the same inventory/cluster schemas with these additions:
+
+**`metadata` additional fields:**
+
+- `discovery_sources` — string[]: which sources produced data, e.g. `["live"]` or `["terraform", "live"]`. `terraform_version` may be `null` on live-only runs.
+- `clustering_mode` — `"simplified"` (IaC Step 3S; also used for merged IaC+live runs), `"simplified_live"` (live-only runs), or absent (full IaC clustering).
+
+**`resources[]` optional fields:**
+
+- `source` — `"terraform"`, `"live"`, or `"live+terraform"` (merged entry)
+- `unmanaged_by_terraform` — `true` when live discovery found the resource but no Terraform manages it (click-ops drift)
+- `not_found_live` — `true` when Terraform declares the resource but the (successful) live capture did not find it deployed
+
+**Top-level `live_metadata` section:**
+
+```json
+{
+  "live_metadata": {
+    "found": true,
+    "captured_at": "2026-07-20T18:20:00Z",
+    "project": "acme-prod",
+    "method": "asset_search",
+    "cai_enable_offered": false,
+    "cai_enable_accepted": null,
+    "capture_warnings": [],
+    "unmapped_asset_types": {},
+    "drift": {
+      "resources_live_only": 0,
+      "resources_terraform_only": 0,
+      "config_conflicts": [
+        {
+          "address": "google_sql_database_instance.db",
+          "field": "settings.tier",
+          "terraform_value": "db-f1-micro",
+          "live_value": "db-custom-2-8192"
+        }
+      ]
+    }
+  }
+}
+```
+
+`drift` is present only when Terraform AND live discovery both produced resources. Env var and secret VALUES must never appear anywhere in the inventory — names only, with `discover-iac.md` Step 0 redaction patterns applied.
+
 ---
 
 ## gcp-resource-clusters.json (Phase 1 output)

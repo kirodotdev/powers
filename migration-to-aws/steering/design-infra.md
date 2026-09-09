@@ -23,12 +23,12 @@ For each cluster, process `primary_resources` first, then `secondary_resources` 
 For each PRIMARY resource in the cluster:
 
 1. Extract GCP type (e.g., `google_sql_database_instance`)
-2. Look up in `steering/design-ref-fast-path.md` → **Direct Mappings** table (not the Preferred Target table — that applies later in Pass 2).
+2. Look up in `design-ref-fast-path.md` → **Direct Mappings** table (not the Preferred Target table — that applies later in Pass 2).
 3. If found and conditions match: assign AWS service with confidence = **`deterministic`**. Set `human_expertise_required: false` (no Direct Mapping row requires it).
 4. If `gcp_type` is `google_sql_database_instance` with PostgreSQL or MySQL engine: **always proceed to Pass 2** (Cloud SQL is not in Direct Mappings — see `design-ref-fast-path.md`). Confidence = **`inferred`** after rubric.
 5. If not found: proceed to Pass 2 (confidence will be **`inferred`** after rubric, or **`billing_inferred`** on the billing-only path).
 
-**Definitions:** See the top of `steering/design-ref-fast-path.md` for **`deterministic` vs `inferred` vs `billing_inferred`** and the note that **design-ref-index.md “Typical AWS target” ≠ deterministic**.
+**Definitions:** See the top of `design-ref-fast-path.md` for **`deterministic` vs `inferred` vs `billing_inferred`** and the note that **design-ref-index.md “Typical AWS target” ≠ deterministic**.
 
 ### Pass 2: Rubric-Based Selection
 
@@ -40,7 +40,7 @@ For resources not covered by fast-path:
 2. Set `aws_service` to **`Deferred — specialist engagement`**, `human_expertise_required` to **`true`**, `confidence` to **`inferred`**, and `aws_config` to include `specialist_engagement` (text: engage **AWS account team** and/or **data analytics migration partner** before choosing any AWS target) and `no_automated_aws_target`: `true`. Set `rubric_applied` to `["BigQuery specialist gate — no automated AWS service target"]`.
 3. **Skip** rubric steps 1–6 and the Preferred AWS target check for this resource.
 
-4. Determine service category (via `steering/design-ref-index.md`):
+4. Determine service category (via `design-ref-index.md`):
    - `google_compute_instance` → compute
    - `google_cloudfunctions_function` → compute
    - `google_sql_database_instance` → database
@@ -53,7 +53,7 @@ For resources not covered by fast-path:
    - If pattern match: use that category
    - If no pattern match: **STOP**. Output: "Unknown GCP resource type: [type]. Not in design-ref-fast-path.md or design-ref-index.md. Cannot auto-map. Please file an issue with this resource type."
 
-5. Load rubric from corresponding `steering/design-ref-*.md` file (e.g., `design-ref-compute.md`, `design-ref-database.md`)
+5. Load rubric from corresponding `design-ref-*.md` file (e.g., `design-ref-compute.md`, `design-ref-database.md`)
 
 6. Evaluate 6 criteria (1-sentence each):
    - **Eliminators**: Feature incompatibility (hard blocker)
@@ -81,13 +81,13 @@ If rubric or fast-path would select Aurora when `availability` is `single-az` or
 
 1. **Set `human_expertise_required`**: If the BigQuery specialist gate applied, already `true`. Otherwise set `false` unless another rubric explicitly requires it. This field is REQUIRED on every resource in the output.
 
-1. **Preferred AWS target check**: **Skip** if `aws_service` is **`Deferred — specialist engagement`**. **Skip Aurora substitution** for Cloud SQL when Q6 availability is `single-az` or `multi-az` (RDS is correct). Otherwise verify the selected `aws_service` aligns with the Preferred AWS Target Services table in `steering/design-ref-fast-path.md`. If a non-preferred service is selected (e.g., App Runner for containerized workloads), substitute the preferred alternative (e.g., Fargate). Add a note to the rationale: "Preferred target: [alternative] selected for stronger ecosystem integration."
+1. **Preferred AWS target check**: **Skip** if `aws_service` is **`Deferred — specialist engagement`**. **Skip Aurora substitution** for Cloud SQL when Q6 availability is `single-az` or `multi-az` (RDS is correct). Otherwise verify the selected `aws_service` aligns with the Preferred AWS Target Services table in `design-ref-fast-path.md`. If a non-preferred service is selected (e.g., App Runner for containerized workloads), substitute the preferred alternative (e.g., Fargate). Add a note to the rationale: "Preferred target: [alternative] selected for stronger ecosystem integration."
 
 ## Step 3: Handle Secondary Resources
 
 For each SECONDARY resource:
 
-1. Use `steering/design-ref-index.md` for category
+1. Use `design-ref-index.md` for category
 2. Apply fast-path (most secondaries have deterministic mappings)
 3. If rubric needed: apply the **BigQuery specialist gate** (Pass 2 step 0) first when `gcp_type` starts with `google_bigquery_`; otherwise apply the same 6-criteria approach as Pass 2
 
@@ -198,7 +198,7 @@ If this gate fails: STOP and output: "design-infra did not produce a valid `aws-
 After writing `aws-design.json`, present a concise summary to the user:
 
 1. Total resources mapped and cluster count
-2. Per-cluster table: GCP resource → AWS service (one line each). For how each mapping was chosen, use **plain English** from `steering/design-ref-fast-path.md` → **User-facing vocabulary** — **Standard pairing** (`deterministic`), **Tailored to your setup** (`inferred`), or **Estimated from billing only** (`billing_inferred`). Lead with the bold phrase; include the JSON value in parentheses only if the user is technical.
+2. Per-cluster table: GCP resource → AWS service (one line each). For how each mapping was chosen, use **plain English** from `design-ref-fast-path.md` → **User-facing vocabulary** — **Standard pairing** (`deterministic`), **Tailored to your setup** (`inferred`), or **Estimated from billing only** (`billing_inferred`). Lead with the bold phrase; include the JSON value in parentheses only if the user is technical.
 3. Any warnings (regional fallbacks; call out **Tailored to your setup** rows that deserve extra review)
 4. If any resource has **`Deferred — specialist engagement`**: state **prominently** that **no AWS analytics target was chosen**. Direct the user to **their AWS account team and/or a data analytics migration partner**. Do **not** recommend Athena, Redshift, Glue, or EMR in the chat summary.
 
