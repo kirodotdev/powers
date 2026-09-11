@@ -35,6 +35,12 @@ Follow this SOP WHEN:
 2. Call `GetAHORun` to check status.
 3. WHEN the workflow completes, outputs will be at the specified output location.
 
+### Session Policy
+
+`StartRun` accepts an optional `sessionPolicy` — an inline IAM policy (JSON string) that further scopes down the permissions of the run's `roleArn` for that run. The run's effective permissions are the intersection of the role's policies and this session policy, so it can only restrict, never grant, access. Pass it only when the user wants to limit what the run's tasks can reach (for example, restrict S3 access to specific buckets). For batch runs it is set in `defaultRunSetting`. See the [Session Policies SOP](./session-policy.md).
+
+> **Tooling support**: `sessionPolicy` is part of the HealthOmics REST API but is not exposed by every AWS CLI/SDK/MCP client version. Confirm the client you use accepts it before relying on it (e.g., `aws omics start-run help` should list `--session-policy`); older clients reject it as an unknown parameter.
+
 ### Engine Settings
 
 `StartRun` accepts an `engineSettings` map that customizes how HealthOmics invokes the workflow engine. The map is engine-agnostic in concept; today only Nextflow keys are implemented, so pass it only for Nextflow workflows. Pass it only when the user requests the corresponding behavior.

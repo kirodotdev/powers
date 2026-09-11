@@ -64,6 +64,7 @@ The IAM service role passed in `roleArn` requires the same permissions as for in
    - `roleArn` — IAM service role ARN (check `.healthomics/config.toml`).
    - `outputUri` — S3 output location (check `.healthomics/config.toml`).
    - `storageType` — Use `DYNAMIC` (recommended).
+   - `sessionPolicy` — Optional; an inline IAM policy (JSON) that scopes down the permissions of `roleArn` for every run in the batch (effective permissions = the intersection of the role's policies and this policy). Applies uniformly to all runs in the batch. See the [Session Policies SOP](./session-policy.md).
    - `parameters` — Common parameters shared across all runs (e.g., reference genome).
 3. Prepare per-run configurations, each with a unique `runSettingId` and any parameter overrides.
 
@@ -223,3 +224,4 @@ The S3 file at `s3://my-bucket/configs/run-configs.json` is a JSON array with th
 - **Ready2Run workflows** — Not supported with batch runs.
 - **Inline limit** — `inlineSettings` supports up to 100 entries. For larger batches, use `s3UriSettings`.
 - **S3 file immutability** — Do not modify the S3 configuration file after submitting the batch.
+- **Session policy is batch-wide, not per-run** — `sessionPolicy` lives in `defaultRunSetting` and applies to every run in the batch identically; individual run settings (`inlineSettings`/`s3UriSettings`) cannot override it. See the [Session Policies SOP](./session-policy.md).
