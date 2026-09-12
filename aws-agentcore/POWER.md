@@ -1,16 +1,16 @@
 ---
 name: "aws-agentcore"
 displayName: "Build an agent with Amazon Bedrock AgentCore"
-description: "Build, test, and deploy AI agents using AWS Bedrock AgentCore with local development workflow. Amazon Bedrock AgentCore is an agentic platform for building, deploying, and operating effective agents."
+description: "Build, test, and deploy AI agents using Amazon Bedrock AgentCore with local development workflow. Amazon Bedrock AgentCore is an agentic platform for building, deploying, and operating effective agents."
 keywords: ["agentcore", "bedrock", "aws", "agents", "ai", "development", "agent"]
 author: "AWS"
 ---
 
-# AWS Bedrock AgentCore
+# Amazon Bedrock AgentCore
 
 ## Overview
 
-Build and deploy AI agents using AWS Bedrock AgentCore with a complete local development workflow. This power provides access to AgentCore documentation, runtime management, memory operations, and gateway configuration through MCP tools, plus comprehensive guidance for the create-dev-test-deploy cycle.
+Build and deploy AI agents using Amazon Bedrock AgentCore with a complete local development workflow. This power provides access to AgentCore documentation, runtime management, memory operations, and gateway configuration through MCP tools, plus comprehensive guidance for the create-dev-test-deploy cycle.
 
 AgentCore supports multiple agent SDKs (Strands, Claude, OpenAI) and model providers (Bedrock, OpenAI), with infrastructure deployment via CDK or Terraform.
 
