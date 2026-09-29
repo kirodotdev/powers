@@ -1,7 +1,11 @@
 {
   "mcpServers": {
     "postman": {
-      "url": "https://mcp.postman.com/minimal",
+      "command": "npx",
+      "args": ["-y", "@postman/postman-mcp-server@latest"],
+      "env": {
+        "POSTMAN_API_KEY": "${POSTMAN_API_KEY}"
+      },
       "disabled": false
     }
   }
