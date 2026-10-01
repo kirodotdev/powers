@@ -23,7 +23,7 @@ Documentation is available at https://kiro.dev/docs/powers/
 ---
 
 ### aws-amplify
-**Build full-stack apps with AWS Amplify** - Build and extend full-stack applications with AWS Amplify Gen 2 using type-safe TypeScript, guided workflows, and best practices. Covers authentication, data models, storage, serverless functions, AI/ML integration, and deployment to sandbox and production.
+**Build full-stack apps with AWS Amplify Gen2** - Build and extend full-stack applications with AWS Amplify Gen 2 using type-safe TypeScript, guided workflows, and best practices. Covers authentication, data models, storage, serverless functions, AI/ML integration, and deployment to sandbox and production.
 
 **MCP Servers:** aws-mcp
 
@@ -46,7 +46,7 @@ Documentation is available at https://kiro.dev/docs/powers/
 ### aws-healthomics
 **AWS HealthOmics** - Create, migrate, run, debug and optimize genomics workflows in AWS HealthOmics. Supports WDL, Nextflow, and CWL workflow languages.
 
-**MCP Servers:** awslabs.aws-healthomics-mcp-server
+**MCP Servers:** aws-healthomics
 
 ---
 
@@ -95,7 +95,7 @@ Documentation is available at https://kiro.dev/docs/powers/
 ### aws-transform
 **AWS Transform** - Migrate, modernize, and upgrade codebases: .NET Framework to .NET 8/10, mainframe COBOL to Java, VMware VMs to EC2, SQL Server/Oracle/MySQL to Aurora, and Java/Python/Node.js version upgrades or AWS SDK migrations. Assess, plan, and execute code transformations from your IDE.
 
-**MCP Servers:** None
+**MCP Servers:** aws-transform-mcp
 
 ---
 
@@ -120,17 +120,10 @@ Documentation is available at https://kiro.dev/docs/powers/
 
 ---
 
-### cloudwatch-application-signals
-**[DEPRECATED] Amazon CloudWatch Application Signals** - This power has been merged into the AWS Observability power. We recommend installing the AWS Observability power for a more comprehensive monitoring experience.
-
-**MCP Servers:** awslabs.cloudwatch-applicationsignals-mcp-server
-
----
-
 ### databricks
-**Databricks AI Dev Kit** - Comprehensive Databricks development toolkit with 44 MCP tools (180+ operations) and expert guidance for building data pipelines, ML workflows, dashboards, jobs, and applications on the Databricks platform across AWS, Azure, and GCP.
+**Databricks AI Dev Kit** - Comprehensive Databricks development toolkit with expert guidance for building data pipelines, ML workflows, dashboards, jobs, and applications on the Databricks platform, plus an optional MCP server adding 44 live tools (180+ operations).
 
-**MCP Servers:** databricks (ai-dev-kit local MCP server)
+**MCP Servers:** databricks (optional, ai-dev-kit local MCP server)
 
 ---
 
@@ -144,7 +137,14 @@ Documentation is available at https://kiro.dev/docs/powers/
 ### dynatrace
 **Dynatrace Observability** - Query logs, metrics, traces, problems, and Kubernetes events from Dynatrace using DQL (Dynatrace Query Language) and Davis AI.
 
-**MCP Servers:** dynatrace-mcp-server
+**MCP Servers:** dynatrace
+
+---
+
+### kiro-support
+**Kiro Support** - File and manage AWS Support cases for Kiro issues directly from the IDE. Collects diagnostics and verifies Support API access first, with a ready-to-send admin request when permissions are missing.
+
+**MCP Servers:** awslabs.aws-support-mcp-server, aws-mcp
 
 ---
 
@@ -165,7 +165,7 @@ Documentation is available at https://kiro.dev/docs/powers/
 ### neon
 **Build a database with Neon** - Serverless Postgres with database branching, autoscaling, and scale-to-zero - perfect for modern development workflows.
 
-**MCP Servers:** neon
+**MCP Servers:** Neon
 
 ---
 
@@ -177,7 +177,7 @@ Documentation is available at https://kiro.dev/docs/powers/
 ---
 
 ### power-builder
-**Power Builder** - Complete guide for building and testing new Kiro powers with templates, best practices, and validation.
+**Power Builder** - Create new Kiro powers using the Agent Plugins specification, or migrate existing POWER.md-based powers to the agent-plugins standard.
 
 **MCP Servers:** None (Knowledge Base Power)
 
@@ -198,7 +198,7 @@ Documentation is available at https://kiro.dev/docs/powers/
 ---
 
 ### stackgen
-**Aiden for InfraOps** - Design, manage, and deploy cloud infrastructure with StackGen - create appstacks, manage resources, configure environments, and push IaC to Git. Supports AWS, Azure, and GCP.
+**Aiden for InfraOps** - Build, operate, observe, and remediate cloud infrastructure with Aiden - create appstacks, manage resources, configure environments, and push IaC to Git. Supports AWS, Azure, and GCP, plus deployment runners and ServiceNow integration.
 
 **MCP Servers:** stackgen (CLI stdio)
 
@@ -208,13 +208,6 @@ Documentation is available at https://kiro.dev/docs/powers/
 **Build an agent with Strands SDK** - Build AI agents with Strands SDK using Bedrock, Anthropic, OpenAI, Gemini, or Llama models.
 
 **MCP Servers:** strands-agents
-
----
-
-### stripe
-**Stripe Payments** - Build payment integrations with Stripe - accept payments, manage subscriptions, handle billing, and process refunds.
-
-**MCP Servers:** stripe
 
 ---
 
