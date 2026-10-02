@@ -1,0 +1,21 @@
+{
+  "mcpServers": {
+    "appwrite-cloud": {
+      "url": "https://mcp.appwrite.io/",
+      "disabled": false
+    },
+    "appwrite-self-hosted": {
+      "command": "uvx",
+      "args": [
+        "mcp-server-appwrite",
+        "--all"
+      ],
+      "env": {
+        "APPWRITE_PROJECT_ID": "${APPWRITE_PROJECT_ID}",
+        "APPWRITE_API_KEY": "${APPWRITE_API_KEY}",
+        "APPWRITE_ENDPOINT": "${APPWRITE_ENDPOINT}"
+      },
+      "disabled": true
+    }
+  }
+}
