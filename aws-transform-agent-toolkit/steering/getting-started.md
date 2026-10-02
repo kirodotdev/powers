@@ -18,6 +18,21 @@ Before starting, ensure you've completed the onboarding steps:
 
 **If you haven't done this yet**: The AWS Transform Agent Toolkit onboarding walks you through all installation steps. Kiro will guide you through tool validation, SDK installation, and hook setup when you first activate the power.
 
+## Environment Variables
+
+These environment variables configure the SDK at runtime:
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `QT_AGENTIC_API_ENDPOINT` | Yes (local dev) | Agentic API endpoint URL. Auto-injected in managed compute. See [agent-registration.md](./agent-registration.md) for endpoints per stage. |
+| `WORKSPACE_ID` | Yes | ATX workspace identifier |
+| `JOB_ID` | Yes | Current job identifier |
+| `AGENT_INSTANCE_ID` | Yes | Agent instance identifier |
+| `AWS_REGION` | Yes | AWS region for Bedrock model inference |
+| `ATX_USE_MOCK_REGISTRY` | No | Set to `true` for offline development without platform connectivity |
+
+For full endpoint details, see the [Agent Registration Guide](./agent-registration.md#agentic-api-endpoint-runtime).
+
 ## What You Can Build
 
 With AWS Transform, you create two types of agents:
