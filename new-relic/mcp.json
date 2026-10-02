@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "newrelic": {
+      "command": "npx",
+      "args": ["-y", "@newrelic/mcp-server"],
+      "env": {
+        "NEW_RELIC_API_KEY": "YOUR_NEW_RELIC_USER_API_KEY",
+        "NEW_RELIC_ACCOUNT_ID": "YOUR_ACCOUNT_ID"
+      },
+      "disabled": false,
+      "autoApprove": []
+    }
+  }
+}
