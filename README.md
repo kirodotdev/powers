@@ -121,9 +121,9 @@ Documentation is available at https://kiro.dev/docs/powers/
 ---
 
 ### databricks
-**Databricks AI Dev Kit** - Comprehensive Databricks development toolkit with expert guidance for building data pipelines, ML workflows, dashboards, jobs, and applications on the Databricks platform, plus an optional MCP server adding 44 live tools (180+ operations).
+**Databricks** - Official Databricks agent skills for building data pipelines, jobs, dashboards, apps, ML and AI agents on the Databricks Platform, installed and updated with the Databricks CLI (`databricks aitools install --agents kiro`).
 
-**MCP Servers:** databricks (optional, ai-dev-kit local MCP server)
+**MCP Servers:** None (Knowledge Base Power)
 
 ---
 

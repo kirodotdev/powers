@@ -1,0 +1,13 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "databricks",
+  "displayName": "Databricks",
+  "version": "1.0.0",
+  "description": "Official Databricks agent skills for Kiro: expert guidance for building data pipelines, jobs, dashboards, apps, ML and AI agents on the Databricks Platform, installed and updated with the Databricks CLI.",
+  "author": {
+    "name": "Databricks",
+    "url": "https://www.databricks.com"
+  },
+  "keywords": ["databricks", "unity catalog", "lakeflow", "databricks sql", "lakebase", "databricks apps"],
+  "repository": "https://github.com/kirodotdev/powers"
+}
