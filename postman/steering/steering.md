@@ -605,6 +605,7 @@ Include test scripts in all requests to validate:
 **STEP 2: Verify API availability**
    - If the target API is a local server, ensure it is running before executing the collection
    - For remote APIs (e.g. staging, production, cloud endpoints), skip this check
+   - `runCollection` executes on this machine via the local Postman MCP server, so `localhost` and other private hosts referenced by your environment variables are reachable
 
 **STEP 3: Run collection**
    ```
