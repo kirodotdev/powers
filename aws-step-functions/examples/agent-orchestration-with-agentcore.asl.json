@@ -1,0 +1,146 @@
+{
+  "Comment": "Customer-support ticket triage using Bedrock AgentCore invokeHarness with role-specific system prompts and a DynamoDB record.",
+  "QueryLanguage": "JSONata",
+  "StartAt": "Analyze Ticket",
+  "States": {
+    "Analyze Ticket": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::bedrockagentcore:invokeHarness",
+      "Arguments": {
+        "HarnessArn": "arn:aws:bedrock-agentcore:us-east-1:123456789012:harness/support-triage",
+        "RuntimeSessionId": "{% $states.context.Execution.Name & '-analyze' %}",
+        "Messages": [
+          {
+            "Role": "user",
+            "Content": [
+              {
+                "Text": "{% 'Customer tier: ' & $states.input.ticket.customer_tier & '\\nSubject: ' & $states.input.ticket.subject & '\\nBody: ' & $states.input.ticket.body %}"
+              }
+            ]
+          }
+        ],
+        "SystemPrompt": [
+          {
+            "Text": "You are a support-ticket analyst. Respond with EXACTLY one JSON object and nothing else. Do not include <thinking> tags. Do not include reasoning. Do not include prose. Do not include markdown. The JSON must have exactly three keys: category (one of: billing, technical, account, other), sentiment (one of: frustrated, neutral, satisfied), urgency (one of: low, medium, high). Account for customer_tier when assessing urgency. The first character of your response must be { and the last character must be }."
+          }
+        ],
+        "Model": {
+          "BedrockModelConfig": {
+            "ModelId": "amazon.nova-lite-v1:0"
+          }
+        },
+        "MaxTokens": 256
+      },
+      "Assign": {
+        "ticket": "{% $states.input.ticket %}",
+        "analysis": "{% $parse('{' & $substringBefore($substringAfter($states.result.Output.Message.Content[0].Text, '{'), '}') & '}') %}"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "BedrockAgentCore.ThrottlingException",
+            "BedrockAgentCore.InternalServerException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Assign": {
+            "failedStep": "Analyze Ticket",
+            "errorInfo": "{% $states.errorOutput %}"
+          },
+          "Next": "Triage Failed"
+        }
+      ],
+      "Next": "Recommend Action"
+    },
+    "Recommend Action": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::bedrockagentcore:invokeHarness",
+      "Arguments": {
+        "HarnessArn": "arn:aws:bedrock-agentcore:us-east-1:123456789012:harness/support-triage",
+        "RuntimeSessionId": "{% $states.context.Execution.Name & '-recommend' %}",
+        "Messages": [
+          {
+            "Role": "user",
+            "Content": [
+              {
+                "Text": "{% 'Ticket: ' & $string($ticket) & '\\nAnalysis: ' & $string($analysis) %}"
+              }
+            ]
+          }
+        ],
+        "SystemPrompt": [
+          {
+            "Text": "You are a triage director. Respond with EXACTLY one JSON object and nothing else. Do not include <thinking> tags. Do not include reasoning. Do not include prose. Do not include markdown. The JSON must have exactly two keys: recommended_action (one of: auto_resolve, route_to_billing, route_to_technical, route_to_account_management, escalate_to_specialist) and summary (one or two sentences a human agent can read in five seconds). The first character of your response must be { and the last character must be }."
+          }
+        ],
+        "Model": {
+          "BedrockModelConfig": {
+            "ModelId": "amazon.nova-lite-v1:0"
+          }
+        },
+        "MaxTokens": 512
+      },
+      "Assign": {
+        "recommendation": "{% $parse('{' & $substringBefore($substringAfter($states.result.Output.Message.Content[0].Text, '{'), '}') & '}') %}"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "BedrockAgentCore.ThrottlingException",
+            "BedrockAgentCore.InternalServerException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Assign": {
+            "failedStep": "Recommend Action",
+            "errorInfo": "{% $states.errorOutput %}"
+          },
+          "Next": "Triage Failed"
+        }
+      ],
+      "Next": "Record Triage"
+    },
+    "Record Triage": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::dynamodb:putItem",
+      "Arguments": {
+        "TableName": "TicketTriageTable",
+        "Item": {
+          "ticket_id": { "S": "{% $ticket.id %}" },
+          "category": { "S": "{% $analysis.category %}" },
+          "sentiment": { "S": "{% $analysis.sentiment %}" },
+          "urgency": { "S": "{% $analysis.urgency %}" },
+          "recommended_action": { "S": "{% $recommendation.recommended_action %}" },
+          "summary": { "S": "{% $recommendation.summary %}" },
+          "triaged_at": { "S": "{% $now() %}" }
+        }
+      },
+      "Output": {
+        "ticket_id": "{% $ticket.id %}",
+        "category": "{% $analysis.category %}",
+        "sentiment": "{% $analysis.sentiment %}",
+        "urgency": "{% $analysis.urgency %}",
+        "recommended_action": "{% $recommendation.recommended_action %}",
+        "summary": "{% $recommendation.summary %}"
+      },
+      "End": true
+    },
+    "Triage Failed": {
+      "Type": "Fail",
+      "Error": "TriageError",
+      "Cause": "{% 'Triage failed at ' & $failedStep & ': ' & ($exists($errorInfo.Cause) ? $errorInfo.Cause : 'Unknown error') %}"
+    }
+  }
+}
