@@ -1,11 +1,16 @@
 {
   "mcpServers": {
-    "arm-mcp": {
-      "command": "sh",
+    "arm_mcp": {
+      "command": "docker",
       "args": [
-        "-c",
-        "docker run --rm -i -v \"$(pwd)\":/workspace armlimited/arm-mcp:latest"
+        "run",
+        "--rm",
+        "-i",
+        "-v", "\"$(pwd)\":/workspace",
+        "--name", "arm-mcp",
+        "armlimited/arm-mcp:latest"
       ],
+      "env": {},
       "timeout": 180000
     }
   }
