@@ -2,11 +2,15 @@
 
 ## Purpose
 
-This SOP defines how you, the agent, configure a HealthOmics WDL task to automatically fall
-back across an ordered list of resource profiles (for example GPU type A -> GPU type B -> CPU)
-when the preferred resource isn't available, instead of the task failing outright. For general
+This SOP defines how you, the agent, configure a HealthOmics WDL or Nextflow task to
+automatically fall back across an ordered list of resource profiles (for example GPU type A ->
+GPU type B -> CPU) when the preferred resource isn't available, instead of the task failing
+outright. For general
 task resource directives (`acceleratorType`, `cpu`, `memory`), see the
 [Workflow Development SOP](./workflow-development.md#task-parameters).
+
+**Note:** This SOP primarily uses WDL syntax. For Nextflow-specific differences, see the
+[Nextflow Specifics](#nextflow-specifics) section.
 
 ## When to Use This
 
@@ -147,7 +151,8 @@ warning (the profile is skipped at scheduling time for the region case).
 - IF the workflow fails to create with a validation error referencing
   `omicsResourceFallbackOrder`, check the profile list against the Validation Rules above —
   the most common causes are unquoted keys (rule 5), mixing with top-level resource directives
-  (rule 1), or a CPU profile that isn't last (rule 13).
+  (rule 1), or a CPU profile that isn't last (rule 13). A Nextflow workflow is created anyway,
+  with the findings in its `statusMessage` (see [Validation](#validation)).
 - IF a task fails with `ALL_PROFILES_INSTANCE_RESERVATION_FAILED`, this means every profile in
   the list ran out its wait window without securing capacity — see
   [Interaction with Other Retries](#interaction-with-other-retries). For other run failures,
@@ -189,6 +194,108 @@ profile it landed on:
 - Tell the user to check [Regional Capabilities SOP](./regional-capabilities.md) if they see a
   profile skip unexpectedly fast — the accelerator type they listed may not be deployed in
   their run's region.
+
+## Nextflow Specifics
+
+The rules above also apply to Nextflow, except for the differences below.
+
+### Syntax
+
+- Use `cpus` (not `cpu`) for the vCPU count, as a whole number.
+- Write `memory` the way the Nextflow `memory` directive accepts it: `'32 GB'` or `32.GB`. Units are
+  `B`, `KB`, `MB`, `GB`, `TB`; `GiB` is not accepted.
+- Profiles are Groovy maps. Bareword keys (`[acceleratorType: 'nvidia-l4', cpus: 8]`) are the
+  normal spelling; quoted keys also work. Rule 5 (quoted keys) is WDL-only.
+- In a process body, call the directive with parentheses: `omicsResourceFallbackOrder([ ... ])`.
+  In `nextflow.config`, assign it: `omicsResourceFallbackOrder = [ ... ]`.
+
+### Where to set the directive
+
+Set it on the process, or in `nextflow.config` under a `withName:`/`withLabel:` selector. Standard
+Nextflow precedence applies: `withName` selector > `withLabel` selector > process definition >
+generic `process { }` scope.
+
+```groovy
+process {
+    withLabel: 'gpu_align' {
+        omicsResourceFallbackOrder = [
+            [acceleratorType: 'nvidia-l40s', acceleratorCount: 1, cpus: 8, memory: '32 GB'],
+            [cpus: 32, memory: '128 GB']
+        ]
+    }
+}
+```
+
+### Process-level directives
+
+- Setting `cpus`, `memory`, or `accelerator` at the process level alongside the directive (rule 1)
+  produces a warning in the workflow's `statusMessage` and the run's engine log, not a rejection.
+- A profile that omits `cpus` or `memory` inherits the process's `cpus`/`memory` directive (after
+  `resourceLimits`). If the process doesn't set it either, a GPU profile gets the GPU instance
+  default and a CPU profile gets the service default. RECOMMEND setting `cpus` and `memory` in
+  every profile; rely on inheritance only for retry escalation, e.g.
+  `memory { 32.GB * task.attempt }` at the process level.
+- The process-level `accelerator` directive is never applied or inherited. A profile without
+  `acceleratorType` is CPU-only.
+
+### Script and environment
+
+- `${task.cpus}` and `${task.memory}` do NOT reflect the profile that ran. They show the process-level
+  directive, or Nextflow's default if it isn't set (`task.cpus` = 1, `task.memory` unset).
+- In a `script:` block, escape the environment variable as `\$AWS_HEALTHOMICS_RESOURCE_TYPE`.
+
+### Retries (differs from WDL)
+
+- `ALL_PROFILES_INSTANCE_RESERVATION_FAILED` is NOT terminal in Nextflow. With `errorStrategy 'retry'`,
+  the task retries up to `maxRetries`, starting again from the first profile. The worst-case wait is
+  roughly (number of profiles) x (each profile's wait timeout) x (`maxRetries` + 1).
+- OOM and other container failures retry only with `errorStrategy 'retry'`; Nextflow's default
+  `errorStrategy` is `terminate`. The retry stays on the profile the task reached.
+- HealthOmics service errors (5xx) retry automatically on the same profile and don't count toward
+  `maxRetries`.
+
+### Validation
+
+For Nextflow, CreateWorkflow does not reject a workflow for these rules. The workflow becomes `ACTIVE`,
+and the findings are listed in its `statusMessage`, with profiles numbered from 0. A run fails at
+start if the profile list breaks a rule that rejects. IF a user creates a Nextflow workflow that
+uses the directive, check `statusMessage` with GetWorkflow before starting a run.
+
+### Nextflow example
+
+```groovy
+process ALIGN {
+    container 'my-registry/align-multi-arch:latest'
+    errorStrategy 'retry'
+    maxRetries 2
+
+    omicsResourceFallbackOrder([
+        [acceleratorType: 'nvidia-l40s', acceleratorCount: 1, cpus: 8, memory: '32 GB', omicsResourceWaitTimeoutInMin: 45],
+        [acceleratorType: 'nvidia-l4', acceleratorCount: 1, cpus: 8, memory: '32 GB'],
+        [cpus: 32, memory: '128 GB']
+    ])
+
+    input:
+    path reference
+    path fastq
+
+    output:
+    path 'output.bam'
+
+    script:
+    """
+    # Branch based on which resource type was allocated
+    if [ "\$AWS_HEALTHOMICS_RESOURCE_TYPE" = "cpu" ]; then
+        sentieon bwa mem -t 32 ${reference} ${fastq} > output.bam
+    else
+        pbrun fq2bam --ref ${reference} --in-fq ${fastq} --out-bam output.bam
+    fi
+    """
+}
+```
+
+This process tries `nvidia-l40s` first (waiting up to 45 minutes), then `nvidia-l4` (default wait
+window), then falls back to a CPU-only profile (32 vCPUs, 128 GB) if neither GPU is available.
 
 ## Related Documentation
 - For general task resource directives (`acceleratorType`, `cpu`, `memory` outside of a
