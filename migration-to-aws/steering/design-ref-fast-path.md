@@ -9,8 +9,8 @@ Use these labels **only** as defined here — they describe _how the mapping was
 | Label                  | Meaning                                                                                                                                                                                                                                                                               |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **`deterministic`**    | The GCP **Terraform resource type** appears in the **Direct Mappings** table below, the row's **Conditions** are satisfied, and the AWS target is taken from that row. **No** 6-criteria rubric is run for that mapping.                                                              |
-| **`inferred`**         | The resource type is **not** in Direct Mappings (or BigQuery / specialist gate applies). The agent loads the category file from `steering/design-ref-index.md`, runs eliminators and the **6-criteria rubric** (and may apply **Preferred AWS Target Services**), then picks the AWS service. |
-| **`billing_inferred`** | Billing-only design path: mappings from billing SKUs/service names — see `steering/design-billing.md`.                                                                                                                                                                |
+| **`inferred`**         | The resource type is **not** in Direct Mappings (or BigQuery / specialist gate applies). The agent loads the category file from `design-ref-index.md`, runs eliminators and the **6-criteria rubric** (and may apply **Preferred AWS Target Services**), then picks the AWS service. |
+| **`billing_inferred`** | Billing-only design path: mappings from billing SKUs/service names — see `design-billing.md`.                                                                                                                                                                |
 
 ### User-facing vocabulary (chat, MIGRATION_GUIDE, migration-report)
 
@@ -26,7 +26,7 @@ JSON artifacts **must** keep the `confidence` string values above. When speaking
 
 **Canonical reference:** This subsection — other phase files should point here instead of redefining wording.
 
-**Common confusion:** `steering/design-ref-index.md` lists a **typical AWS target** per GCP service. That is not automatically the same as **`deterministic`**. Confidence is `deterministic` only when the exact Terraform resource type appears in the Direct Mappings table above and its conditions are met; otherwise confidence is `inferred` via rubric evaluation.
+**Common confusion:** `design-ref-index.md` lists a **typical AWS target** per GCP service. That is not automatically the same as **`deterministic`**. Confidence is `deterministic` only when the exact Terraform resource type appears in the Direct Mappings table above and its conditions are met; otherwise confidence is `inferred` via rubric evaluation.
 
 **Add-ons (ALB, NAT, etc.):** A row may say "Fargate" while the architecture diagram also includes an **ALB** or **NAT Gateway** from **other** Terraform resources. Confidence is still per **resource row** — e.g. `google_cloud_run_service` = `inferred`; `google_compute_forwarding_rule` + backend = often `inferred` (see `design-ref-networking.md`).
 
@@ -110,4 +110,4 @@ For resources in the Skip Mappings table but present in inventory:
 3. If found and condition met: assign AWS service (confidence = deterministic)
 4. If `google_sql_database_instance` (PostgreSQL/MySQL): skip Direct Mappings → apply `design-ref-database.md` rubric (confidence = inferred)
 5. If found in Skip Mappings: skip it (confidence = n/a)
-6. If not found: use `steering/design-ref-index.md` to determine category → apply rubric in that category's file
+6. If not found: use `design-ref-index.md` to determine category → apply rubric in that category's file

@@ -1,0 +1,62 @@
+{
+  "_comment": "Tunable estimate-phase assumptions for the heroku-to-aws skill (the heuristic knobs an org adjusts, independent of the cost algorithm and the AWS rate table). AWS rates live in aws-infra-pricing.json; cost FORMULAS and tier/heuristic logic stay in heroku-estimate.md prose. Complexity-tier bands are NOT here (thresholds live in complexity-tiers.json; timelines are inline in heroku-estimate-cost-engine.md).",
+  "log_volume_gb_per_service": {
+    "_comment": "Per-service monthly CloudWatch log-volume heuristic, counted PER DESIGNED SERVICE (MSK is per broker). Used by the observability cost step. Heuristic because Heroku's logging model differs, so source billing doesn't apply.",
+    "fargate_task": 3,
+    "eb_environment": 3,
+    "rds_or_aurora_instance": 1,
+    "alb": 2,
+    "nat_gateway": 1,
+    "elasticache_node": 0.5,
+    "msk_broker": 2
+  },
+  "optimization_savings_ranges": {
+    "_comment": "Estimated savings RANGES per post-migration optimization opportunity, shown beyond the Balanced on-demand baseline. Ranges only (the LLM emits the full optimization_opportunities[] entry, with descriptions/references, from heroku-estimate.md prose). target_services / timing gate which opportunities are relevant to the designed architecture and match the emitted entry field names.",
+    "compute_savings_plans": {
+      "savings_percent": "20-66%",
+      "target_services": [
+        "Fargate",
+        "Elastic Beanstalk"
+      ],
+      "timing": "Post-migration (after 30-90 day baseline)"
+    },
+    "database_savings_plans": {
+      "savings_percent": "up to 35% (serverless) / ~20% (provisioned)",
+      "target_services": [
+        "Aurora",
+        "RDS",
+        "ElastiCache"
+      ],
+      "timing": "Post-migration or after right-sizing"
+    },
+    "rds_reserved_instances": {
+      "savings_percent": "up to 69%",
+      "target_services": [
+        "RDS",
+        "Aurora (provisioned)"
+      ],
+      "timing": "Post-migration (after architecture stabilizes)"
+    },
+    "s3_intelligent_tiering": {
+      "savings_percent": "38-50%",
+      "target_services": [
+        "S3 storage"
+      ],
+      "timing": "During migration"
+    },
+    "fargate_spot": {
+      "savings_percent": "60-70%",
+      "target_services": [
+        "Non-critical/batch Fargate tasks"
+      ],
+      "timing": "If worker dynos exist"
+    },
+    "ec2_spot": {
+      "savings_percent": "60-90%",
+      "target_services": [
+        "Elastic Beanstalk worker environments"
+      ],
+      "timing": "during migration for interruption-tolerant SingleInstance workers"
+    }
+  }
+}

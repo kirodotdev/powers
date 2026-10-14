@@ -6,9 +6,9 @@ This file is loaded by `design-ai.md` when `ai-workload-profile.json` has `summa
 
 Many GCP-hosted applications use OpenAI's API rather than Vertex AI. This guide covers that migration path.
 
-Verify all pricing via AWS Pricing MCP or `steering/cached-prices.md`. Uses OpenAI Standard tier pricing.
+Verify all pricing via AWS Pricing MCP or `cached-prices.md`. Uses OpenAI Standard tier pricing.
 
-**Model lifecycle:** Before recommending any Bedrock model, check `steering/ai-model-lifecycle.md`. Do not recommend Legacy models as primary selections for new migrations. Legacy models are annotated below where they appear.
+**Model lifecycle:** Before recommending any Bedrock model, check `ai-model-lifecycle.md`. Do not recommend Legacy models as primary selections for new migrations. Legacy models are annotated below where they appear.
 
 ---
 
@@ -201,9 +201,9 @@ Assistants API and Responses API are different surfaces. Do not treat all Assist
 → Mantle Responses API with tool use is viable. Moderate code migration (1-2 weeks) to adapt tool definitions and run lifecycle.
 
 **4. App uses Assistants API with file search, vector stores, code interpreter, persistent Assistant objects, or complex run lifecycle management**
-→ Do not recommend Mantle. Evaluate: Bedrock Agents (sessions, action groups, knowledge bases) for full agentic replacement (2-4 week migration), or app-managed orchestration if the team prefers to own state.
+→ Do not recommend Mantle. Evaluate: Bedrock AgentCore (Harness sessions/memory, action groups as MCP tools via Gateway, gateway-fronted knowledge bases) for full agentic replacement (2-4 week migration), or app-managed orchestration if the team prefers to own state. Never target classic Bedrock Agents (`bedrock-agent`): it is in maintenance mode and closed to new customers as of July 30, 2026.
 
-**When to prefer Converse API over Mantle:** If you need Bedrock-specific features (Guardrails, Knowledge Bases, prompt caching, Bedrock Agents integration) or your target region doesn't have Mantle. Mantle is the fastest path; Converse API is the most feature-complete path.
+**When to prefer Converse API over Mantle:** If you need Bedrock-specific features (Guardrails, Knowledge Bases, prompt caching, AgentCore integration) or your target region doesn't have Mantle. Mantle is the fastest path; Converse API is the most feature-complete path.
 
 ### GPT-5.4 → Claude Sonnet 4.6
 
