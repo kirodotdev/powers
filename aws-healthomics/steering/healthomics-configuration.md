@@ -46,6 +46,7 @@ A VPC configuration stores VPC networking settings (subnets and security groups)
 - **VPC Config** — The networking settings within a configuration, including security group IDs and subnet IDs. All subnets and security groups must belong to the same VPC.
 - **Subnet IDs** — 1 to 16 subnets. Maximum one subnet per Availability Zone. All subnets must belong to the same VPC. Use private subnets with NAT Gateway routes for runs requiring internet access.
 - **Security Group IDs** — 1 to 5 security groups. All must belong to the same VPC as the subnets.
+- **VPC Owner Account ID** (`vpcOwnerAccountId`) — Optional. The 12-digit AWS account ID that owns the VPC. Set this field only when the VPC's subnets are shared into the caller's account via AWS Resource Access Manager (RAM). Do not set it for same-account VPCs or VPC peering. See the [Cross-Account VPC Sharing SOP](./cross-account-vpc-configuration-setup.md) for the full setup procedure and prerequisites.
 
 ## Prerequisites
 
@@ -74,6 +75,7 @@ A VPC configuration stores VPC networking settings (subnets and security groups)
    - `run_configurations` — Configuration settings containing:
      - `vpcConfig.securityGroupIds` — List of 1–5 security group IDs.
      - `vpcConfig.subnetIds` — List of 1–16 subnet IDs.
+     - `vpcConfig.vpcOwnerAccountId` — Optional. The 12-digit account ID that owns a RAM-shared VPC. Set this field only when the VPC's subnets are shared via RAM (see the [Cross-Account VPC Sharing SOP](./cross-account-vpc-configuration-setup.md)); do not set it for same-account VPCs or VPC peering.
    - `tags` — Optional resource tags (recommended: Environment, Owner, CostCenter, Purpose).
    - `request_id` — Idempotency token (optional, auto-generated if not provided).
 2. The configuration will initially have status `CREATING`. Inform the user that provisioning takes up to 15 minutes.
@@ -297,6 +299,8 @@ Response:
 - **ENI capacity** — HealthOmics provisions ENIs in your VPC. Monitor your ENI usage and request quota increases if needed (default: 5,000 per Region).
 - **Do not modify HealthOmics ENIs** — ENIs tagged with `Service: HealthOmics` are managed by HealthOmics. Modifying or deleting them can cause service disruptions.
 - **Configuration name constraints** — Must be 1-128 characters, start with an alphanumeric character, and contain only letters, numbers, hyphens, dots, and underscores.
+- **RAM-shared VPCs** — A configuration can reference a cross-account VPC whose subnets are RAM-shared to the caller by setting `vpcConfig.vpcOwnerAccountId`. This has extra prerequisites (same AWS Organization, accepted RAM share) and an ENI-cleanup consequence for the VPC owner. See the [Cross-Account VPC Sharing SOP](./cross-account-vpc-configuration-setup.md).
+- **VPC Peering** — For cross-account reachability without RAM sharing, use VPC peering. No HealthOmics-specific setup is needed — leave `vpcOwnerAccountId` empty. See the [Cross-Account VPC Sharing SOP](./cross-account-vpc-configuration-setup.md).
 
 ## Configuration Limits
 

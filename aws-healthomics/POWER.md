@@ -28,6 +28,7 @@ Whenever you are asked to perform a task related to any of the following scenari
 - Setting up VPC infrastructure for HealthOmics workflows (subnets, NAT Gateway, security groups, endpoints) -> use `./steering/vpc-setup.md`
 - Managing HealthOmics VPC configurations (creating, listing, getting, or deleting configurations) -> use `./steering/healthomics-configuration.md`
 - Running workflows with VPC connectivity, public internet access, cross-region access, or access to private VPC resources -> use `./steering/vpc-connected-workflow-runs.md`
+- Using a VPC and subnets owned by a different AWS account (security groups may be owned by either the requester or the VPC owner) — RAM-shared VPCs (`vpcOwnerAccountId`), centralized egress, or VPC peering -> use `./steering/cross-account-vpc-configuration-setup.md`
 - Understanding regional feature availability, GPU instance limitations, or troubleshooting region-specific errors -> use `./steering/regional-capabilities.md`
 - Scoping down a workflow run's IAM permissions with an inline session policy (the StartRun / StartRunBatch `sessionPolicy` parameter) -> use `./steering/session-policy.md`
 

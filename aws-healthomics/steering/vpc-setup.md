@@ -16,6 +16,7 @@ Follow this SOP WHEN:
 DO NOT follow this SOP WHEN:
 - User wants to start a workflow run with VPC networking — use the [VPC Connected Workflow Runs SOP](./vpc-connected-workflow-runs.md).
 - User wants to create or manage a HealthOmics Configuration resource — use the [HealthOmics Configuration Management SOP](./healthomics-configuration.md).
+- User wants to use a VPC, subnets, or security groups owned by a **different AWS account** (RAM-shared VPC or VPC peering) — use the [Cross-Account VPC Sharing SOP](./cross-account-vpc-configuration-setup.md).
 
 ## Key Concepts
 
@@ -109,6 +110,8 @@ HealthOmics Workflows operates in the following Regions and Availability Zones. 
 ### Step 3: Create HealthOmics Configuration
 
 Once the VPC infrastructure is ready, create a HealthOmics Configuration resource to store the VPC settings. Follow the [HealthOmics Configuration Management SOP](./healthomics-configuration.md).
+
+IF the VPC, subnets, or security groups are owned by a different AWS account (a RAM-shared VPC, e.g. a centralized network account), follow the [Cross-Account VPC Sharing SOP](./cross-account-vpc-configuration-setup.md) instead — it covers the AWS Organizations / RAM setup and the `vpcOwnerAccountId` parameter.
 
 ### Step 4: Validate Setup
 
