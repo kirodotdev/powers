@@ -218,6 +218,13 @@ Documentation is available at https://kiro.dev/docs/powers/
 
 ---
 
+### workshop-content-reviewer
+**Workshop Content Reviewer** - Review AWS Workshop Studio lab content for any service or topic against structure, formatting, security, content quality, cleanup, and Well-Architected best practices, then produce a Review.md report.
+
+**MCP Servers:** None (Knowledge Base Power)
+
+---
+
 ### zapier
 **Zapier** - Connect 9,000+ apps to your AI workflow — discover, enable, and execute Zapier actions directly from your AI assistant. Supports Agentic and Classic server modes with OAuth authentication.
 
