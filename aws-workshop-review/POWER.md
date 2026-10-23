@@ -1,8 +1,8 @@
 ---
 name: "workshop-content-reviewer"
 displayName: "Workshop Content Reviewer"
-description: "Reviews new Aurora PostgreSQL and RDS PostgreSQL workshop lab content against established patterns, formatting standards, and security practices from the existing aurora-pg-lab and rdspg workshops."
-keywords: ["aurora", "rds", "workshop", "postgresql", "lab-content", "content-review", "hugo", "workshop-studio", "aurora-pg-lab", "rdspg"]
+description: "Reviews AWS Workshop Studio lab content for any service or topic against structure, formatting, security, content quality, cleanup, and Well-Architected best practices, then produces a Review.md report."
+keywords: ["workshop", "workshop-studio", "lab-content", "content-review", "hugo", "markdown", "aws", "well-architected", "technical-writing", "documentation-review"]
 author: "Workshop Content Team"
 ---
 
@@ -10,441 +10,416 @@ author: "Workshop Content Team"
 
 ## Overview
 
-This power provides a comprehensive checklist and ruleset for reviewing new Aurora PostgreSQL and RDS PostgreSQL workshop lab content before it is merged. It codifies the patterns, conventions, and security practices established across both the `aurora-pg-lab` and `rdspg` workshop repositories so that every new lab is consistent, high-quality, and ready for participants.
+This power provides a checklist and ruleset for reviewing new or updated AWS workshop lab content before it is merged. It applies to any Workshop Studio (Hugo-based) workshop, whatever the subject: databases, serverless, containers, compute, networking, security, analytics, AI/ML, or developer tooling.
 
-Use this power whenever you are asked to review, audit, or validate new workshop content destined for either the Aurora PostgreSQL or RDS PostgreSQL labs.
+The rules come from lessons learned reviewing real workshops. The most important one: **workshops legitimately differ in their house conventions** (weights, prerequisite format, cleanup model, code block style). A good review enforces the universal rules strictly and checks the house rules for internal consistency, rather than imposing one workshop's style on another.
 
 ## Onboarding
 
 ### What This Power Reviews
 
-This power is designed for reviewing Hugo/Workshop Studio-based lab content for PostgreSQL workshops on AWS. It covers:
-
-- **File and directory structure** — correct layout under `content/` and `static/`
-- **Front matter** — required YAML fields, weight conventions, and chapter metadata
-- **Code blocks** — Workshop Studio `:::code` directive usage and standard fenced blocks
-- **Alerts and callouts** — correct `::alert` / `:::alert` syntax
-- **Expandable sections** — `::::expand` directive usage
-- **Children directive** — `::children` for auto-listing sub-pages
-- **Image references** — paths, alt text, and file naming
-- **Internal links** — absolute paths, no broken links
-- **Prerequisites section** — standard block format for each workshop
-- **Security** — no hardcoded credentials, no real PII, environment variable usage
-- **Content quality** — grammar, step numbering, flow, explanations before commands
-- **Cleanup / teardown** — resource cleanup instructions
-- **Workshop Studio compatibility** — contentspec.yaml, CloudFormation templates, IAM policies
+- **File and directory structure** — layout under `content/` and `static/`, naming, stale files
+- **Front matter** — required YAML fields, weight ordering, chapter metadata
+- **Workshop Studio directives** — `:::code`, `::alert`, `::::expand`, `::children`, `::image`
+- **Code blocks** — language attributes, copy actions, placeholders, environment variables
+- **Images** — paths, existence, alt text, naming, unused assets
+- **Links** — internal paths, external links, no `localhost`
+- **Prerequisites** — clear statement of what must be done first
+- **Delivery modes** — separate, complete setup paths for AWS-provided accounts (Workshop Studio events) and participants' own accounts
+- **Security** — credentials, PII, account identifiers, least privilege
+- **Content quality** — grammar, step numbering, explanations, flow, accessibility
+- **Cleanup / teardown** — every created resource can be removed
+- **Workshop Studio configuration** — `contentspec.yaml`, CloudFormation/CDK templates, IAM policies
+- **Well-Architected alignment** — the six pillars, applied to whatever service the lab teaches
+- **Domain-specific checks** — targeted checks for the technology area the lab covers
 
 ### When to Activate
 
 Activate this power when a user asks you to:
-- Review or audit new lab content before merging
+- Review or audit new or changed workshop/lab content before merging
 - Validate a lab against workshop standards
-- Check a PR or zip of new workshop content
-- Ensure a new lab follows established patterns from either workshop
-- Compare content patterns between the aurora-pg-lab and rdspg workshops
+- Check a PR, branch, folder, or zip of workshop content
+- Make a new lab consistent with the rest of its workshop
+- Compare conventions between two workshops
 
 ### How to Use
 
 1. Activate this power.
-2. Read the `review-checklist` steering file for the full structured checklist.
-3. Walk through each category against the new content files.
-4. Generate a `Review.md` file as the output artifact containing the full review report.
+2. Read the `review-checklist` steering file.
+3. **Run Step 0 (Discover House Conventions)** below against the target workshop before judging the new content.
+4. Walk through checklist sections A–P against every new or changed file.
+5. Pick the relevant domain module(s) in section P based on what the lab teaches.
+6. Write a `Review.md` report using the template in the steering file.
 
 ### Output
 
-The review must produce a **`Review.md`** file in the root of the reviewed content directory (or the working directory if reviewing a PR/zip). This file is the single deliverable of every review and must follow the Review Report Template defined in the `review-checklist` steering file.
-
-The `Review.md` file should include:
-- Review metadata (lab name, target workshop, reviewer, date, overall status)
-- Critical issues that must be fixed before merge
-- Warnings that should be fixed
+The review produces a **`Review.md`** file in the root of the reviewed content directory (or the working directory when reviewing a PR/zip). It must follow the Review Report Template in the `review-checklist` steering file and include:
+- Review metadata (lab, workshop, domain, delivery mode, reviewer, date, overall status)
+- The house conventions detected in Step 0
+- Critical issues (must fix before merge)
+- Warnings (should fix)
 - Recommendations (nice to have)
-- List of files to remove (stale/unused)
+- Files to remove
 - Consistency notes
-- A summary table of checklist categories with PASS/FAIL/N/A status
+- A summary table of checklist categories with PASS / FAIL / N/A
+
+Every finding should cite the file path (and line or heading where possible) and propose a concrete fix.
 
 ## Available Steering Files
 
-- **review-checklist** — Full review checklist with pass/fail criteria organized by category (structure, front matter, formatting, images, security, content quality, cleanup), plus a review report template.
+- **review-checklist** — Full checklist with pass/fail criteria (sections A–P), domain modules, severity guidance, and the `Review.md` report template.
 
 ---
 
-## Established Workshop Patterns (Reference)
+## Step 0: Discover House Conventions
 
-The following patterns are extracted from both the `aurora-pg-lab` and `rdspg` workshop content and represent the standards every new lab must follow.
+Before reviewing new content, sample 3–5 existing, published labs in the same workshop and record:
+
+| Convention | What to look for |
+|------------|------------------|
+| Page file name | `index.en.md` vs `index.md` |
+| Folder naming | Numbered prefixes (`1-Prerequisites`), descriptive names (`Lab1-Create`), task folders (`task1/`) |
+| Weight scheme | Tens (10, 20, 30) vs hundreds (100, 200) vs category + offset (310, 315) |
+| Front matter extras | Use of `chapter`, `pre`, emoji in titles |
+| Code block style | `:::code` directive vs fenced blocks, or a deliberate mix |
+| Prerequisites format | Inline alert vs bulleted list with Mandatory/Optional/Skip guidance |
+| Cleanup model | Per-lab cleanup page vs centralized cleanup page vs both |
+| Environment variables | Names the environment exports (e.g., `$AWS_REGION`, stack outputs, service endpoints) |
+| Delivery modes | Workshop Studio event, self-paced in own account, or both; where the chooser page and each path's setup pages live (see section 15) |
+
+Record these in the `Review.md` "House Conventions" section. New content that deviates from them is a **consistency warning**, not a universal failure, unless it also breaks a universal rule.
+
+If there is no existing content (a brand-new workshop), apply the defaults in this document and recommend the author write down their conventions.
+
+---
+
+## Universal Patterns (Reference)
 
 ### 1. File & Directory Structure
 
-- Content lives under `content/<Category>/<LabName>/` with sub-folders for each page (e.g., `task1/`, `task2/`, `Prerequisites/`).
-- Static assets (images) live under `static/<category-folder>/<lab-folder>/` mirroring the content structure (e.g., `static/2-Foundation/Lab6-Monitoring/task1/`).
-- Every page is an `index.en.md` (preferred) or `index.md` file inside its folder.
-- No stale, duplicate, or "OLD"/"USELESS" files should be present in the deliverable.
-- No OS artifacts (`.DS_Store`, `__MACOSX/`, `Thumbs.db`) should be committed.
-- Category folders use numbered prefixes for ordering (e.g., `1-Prerequisites`, `2-Foundation`, `3-Intermediate`, `4-Advanced`).
-- Lab folders within categories use descriptive names (e.g., `Lab1-Create`, `Lab4-Backup`, `RDS-Proxy`, `Secrets-Mgr`).
-- Task sub-folders use sequential naming (e.g., `task1/`, `task2/`, `task3/`).
+- Content lives under `content/<Category>/<LabName>/` with sub-folders per page (e.g., `task1/`, `task2/`).
+- Static assets live under `static/` mirroring the content structure (e.g., `static/<Category>/<LabName>/task1/`).
+- Every page is an `index.en.md` or `index.md` inside its own folder, consistent within the workshop.
+- No stale, duplicate, or "OLD"/"BACKUP"/"USELESS" files.
+- No OS or editor artifacts (`.DS_Store`, `__MACOSX/`, `Thumbs.db`, `.bak`, `.tmp`, `.new`, `.swp`, `*.code-workspace`).
+- No spaces in file or folder names; use hyphens or underscores.
+- Ordering is controlled by `weight`, optionally reinforced by numbered folder prefixes.
 
 ### 2. Front Matter
 
-Every `index.en.md` must have YAML front matter with at minimum:
+Every page needs YAML front matter with at least:
 
 ```yaml
 ---
 title: "Human-Readable Title"
-weight: <number>
+weight: 10
 ---
 ```
 
-#### Category/Chapter Index Pages
-
-Category and lab index pages use additional fields:
-
-```yaml
----
-chapter: true
-pre: '<i class="fas fa-landmark"></i>  - '
-title: 🏛️ Foundation
-weight: 20
----
-```
-
-Or with numbered prefix:
+Category and lab index pages may add:
 
 ```yaml
 ---
 chapter: true
 pre: <b>1. </b>
-title: 🗃️ Create RDS PostgreSQL Database Instance
+title: "🧪 Lab Title"
 weight: 10
 ---
 ```
 
-#### Valid Front Matter Fields
-
 | Field | Required | Description |
 |-------|----------|-------------|
-| `title` | Yes | Human-readable page title, may include emoji for category pages |
-| `weight` | Yes | Numeric ordering value |
-| `chapter` | No | Set to `true` for category/section index pages |
-| `pre` | No | Prefix content (icons, bold numbers) for navigation display |
-| `date` | No | Creation/modification date in ISO format |
+| `title` | Yes | Human-readable page title; emoji allowed if the workshop uses them |
+| `weight` | Yes | Numeric ordering; unique among siblings |
+| `chapter` | No | `true` for category/section index pages |
+| `pre` | No | Navigation prefix (icon or bold number) |
+| `date` | No | ISO date |
 
-#### Weight Conventions (rdspg)
-
-| Level | Pattern | Examples |
-|-------|---------|---------|
-| Top-level category | Tens/Hundreds | 1, 20, 30, 40, 100 |
-| Lab index page | Within category range | 10, 20, 30, 40, 59, 61, 75 |
-| Sub-pages within a lab | Small increments | 10, 20, 30, 51, 52 |
-
-#### Weight Conventions (aurora-pg-lab)
-
-| Level | Pattern | Examples |
-|-------|---------|---------|
-| Top-level category | Hundreds | 100, 200, 400, 510, 705, 805 |
-| Lab index page | Category weight + offset | 315, 410, 510 |
-| Sub-pages within a lab | Small increments | 51, 52, 151, 171 |
+Weight rules that hold across all workshops:
+- Sibling pages have unique weights; duplicates render in unpredictable order.
+- Leave gaps (10, 20, 30) so pages can be inserted later.
+- The new lab's weight places it where the author intends relative to existing labs.
 
 ### 3. Code Blocks
 
-The workshops use two code block styles depending on context:
-
-#### Workshop Studio `:::code` Directive (preferred for participant-facing commands)
+**Workshop Studio `:::code` directive** (preferred for commands participants run):
 
 ```
-:::code{showCopyAction=true showLineNumbers=false language=sql}
-SELECT version();
+:::code{showCopyAction=true showLineNumbers=false language=bash}
+aws sts get-caller-identity
 :::
 ```
 
-Key attributes:
-- `showCopyAction=true` — always present so participants can copy.
-- `showLineNumbers=false` — default for most blocks.
-- `language=sql` / `language=bash` / `language=json` — always specify the language.
+- `showCopyAction=true` on anything participants copy.
+- `language=` always set (`bash`, `sql`, `python`, `json`, `yaml`, `typescript`, `java`, etc.).
+- `showLineNumbers=true` only when the text refers to line numbers.
 
-#### Standard Markdown Fenced Blocks
+**Standard fenced blocks** (` ```lang `) are acceptable for sample output, content inside `::::expand`, and workshops that use them by convention. Always include a language.
 
-The rdspg workshop also uses standard markdown fenced blocks (` ```lang `) for CLI commands, especially within expandable sections:
-
-```
-```sh
-aws rds modify-db-instance \
-    --db-instance-identifier rds-pg-labs \
-    --multi-az \
-    --apply-immediately
-```
-```
-
-Standard fenced blocks are acceptable for:
-- Non-copyable output examples
-- Commands within `::::expand` sections
-- Inline code references
-- CLI commands where the Workshop Studio directive is not used
-
-#### Best Practice
-
-- Every code block should specify a language (`sql`, `bash`, `sh`, `sh-session`, `json`, `python`, etc.)
-- Commands that require user-specific values should use environment variables (`$PGHOST`, `$DBENDP`, `$DBPASS`, `$DBUSER`, `$AWSREGION`) or clearly mark placeholders with `[brackets]`
-- Multi-line CLI commands should use backslash continuation (`\`) for readability
+Best practices:
+- Values that vary per participant use environment variables the lab environment provides, or clearly marked placeholders like `<your-bucket-name>`, with an instruction to replace them.
+- Do not hardcode region or account ID; use `$AWS_REGION` / `$AWS_ACCOUNT_ID` or the workshop's equivalents.
+- Multi-line CLI commands use `\` continuation.
+- Each block does one logical step. Don't bury a destructive command in the middle of a long block.
+- Commands must be idempotent or say what happens on re-run, since participants often re-run steps.
+- Commands run as-is in the documented environment (shell, OS, tool versions). Pin or state tool versions when it matters.
 
 ### 4. Alerts & Callouts
 
-The workshop uses two syntaxes:
-
-**Inline alert (single line):**
+**Inline (single line):**
 ```
-::alert[Alert text here.]{type="warning"}
+::alert[Alert text here.]{type="info"}
 ```
 
-**Block alert (multi-line):**
+**Block (multi-line):**
 ```
 :::alert{header="Important" type="warning"}
 Multi-line alert content here.
 :::
 ```
 
-Valid types: `warning`, `info`.
+- Supported types: `info`, `success`, `warning`, `error`. Flag anything else.
+- Colon counts must match: `::` for inline, `:::` open and close for block. Mixing them breaks rendering.
+- Use `warning` for cost, security, data-loss, and prerequisite notices; `info` for context and cross-references; `success` for checkpoints.
 
-Both syntaxes must use the correct number of colons — `::` for inline, `:::` for block. Mixing them (e.g., using `::alert` with `:::` closing) will break rendering.
-
-Common usage patterns observed:
-- **Prerequisites warnings** at the top of lab index pages: `::alert[This chapter assumes you have completed the Prerequisites...]{type="warning"}`
-- **Cost warnings** for self-paced labs: `:::alert{type="warning"} CAREFUL... :::`
-- **Informational notes** about AWS services: `::alert[Amazon RDS provides...]{type="info"}`
-- **Cross-reference notes** to related workshops: `::alert[Please check [Workshop Name](URL) for a deep dive...]{type="info"}`
+Common uses:
+- Prerequisite notice at the top of each lab index page
+- Cost warning for self-paced participants running in their own account
+- Security note wherever a lab takes a shortcut that is not production-safe
+- Cross-reference to a deeper workshop or documentation
 
 ### 5. Expandable Sections
 
-Used for optional content, CLI alternatives, or verbose code:
-
 ```
-::::expand{header="Code"}
-Content here, including code blocks.
+::::expand{header="CLI alternative"}
+Content, including code blocks.
 ::::
 ```
 
-Common uses:
-- Optional CLI alternatives to console steps
-- Detailed code snippets that would clutter the main flow
-- Additional context for advanced users
+Use for optional CLI/IaC alternatives, long code listings, troubleshooting, and advanced detail. Headers should describe the content, not just say "Click here".
 
 ### 6. Children Directive
 
-Used on category and lab index pages to auto-list sub-pages:
-
-```
-::children
-```
-
-Or within a section:
-
 ```markdown
-## This lab contains following tasks:
+## This lab contains the following tasks:
 
 ::children
 ```
 
-### 7. Image References
+Use on category and lab index pages that should auto-list sub-pages. Do not use it on leaf pages.
 
-- All images use the `/static/<path>/` prefix matching the content structure.
-- Path pattern: `/static/<category>/<lab-folder>/<optional-task>/filename.png`
-- Examples:
-  - `/static/2-Foundation/Lab6-Monitoring/task1/cwlogs.png`
-  - `/static/3-Intermediate/SecretManager/sm-main-page.png`
-  - `/static/4-Advanced/PgVector/pgpgvector.png`
-- Alt text should be descriptive of the actual image content.
-- Image filenames should be descriptive (e.g., `cwlogs.png`, `createalarm.png`, `sm-rotate-secret.png`).
-- No spaces in filenames that are referenced from markdown (use hyphens or underscores).
-- Logo images may be at the top level of `/static/` (e.g., `/static/Amazon-RDS_light-bg@4x.png`).
+### 7. Images
 
-### 8. Internal Links
+- Paths start at `/static/` and mirror the content structure.
+- Every referenced image exists and every image in the lab's static folder is referenced.
+- Alt text describes what the image shows (not "screenshot" or "image1").
+- File names are descriptive and lowercase with hyphens (e.g., `create-function-console.png`).
+- Screenshots show no account IDs, ARNs with real account numbers, emails, or internal hostnames. Blur or crop them.
+- Screenshots match the current console UI; outdated UIs confuse participants.
+- Screenshots come after the step that produces them, with text that says what to look for.
 
-- Use absolute paths from the content root: `/1-prerequisites/`, `/2-foundation/lab1-create/`.
-- Links are case-insensitive in Hugo but should match the folder naming convention.
-- External links to AWS documentation and console are acceptable and encouraged.
-- Console links should use region-agnostic URLs where possible (e.g., `https://console.aws.amazon.com/rds/home#databases:`).
-- Links to other workshops use the `catalog.workshops.aws` domain.
+### 8. Links
 
-### 9. Prerequisites Section
+- Internal links use absolute paths from the content root and match real folder names.
+- No `localhost`, internal-only, or personal URLs.
+- External documentation links point to official sources and resolve.
+- Console links are region-agnostic where possible (e.g., `https://console.aws.amazon.com/<service>/home`).
+- Links to other workshops use the `catalog.workshops.aws` (or `catalog.us-east-1.prod.workshops.aws`) domain.
 
-#### rdspg Pattern
+### 9. Prerequisites
 
-Labs reference the Prerequisites section and the first foundation lab:
+Each lab index page must say what must be done first. Two patterns are accepted; use whichever the workshop already uses.
 
+**Inline alert:**
 ```markdown
-::alert[This chapter assumes you have completed the [Prerequisites](/1-prerequisites/) and have already created an RDS PostgreSQL instance in the [first lab](/2-foundation/lab1-create/).]{type="warning"}
+::alert[This lab assumes you have completed the [Prerequisites](/1-prerequisites/) and the [Getting Started](/2-getting-started/) lab.]{type="warning"}
 ```
 
-Some labs add additional prerequisites:
-
-```markdown
-::alert[This chapter assumes you have completed the [Prerequisites](/1-prerequisites/), have already created an RDS PostgreSQL instance in the [first lab](/2-foundation/lab1-create/) and have already created a Secret in [Create Secret lab](/2-foundation/lab1-create/task3/).]{type="warning"}
-```
-
-#### aurora-pg-lab Pattern
-
+**Bulleted list with guidance:**
 ```markdown
 ## Prerequisites
 
-This lab requires the following lab modules to be completed first.
+This lab requires the following to be completed first:
 
-* [All Lab Prerequisites](/1-prereq)
-* [Creating a New Aurora Cluster](/1-prereq/create-aurora-cluster) (Mandatory if you followed [bare minimal lab environment without the Aurora PostgreSQL Cluster](/1-prereq/i-need-to-deploy-lab-environment-manually/setup-without-aurora-pg) in the **All Lab Prerequisites** section. Optional otherwise.)
-* [Configure VSCode and Initialize Database](/1-prereq/VSCode-client)  (Mandatory if you followed [bare minimal lab environment without the Aurora PostgreSQL Cluster](/1-prereq/i-need-to-deploy-lab-environment-manually/setup-without-aurora-pg) in the **All Lab Prerequisites** section. Skip otherwise.)
+* [Workshop Prerequisites](/1-prerequisites/)
+* [Set up the environment](/1-prerequisites/setup/) (Mandatory if you are running in your own account. Skip if you are at an AWS event.)
 ```
 
-### 10. Security Standards
+Lessons learned:
+- Say whether each prerequisite is Mandatory, Optional, or Skip, and under which condition.
+- Branch clearly for the two delivery modes: AWS-provided event account vs own account (see section 15).
+- Call out labs that are independent of each other so participants can jump around.
 
-- **No hardcoded passwords** in production-like code. If passwords are required for a lab, they must be accompanied by a warning callout recommending AWS Secrets Manager or equivalent.
-- **No real PII** in sample data. Use placeholder names, emails, and identifiers.
-- Passwords should use simple ASCII characters to avoid terminal encoding issues (avoid `£`, `{`, `|` and similar).
-- Environment variables (`$PGHOST`, `$DBENDP`, `$DBPASS`, `$DBUSER`, `$AWSREGION`) should be used where the workshop infrastructure provides them.
-- Connection strings should not embed credentials when environment variables are available.
-- **No AWS account IDs, access keys, or secret keys** should appear in content.
-- IAM roles and policies in examples should follow least-privilege principles.
-- When demonstrating credential rotation or secrets management, emphasize it as a best practice.
+### 10. Security
+
+- No passwords, tokens, API keys, access keys, or secret keys in content, code, templates, or screenshots.
+- If a lab uses a static password for simplicity, a warning callout recommends AWS Secrets Manager (or the service's native secret mechanism) for production.
+- Lab passwords use plain ASCII; avoid characters that break shells or encodings (`£`, `{`, `|`, `$`, `` ` ``, quotes).
+- No real PII in sample data; use placeholder names, `example.com` emails, and reserved phone ranges.
+- No real AWS account IDs; use `123456789012` or a variable.
+- IAM policies follow least privilege; wildcards (`*`) are justified in text.
+- Credentials flow through environment variables, IAM roles, or secrets services, never inline in connection strings.
+- Resources are not public (open security groups, public buckets, public endpoints) unless the lab teaches that, with a warning.
 
 ### 11. Content Quality
 
-- Correct grammar and spelling throughout.
-- Consistent step numbering (1.1, 1.2 or ### Step 1, ### Step 2).
-- Every SQL/CLI command block should be preceded by a brief explanation of what it does.
-- Every screenshot should be preceded or followed by context explaining what the participant should see.
-- Output images should appear after the command that produces them, not before.
-- Labs should include a cleanup/teardown section or reference the main cleanup page.
-- Technical terms should be used consistently (e.g., always "RDS PostgreSQL" or "Amazon RDS for PostgreSQL", not mixing abbreviations without definition).
-- The lab should flow logically from setup through execution to validation.
-- No contradictory instructions (e.g., "replace the password" when the password is already in the command).
-- Console navigation instructions should include the specific path (e.g., "from the services dropdown or search bar in Navigation").
+- Correct grammar and spelling. Watch for common slips like "preformed/performed", "secton/section", "seperate/separate".
+- One step-numbering style per page.
+- Each command or console step is preceded by what it does and why.
+- Each screenshot has context explaining what to observe.
+- Each task ends with a way to validate success (expected output, a check command, or a `success` alert).
+- Terminology is consistent; use the official service name on first mention (e.g., "Amazon Simple Storage Service (Amazon S3)", then "Amazon S3").
+- No contradictory instructions (e.g., "replace the value" when it is already filled in).
+- Console navigation is specific ("In the search bar, type **Lambda** and choose **Lambda**").
+- UI element names are **bold** and match the console exactly.
+- The lab flows setup → execution → validation → cleanup, and states learning objectives and estimated time up front.
+- Inclusive, accessible language; no idioms that don't translate, no "simply/just/easy".
 
 ### 12. Cleanup / Teardown
 
-Every lab that creates AWS resources, databases, users, or extensions should either:
-- Include its own cleanup section as the final sub-page, OR
-- Reference the main cleanup page with specific instructions for what this lab created.
+Every lab that creates resources must say how to remove them. Two models are accepted:
+- **Per-lab cleanup**: a final sub-page in the lab.
+- **Centralized cleanup**: a workshop-level cleanup page listing per-lab steps, with each lab linking to its section.
 
-The rdspg workshop uses a centralized cleanup page (`/7-Lab-cleanup/`) that lists per-lab cleanup steps:
+Requirements for both:
+- Cover every resource: stacks, instances, functions, buckets, containers, endpoints, users, roles, policies, parameters, log groups, and in-resource objects (tables, indexes, extensions).
+- Order steps by dependency (children before parents; empty buckets before deleting them).
+- Provide copyable commands, with a console alternative where useful.
+- Open with a cost warning for self-paced participants.
+- Make clear what event participants can skip because the account is reclaimed.
 
+Example:
 ```markdown
-::alert[In order to avoid unnecessary charges we recommend to decommission the resources that were created for this lab.]{type="warning"}
+::alert[To avoid ongoing charges, delete the resources created in this lab.]{type="warning"}
 
-1. If you completed the Graviton Lab...delete the `rds-pg-x86` and `rds-pg-graviton` RDS databases...
-2. If you completed the [Service Catalog](/4-advanced/6-servicecatalog) lab, delete the `SvcCatalogSetup` cloudformation stack.
-3. Delete CloudFormation Stack `rds-pg-labs` created in [Prerequisites section](/1-prerequisites/task2/)
-4. Manually created resources per Lab:
-  - Cleanup for Lab [Backup and Restore](/2-foundation/lab4-backup/task6#cleanup-restored-database-copies)
+1. If you completed the [Optional Lab](/3-advanced/optional-lab/), delete the `optional-lab-stack` CloudFormation stack.
+2. Delete the CloudFormation stack created in [Prerequisites](/1-prerequisites/setup/).
+3. Manually created resources per lab:
+   - [Lab 2 cleanup](/2-foundation/lab2/cleanup/)
 ```
 
-### 13. Workshop Studio Configuration (contentspec.yaml)
+### 13. Workshop Studio Configuration (`contentspec.yaml`)
 
-The `contentspec.yaml` file at the repository root defines:
-- Workshop metadata (author, description, locale)
-- Account configuration (account sources, IAM policies, managed policies)
-- Region configuration (required, recommended, optional regions)
-- Infrastructure (CloudFormation templates with parameters)
-- Additional navigation links
+`contentspec.yaml` defines workshop metadata, account sources, IAM policies, regions, infrastructure templates, and navigation links.
 
-Key review points:
-- IAM policies should follow least-privilege
-- CloudFormation parameters should use Workshop Studio magic variables where appropriate (e.g., `{{.ParticipantRoleArn}}`, `{{.AssetsBucketName}}`)
-- Region configuration should include commonly used regions
-- Participant-visible stack outputs should be limited to what's needed
+Review points:
+- Valid structure for the declared `version`.
+- Participant IAM policies follow least privilege and cover everything the labs actually do (a missing permission breaks the lab at the event).
+- Templates use Workshop Studio magic variables where appropriate (`{{.ParticipantRoleArn}}`, `{{.AssetsBucketName}}`, `{{.AssetsBucketPrefix}}`).
+- Region configuration matches where every service used is available.
+- Stack outputs shown to participants are limited to what they need.
+- Service quotas (instance counts, GPU capacity, concurrency) are enough for the expected event size.
 
 ### 14. Static Assets & Templates
 
-- CloudFormation templates live under `static/templates/`
-- IAM policy documents live under `static/templates/` as JSON files
-- The `assets/` directory may contain supplementary scripts and zip files
-- The `resources/` directory may contain code samples, policies, and generated content
+- CloudFormation/CDK/Terraform templates live under `static/` (commonly `static/templates/`) or `assets/`.
+- Templates deploy cleanly in a fresh account, tag resources, and delete without manual steps (no retained resources unless documented).
+- Scripts and sample code in `assets/` or `resources/` follow the same security rules as page content.
+- Large binaries (zips, datasets, spreadsheets) are justified, versioned, and referenced from content.
+
+### 15. Delivery Modes: AWS-Provided Accounts vs Own Account
+
+Most workshops run in two ways, and each needs its own setup path:
+
+| | AWS-provided account (Workshop Studio event) | Participant's own account (self-paced) |
+|---|---|---|
+| Account access | Event access code or link; temporary credentials | Participant's IAM user/role |
+| Infrastructure | Pre-deployed from `contentspec.yaml` | Participant deploys a template from the workshop |
+| Permissions | Limited by the Workshop Studio participant role | Whatever the participant has; may be broader or narrower |
+| Cost | Paid by AWS; account is reclaimed after the event | Paid by the participant until cleanup |
+| Duration | Fixed event window | Unlimited |
+| Region | Set by the event | Participant chooses |
+
+**Required structure.** The workshop's prerequisites must include:
+
+1. **A chooser page** at the top of prerequisites that describes both paths and links to each, with a "Not sure which to choose?" tie-breaker (e.g., "If you received an event access code or workshop URL from an instructor, use the AWS-provided path. Otherwise, use your own account.").
+2. **An AWS-provided account path** (e.g., `in-a-workshop-using-workshop-studio/`) covering sign-in through Workshop Studio, opening the console, and locating pre-deployed resources and stack outputs.
+3. **An own-account path** (e.g., `deploy-in-your-own-account/`) covering:
+   - Required permissions (ideally a sample IAM policy) and a warning against using the root user
+   - Supported regions and a region selection step
+   - A downloadable or one-click template (CloudFormation/CDK/Terraform) that deploys the same environment the event provides
+   - Expected deployment time and how to confirm the stack succeeded
+   - A cost estimate or cost warning, and a link to the cleanup page
+   - Any service prerequisites the event account pre-enables (model access, quota increases, service-linked roles, opt-in regions)
+   - Optional variants if offered (e.g., "full environment" vs "minimal environment, create the main resource manually in a later lab"), with the downstream labs that each variant requires or lets you skip
+
+**Parity.** Both paths must end in the same state: the same resources, names, environment variables, and stack outputs. Labs after prerequisites should then work identically regardless of path. If a lab can't (e.g., it needs a quota only events have), it must say so at the top.
+
+**Lab-level checks.** Inside individual labs:
+- Steps that differ by path are clearly branched (headings, tabs, or `::alert` callouts like "If you are using your own account...").
+- Cost warnings target own-account participants; cleanup says what event participants can skip because the account is reclaimed.
+- Don't assume event-only conveniences (pre-created resources, pre-enabled model access, specific regions) without saying so.
+- Don't assume own-account freedoms (creating IAM users, changing account settings, using unlisted regions) that the Workshop Studio participant role blocks.
+- References to stack names, outputs, and environment variables match between the event template in `contentspec.yaml` and the own-account template. A mismatch is a Critical issue.
+
+**Lessons learned:**
+- Missing one path is the most common gap. Workshops built for events often have no own-account path, or an outdated one.
+- Own-account templates drift from the event template. Compare their resources, parameters, and outputs.
+- Self-paced participants are the ones who pay, so cleanup and cost warnings matter most on their path.
+- Name the paths by the participant's situation ("I am at an AWS event" / "I am using my own AWS account"), not by internal tool names alone.
 
 ---
 
-## Workshop Comparison: aurora-pg-lab vs rdspg
+## Well-Architected Alignment (Service-Agnostic)
 
-| Aspect | aurora-pg-lab | rdspg |
-|--------|--------------|-------|
-| Database engine | Aurora PostgreSQL | RDS PostgreSQL |
-| Code blocks | Primarily `:::code` directive | Mix of `:::code` and standard fenced blocks |
-| Prerequisites format | Bulleted list with Mandatory/Optional guidance | Inline alert with links |
-| Category weights | Hundreds (100, 200, 400) | Tens (1, 20, 30, 40) |
-| File naming | `index.en.md` | Mix of `index.en.md` and `index.md` |
-| Cleanup | Per-lab cleanup sections | Centralized cleanup page + per-lab references |
-| Front matter `pre` | Less common | Frequently used for icons and numbering |
-| Front matter `chapter` | Used on category pages | Used on category and lab index pages |
-| Emoji in titles | Less common | Frequently used (🗃️, 🏛️, 📊, 📼, 🧹, ⚗️) |
-| External workshop links | Inline | `::alert` callouts with links to dedicated workshops |
+Labs don't need to cover every pillar, but they must not teach anti-patterns, and should mention the best practice when a shortcut is taken for simplicity.
 
----
+### Security
+- Encryption at rest (KMS) is enabled, or the lab explains why not and recommends it for production.
+- Encryption in transit (TLS) is used for connections and endpoints.
+- Resources sit in private subnets or behind authentication unless the lab teaches public exposure.
+- Credentials use IAM roles, IAM auth, or a secrets service instead of static values.
+- IAM is least-privilege; wildcards are explained.
+- Audit and detection (CloudTrail, service logs, GuardDuty/Security Hub where relevant) are mentioned in monitoring or security labs.
 
-## AWS Well-Architected Framework Review
+### Reliability
+- Multi-AZ (or the service's HA equivalent) is explained; single-AZ shortcuts carry a production callout.
+- Backup, versioning, or snapshot strategy is mentioned where data is stored, with RPO/RTO in backup/DR labs.
+- HA/DR labs include a failover test and describe expected behavior.
+- Application code demonstrates or recommends retries with backoff and idempotency.
 
-Every lab should align with the AWS Well-Architected Framework pillars where applicable. Not every pillar applies to every lab, but reviewers should verify that labs don't teach anti-patterns and that they promote best practices when the opportunity arises naturally.
+### Performance Efficiency
+- Resource sizing (instance class, memory, concurrency, shard count) is explained, with a note that production should size from real requirements.
+- Scaling options (auto scaling, read scaling, caching, pooling) are mentioned where relevant.
+- Sample code and queries avoid obvious inefficiencies unless teaching optimization.
 
-### Security Pillar
+### Cost Optimization
+- The smallest resource that meets lab needs is used.
+- Features with extra cost carry a short cost note.
+- Cost warnings appear at the start and the cleanup of labs that create billable resources.
+- Data transfer, cross-region, and idle-resource costs are noted where relevant.
+- Production cost levers (Savings Plans, Reserved capacity, Spot, lifecycle policies) are mentioned when discussing production.
 
-- **Encryption at rest**: Labs that create databases should mention or enable storage encryption (KMS). If encryption is not enabled, a callout should explain why (e.g., lab simplicity) and recommend it for production.
-- **Encryption in transit**: Labs involving database connections should recommend or enforce SSL/TLS. Connection strings should include `sslmode=require` or equivalent where appropriate.
-- **Network isolation**: Database instances should be created in private subnets. Labs should not make databases publicly accessible unless explicitly teaching that concept with a warning.
-- **Credential management**: Prefer AWS Secrets Manager or IAM authentication over static passwords. If static passwords are used for simplicity, include a callout recommending Secrets Manager for production.
-- **Least-privilege IAM**: IAM policies in examples should grant only the permissions needed. Avoid `*` resource wildcards unless explaining why.
-- **Detective controls**: Labs that teach monitoring or auditing should mention CloudTrail, RDS event subscriptions, or audit logging as best practices.
+### Operational Excellence
+- Monitoring and logging (CloudWatch metrics, logs, alarms, service-specific insights) are enabled or recommended.
+- Console steps have a CLI/IaC alternative, even inside `::::expand`.
+- Resources are tagged (at minimum `Name`, ideally a workshop/lab tag).
+- Event notifications (EventBridge, SNS, service events) are mentioned for operational awareness.
+- Custom configuration (parameter groups, config files) is preferred over modifying defaults.
 
-### Performance Efficiency Pillar
-
-- **Right-sizing**: Labs should explain why a particular instance class is chosen (e.g., `db.t3.medium` for lab cost efficiency). Include a note that production workloads should be sized based on actual requirements.
-- **Read scaling**: Labs covering read replicas should explain when to use them (read-heavy workloads, reporting, geographic distribution).
-- **Connection pooling**: Labs involving application connections should mention RDS Proxy or PgBouncer for connection management at scale.
-- **Storage optimization**: Labs should mention the differences between gp2/gp3/io1 storage types when creating instances, or at minimum note that storage type affects performance.
-- **Query performance**: Labs with SQL examples should avoid obviously inefficient patterns (e.g., `SELECT *` on large tables without LIMIT) unless teaching optimization.
-- **Caching**: Where applicable, mention ElastiCache or application-level caching as a complement to database scaling.
-
-### Reliability / High Availability Pillar
-
-- **Multi-AZ**: Labs that create database instances should explain the Multi-AZ option. If Single-AZ is used for cost savings in the lab, include a callout recommending Multi-AZ for production.
-- **Backup strategy**: Labs should mention automated backups and their retention period. Point-in-time recovery (PITR) should be referenced when teaching backup concepts.
-- **Failover testing**: Labs covering HA should include steps to test failover and explain expected behavior (DNS propagation, connection interruption duration).
-- **Read replica promotion**: Labs with read replicas should explain that replicas can be promoted in a disaster recovery scenario.
-- **Recovery objectives**: When teaching backup/restore, labs should mention RTO and RPO concepts and how different strategies affect them.
-- **Connection handling**: Labs should demonstrate or recommend retry logic and connection failover handling in application code.
-
-### Cost Optimization Pillar
-
-- **Instance sizing awareness**: Labs should use the smallest instance class that meets the lab's needs (e.g., `db.t3.medium` or `db.t3.micro` rather than `db.r5.xlarge`).
-- **Cleanup emphasis**: Every lab must emphasize resource cleanup to avoid ongoing charges. Cost warnings should appear at both the start and end of labs that create billable resources.
-- **Cost callouts**: When introducing a feature that has additional cost (Enhanced Monitoring, Performance Insights, RDS Proxy, Multi-AZ), include a brief note about the cost implications.
-- **Reserved capacity**: When discussing production deployments, mention Reserved Instances or Savings Plans as cost optimization strategies.
-- **Storage costs**: Note that allocated storage incurs cost even when unused. Labs should use minimal storage allocations (e.g., 20 GB).
-- **Data transfer**: Labs involving cross-region replication or data export should mention data transfer costs.
-
-### Operational Excellence Pillar
-
-- **Monitoring**: Labs should recommend enabling Enhanced Monitoring, Performance Insights, or CloudWatch Database Insights where relevant.
-- **Logging**: Labs should enable and reference appropriate log exports (PostgreSQL log, upgrade log) to CloudWatch.
-- **Automation**: Labs that perform manual console steps should include CLI/IaC alternatives (even if in expandable sections) to promote automation.
-- **Tagging**: Resources created in labs should include tags (at minimum a `Name` tag) to demonstrate the tagging best practice.
-- **Event notifications**: Labs creating databases should mention RDS Event Subscriptions for operational awareness.
-- **Parameter groups**: Labs should use custom parameter groups rather than the default, explaining that defaults cannot be modified.
-
-### Sustainability Pillar
-
-- **Right-sizing**: Reinforce that over-provisioned instances waste energy and cost. Use appropriate instance sizes.
-- **Graviton**: When applicable, mention Graviton-based instance types as a more energy-efficient option.
-- **Efficient queries**: Promote efficient SQL patterns that reduce compute cycles.
-- **Cleanup**: Emphasize deleting unused resources to avoid idle infrastructure.
+### Sustainability
+- Right-size and remove idle resources.
+- Mention AWS Graviton or other efficient options where applicable.
+- Promote efficient code and queries that reduce compute.
 
 ---
 
 ## Common Issues Found in Reviews
 
-Based on patterns observed across both workshops, these are the most frequently encountered issues:
+Seen repeatedly across workshops:
 
-1. **Mixed code block styles** — Using `:::code` in some places and fenced blocks in others without clear rationale.
-2. **Missing language attribute** — Code blocks without a specified language.
-3. **Broken internal links** — Links that don't match the actual folder structure (case sensitivity, missing trailing slashes).
-4. **Screenshots without context** — Images placed without preceding or following explanation.
-5. **Hardcoded region** — Using `us-east-1` directly instead of `$AWSREGION` environment variable.
-6. **Missing prerequisite alert** — Lab index pages that don't warn about required prior labs.
-7. **Stale files** — `.DS_Store`, `.bak`, `.tmp`, `.new` files committed to the repository.
-8. **Inconsistent naming** — Mixing spaces and hyphens in folder/file names.
-9. **Missing cleanup instructions** — Labs that create resources but don't document how to remove them.
-10. **Incorrect alert syntax** — Mixing `::` and `:::` colon counts, or using invalid alert types.
+1. **Mixed code block styles** without a reason.
+2. **Missing language attribute** on code blocks.
+3. **Broken internal links** — case mismatch, renamed folders, missing trailing slash.
+4. **Screenshots without context**, or before the step that produces them.
+5. **Hardcoded region or account ID** instead of variables.
+6. **Missing prerequisite notice** on lab index pages.
+7. **Stale and OS files** — `.DS_Store`, `.bak`, `.tmp`, `.new`, "OLD" copies.
+8. **Inconsistent naming** — spaces mixed with hyphens.
+9. **Missing or incomplete cleanup**, especially for manually created resources.
+10. **Incorrect alert syntax** — colon mismatches or unsupported types.
+11. **Duplicate sibling weights** causing unpredictable page order.
+12. **Secrets or account IDs in screenshots**, not just in text.
+13. **Participant IAM policy missing a permission** the lab needs, discovered only at the event.
+14. **Assuming one delivery mode** — steps that only work at an event, or only in an own account.
+15. **Missing or stale own-account path** — no self-paced setup, or an own-account template that no longer matches the event template.
