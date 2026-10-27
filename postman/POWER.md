@@ -12,6 +12,18 @@ Before proceeding, validate that the user has completed the following steps befo
 
 ## Step 1
 
+Confirm the user has a Postman API key available to the MCP server as `POSTMAN_API_KEY`.
+
+This power runs the Postman MCP server **locally over stdio**, which authenticates with a Postman API key (the local server does not support OAuth). Ask the user in chat to confirm they have set it — do not probe the value from the terminal.
+
+- Generate a key at https://postman.postman.co/settings/me/api-keys
+- Export it in the environment Kiro launches from, e.g. `export POSTMAN_API_KEY=...`. `mcp.json` forwards it to the server via `"POSTMAN_API_KEY": "${POSTMAN_API_KEY}"`.
+- Node.js 20 or later must be installed, since the server is started with `npx`.
+
+To verify the connection, call the `getAuthenticatedUser` MCP tool. A successful response is the auth check — if it fails, the key is missing, expired, or invalid.
+
+## Step 2
+
 Create a hook that runs anytime the source code or configuration file has been changed. Save the hook in .kiro/hooks/hookname.kiro.hook. Example hook format. Please update the patterns to match the project's file structure.
 
 ```json
@@ -64,20 +76,23 @@ Create a hook that runs anytime the source code or configuration file has been c
 
 Automate API testing and collection management with Postman. Create workspaces, collections, environments, and run tests programmatically.
 
-**Authentication**: OAuth — Kiro will open a browser sign-in on first use. No API key required.
+**Authentication**: Postman API key, supplied to the local server as `POSTMAN_API_KEY`.
 
 ## Available MCP Servers
 
 ### postman
 **Package:** `@postman/postman-mcp-server`
-**Connection:** Streamable HTTP MCP server
-**Authentication:** OAuth (handled automatically by Kiro)
-**Mode:** Minimal (40 essential tools) - Default configuration
-**Endpoint:** https://mcp.postman.com/minimal
+**Connection:** Local server over stdio, started with `npx`
+**Authentication:** Postman API key via the `POSTMAN_API_KEY` environment variable
+**Mode:** Minimal (42 essential tools) - Default configuration
 
-**Note:** This power connects to Postman's hosted MCP server via streamable HTTP using OAuth. To enable Full mode (100+ tools) for advanced collaboration and enterprise features, change the URL to `https://mcp.postman.com/mcp`.
+**Why the local server:** `runCollection` — the tool that actually executes a collection and returns test results — is only exposed by the local server. Postman's hosted remote endpoints (`https://mcp.postman.com/minimal` and `/mcp`) do not include it. Because collection runs are the core of this power (the hook in Step 2 asks the agent to run the collection and propose fixes), the local server is required.
 
-**Available Tools (40 in Minimal Mode):**
+The local server also executes requests from the developer's own machine, so collections that target `http://localhost:3000` and other private hosts are reachable. The remote server has no network access to the user's workstation.
+
+To enable Full mode (125 tools) for advanced collaboration and enterprise features, add `--full` to `args`.
+
+**Available Tools (42 in Minimal Mode):**
 
 **Workspace Management:**
 - `createWorkspace` - Create a new workspace
@@ -92,6 +107,7 @@ Automate API testing and collection management with Postman. Create workspaces, 
 - `putCollection` - Replace/update entire collection
 - `duplicateCollection` - Create a copy of a collection
 - `createCollectionRequest` - Add a request to a collection
+- `updateCollectionRequest` - Update an existing request in a collection
 - `createCollectionResponse` - Add a response example to a request
 
 **Environment Management:**
@@ -127,12 +143,15 @@ Automate API testing and collection management with Postman. Create workspaces, 
 - `syncSpecWithCollection` - Sync spec with its collection
 
 **Testing & Execution:**
-- `runCollection` - Execute a collection with automated tests
+- `runCollection` - Execute a collection with automated tests (**local server only**)
+
+**Search & Discovery:**
+- `searchPostmanElements` - Search Postman elements across networks
 
 **User & Metadata:**
 - `getAuthenticatedUser` - Get current user information
 - `getTaggedEntities` - Get entities by tag
-- `getStatusOfAnAsyncApiTask` - Check async task status
+- `getDuplicateCollectionTaskStatus` - Check the status of a collection duplication task
 - `getEnabledTools` - List available tools by mode
 
 ## Tool Usage Examples
@@ -215,20 +234,33 @@ for (const collection of collections) {
 
 **Test failures**: Verify API server running, check environment variables (base_url), review test scripts
 
-**Authentication issues**: If the OAuth flow did not complete, remove the power and re-add it to trigger a fresh sign-in
+**Authentication issues**: Confirm `POSTMAN_API_KEY` is exported in the environment Kiro was launched from, then restart the MCP server so it picks up the value. Call `getAuthenticatedUser` to verify. Keys can be regenerated at https://postman.postman.co/settings/me/api-keys
+
+**Server fails to start**: Ensure Node.js 20 or later is installed and `npx` is on `PATH`. The first run downloads the package, which may take a moment.
+
+**`runCollection` not available**: The tool is only exposed by the local server. Confirm `mcp.json` uses `command`/`args` rather than a `url` pointing at `https://mcp.postman.com/...`.
 
 ## Configuration
 
-**MCP Configuration (Minimal mode - 40 tools):**
+**MCP Configuration (Minimal mode - 42 tools):**
 ```json
 {
   "mcpServers": {
     "postman": {
-      "url": "https://mcp.postman.com/minimal",
+      "command": "npx",
+      "args": ["-y", "@postman/postman-mcp-server@latest"],
+      "env": {
+        "POSTMAN_API_KEY": "${POSTMAN_API_KEY}"
+      },
       "disabled": false
     }
   }
 }
 ```
 
-**Full mode (100+ tools):** Change URL to `https://mcp.postman.com/mcp`
+**Full mode (125 tools):** Add `--full` to `args`:
+```json
+"args": ["-y", "@postman/postman-mcp-server@latest", "--full"]
+```
+
+**EU region:** Add `--region eu` to `args`.
