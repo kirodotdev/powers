@@ -2,7 +2,7 @@
 name: "saas-builder"
 displayName: "SaaS Builder"
 description: "Build production-ready multi-tenant SaaS applications with serverless architecture, integrated billing, and enterprise-grade security"
-keywords: ["saas", "multi-tenant", "serverless", "aws", "lambda", "dynamodb", "stripe", "billing", "react", "typescript"]
+keywords: ["saas", "multi-tenant", "serverless", "aws", "lambda", "dynamodb", "route53", "cloudfront", "waf", "acm", "stripe", "billing", "react", "typescript"]
 author: "Allen Helton"
 ---
 
@@ -18,6 +18,8 @@ The SaaS Builder power provides tools and patterns for building scalable, cost-e
 
 - **Multi-tenant architecture** with tenant isolation at the data layer
 - **Serverless-first** infrastructure (Lambda, API Gateway, DynamoDB)
+- **CDN, Certificate and domain management** with CloudFront SaaS Manager, ACM, and Route53
+- **Caching and DDoS protection** with Amazon CloudFront and AWS WAF
 - **Integrated billing** with Stripe and usage metering
 - **Authentication & authorization** with JWT and RBAC
 - **Cost-per-tenant economics** with zero idle costs
@@ -45,12 +47,17 @@ The SaaS Builder power provides tools and patterns for building scalable, cost-e
 - DynamoDB on-demand pricing
 - Zero cost when idle
 - Linear scaling economics
+- CloudFront pay as you go, 1TB free every month
+- ACM Generated Certificates are free with CloudFront
 
 ### Security
 - Managed authentication (Cognito/Auth0)
 - JWT tokens with tenant claims
 - Role-based access control (RBAC)
 - Encryption at rest and in transit
+- AWS WAF for request inspection, DDoS mitigation, application layer protection, bot management and fraud control
+- Amazon CloudFront for GEO controls, caching and availability
+- Rate limiting AWS WAF, API Gateway, Application layers
 
 ## Repository Structure
 
@@ -64,9 +71,27 @@ The SaaS Builder power provides tools and patterns for building scalable, cost-e
 │   │   └── billing/
 │   ├── lib/           # Business logic
 │   └── infrastructure/ # IaC (CDK/SAM)
+│       ├── cloudfront/ # Multi-tenant distributions
+│       ├── certificates/ # ACM certificate management
+│       ├── dns/       # Route53 hosted zones
+│       ├── waf/       # Web ACL and security rules
+│       └── api.yaml   # API Gateway definition
 ├── schema/            # API contracts (OpenAPI)
 └── .kiro/             # Kiro configuration
 ```
+
+## Custom Domain Management
+
+- **CloudFront SaaS Manager**: Multi-tenant distributions with per-tenant customization
+- **ACM Certificates**: HTTPS and DNS validation for auto-renewal (us-east-1 region required)
+- **DNS Options**: Platform-managed (Route53), tenant-managed, or hybrid approach
+- **Tiered Strategy**: Basic (subdomains), Premium (vanity domains), Enterprise 
+
+## Security & Protection
+
+- **AWS WAF**: AntiDDoS rule group, managed rules, rate limiting, IP reputation, geo-blocking, ATP for logins, bot control
+- **Rate Limiting**: Multi-layer (WAF, API Gateway per tier, application quotas)
+- **DDoS Protection**: AWS WAF AntiDDoS AMR, Shield Standard, CloudFront, Route53 DNS protection
 
 ## Billing & Payments
 
@@ -140,9 +165,12 @@ Edit `saas-builder/mcp.json` to:
 - Always validate tenant context
 - Check user roles before operations
 - Prefix all keys with tenant ID
+- Use ACM HTTP validation (never email), fall back to DNS validation for wildcard domain
+- Protect all public endpoints (AWS WAF with Amazon CloudFront)
+- Implement rate limiting at multiple layers (service availability, tenant rate control)
+- Use OpenAPI v3 specification as the source of truth for APIs, informing WAF rules, CloudFront configurations
 - Use idempotency keys for payments
 - Verify webhook signatures
-- Implement rate limiting per tenant
 - Monitor cost per tenant
 - Test cross-tenant isolation
 - Design for 10x growth
