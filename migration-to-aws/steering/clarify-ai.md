@@ -122,6 +122,16 @@ Before presenting Q16–Q22, show the detected workloads and proposed Bedrock ta
 
 _Skip when:_ Auto-detection fully resolves the framework(s). Use detected value(s) with `chosen_by: "extracted"`.
 
+**Partial detection — confirm, don't re-ask (preferred over the full taxonomy):** When detection produced signals but not full resolution (e.g. one framework import found alongside unexplained raw HTTP calls), present a confirm card instead of the full option list:
+
+> I detected **[framework, e.g. LangChain]** ([evidence, e.g. `langchain` in requirements.txt]) — plus some direct API calls I couldn't attribute.
+>
+> 1. **That's right** — LangChain plus some direct calls
+> 2. **Edit** — show me all framework options
+> 3. **Just [detected framework]** — the direct calls are part of it
+
+Accept → record detected value(s) with `chosen_by: "user"` (confirmed). Edit → fall through to the full question below. Only present the full taxonomy cold when detection found **no** signals at all.
+
 > How your AI calls reach the model determines migration effort. Gateway users can often migrate by changing a single config line.
 >
 > A) No framework — direct API calls to OpenAI/Gemini
@@ -136,13 +146,15 @@ _Skip when:_ Auto-detection fully resolves the framework(s). Use detected value(
 
 | Answer                             | Recommendation Impact                                                                                     | Migration Effort  | Timeline                                             |
 | ---------------------------------- | --------------------------------------------------------------------------------------------------------- | ----------------- | ---------------------------------------------------- |
-| A) No framework — direct API calls | Swap SDK calls to Bedrock SDK; evaluate Bedrock Agents if planning agentic                                | Low               | 1–3 weeks depending on call sites                    |
+| A) No framework — direct API calls | Swap SDK calls to Bedrock SDK; evaluate AgentCore (Harness) if planning agentic                           | Low               | 1–3 weeks depending on call sites                    |
 | B) LLM router/gateway              | Add Bedrock as provider in gateway config; no app code changes; verify SigV4 auth                         | Minimal           | Hours to 1–3 days                                    |
 | C) LangChain / LangGraph           | Provider swap via `ChatBedrock`; chains/graphs/tools preserved; validate tool schemas                     | Low               | 1–3 days; 1 week if complex graphs                   |
 | D) Multi-agent framework           | Path 1: Keep framework, swap LLM provider (lower effort). Path 2: Migrate to Bedrock multi-agent (deeper) | Medium            | Path 1: 3–5 days; Path 2: 2–4 weeks                  |
-| E) OpenAI Agents SDK               | Highest effort; tightly coupled to OpenAI API; recommend Bedrock Agents or LangGraph as portable step     | High              | 2–4 weeks                                            |
-| F) MCP / A2A                       | Bedrock Agents supports MCP natively; A2A interop available; recommend Bedrock Agents as orchestration    | Low–Medium        | 3–5 days MCP; 1–2 weeks A2A                          |
+| E) OpenAI Agents SDK               | Highest effort; tightly coupled to OpenAI API; recommend AgentCore (Harness, or Runtime for code loops)   | High              | 2–4 weeks                                            |
+| F) MCP / A2A                       | AgentCore supports MCP natively (Gateway exposes tools as MCP); A2A interop; recommend AgentCore          | Low–Medium        | 3–5 days MCP; 1–2 weeks A2A                          |
 | G) Voice platform                  | If platform supports Bedrock natively → config change; otherwise evaluate Nova 2 Sonic                    | Minimal to Medium | Hours if native; 2–3 weeks if Nova 2 Sonic migration |
+
+> **Never recommend classic Bedrock Agents (`bedrock-agent`) as a migration target.** It is in maintenance mode and closed to new customers as of July 30, 2026 ([AWS announcement](https://aws.amazon.com/about-aws/whats-new/2026/06/aws-service-availability/)). Agentic targets are AgentCore Harness (config-based, default) or AgentCore Runtime (code-defined loops) — consistent with Q23–Q26.
 
 ### Combination Logic
 
@@ -152,7 +164,7 @@ _Skip when:_ Auto-detection fully resolves the framework(s). Use detected value(
 | B only                               | Quick win — gateway config change, skip SDK migration steps                                            |
 | B + any other                        | Gateway swap is the quick win; assess framework migration as separate workstream                       |
 | C + A                                | Two workstreams: LangChain provider swap (fast) + direct call migration (slower)                       |
-| D + F                                | Complex — multi-agent with MCP tooling; recommend Bedrock Agents to unify orchestration and tools      |
+| D + F                                | Complex — multi-agent with MCP tooling; recommend AgentCore to unify orchestration and tools           |
 | E + anything                         | E is the long pole; plan timeline around Agents SDK migration; other layers may be quick wins          |
 | Multiple frameworks (C+D, C+E, etc.) | Assess independently; prioritize by traffic volume or business criticality; consolidate post-migration |
 
@@ -162,7 +174,9 @@ Interpret → `ai_framework` array (multiple selections → array of all selecte
 
 ---
 
-## Q15 — Approximately how much are you spending on OpenAI or Gemini per month?
+## Q15 — Approximately how much are you spending on your AI/LLM providers per month?
+
+**Personalize the wording:** substitute the detected provider names from `ai-workload-profile.json` → `models[].provider` when available (e.g. "on OpenAI" or "on OpenAI and Gemini, per your detected usage"). Do not assume providers the profile did not detect.
 
 > A) < $500/month
 > B) $500–$2,000/month
@@ -170,14 +184,15 @@ Interpret → `ai_framework` array (multiple selections → array of all selecte
 > D) > $10,000/month
 > E) I don't know
 
-| Answer               | Recommendation Impact                                                                                                                                                                                                                                                                                                                                                                                                            |
-| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| < $500/month         | **AWS Activate Founders** (up to $5,000 credits, self-service, no VC needed — apply at aws.amazon.com/startups/credits); Bedrock free tier covers initial testing; Bedrock cost comparison shows modest savings                                                                                                                                                                                                                  |
-| $500–$2,000/month    | **AWS Activate Portfolio** (up to $200,000 credits for VC/accelerator-backed startups — requires Activate Provider Org ID); Bedrock cost comparison highlighted; credits apply to Bedrock third-party models including Claude                                                                                                                                                                                                    |
-| $2,000–$10,000/month | **AWS Activate Portfolio** (up to $200,000); Bedrock cost savings prominently featured; Savings Plans analysis; if agentic workload detected → flag **AWS Generative AI Accelerator** (up to $1M credits, cohort-based, adjacent to the credits-hub funnel)                                                                                                                                                                      |
-| > $10,000/month      | **AWS Credits for AI Startups** ($200,000+, invite-only for startups ready to scale post-Activate-Portfolio — contact your AWS Account Manager; see aws.amazon.com/startups/credits); dedicated AI migration support; Bedrock provisioned throughput analysis; if agentic workload detected → also flag **AWS Generative AI Accelerator** (up to $1M credits, 8-week cohort — aws.amazon.com/startups/generative-ai/accelerator) |
+| Answer               | Recommendation Impact                                                                                                                                                                                      |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| < $500/month         | Low token-volume baseline for Bedrock cost comparison; Bedrock free tier may cover initial testing                                                                                                         |
+| $500–$2,000/month    | Mid band for Bedrock savings comparison and token-volume derivation                                                                                                                                        |
+| $2,000–$10,000/month | Higher band — Bedrock cost savings prominently featured; Savings Plans analysis; if agentic workload detected → flag **AWS Generative AI Accelerator** (cohort program — see program page for eligibility) |
+| > $10,000/month      | High band — provisioned throughput analysis; if agentic workload detected → also flag **AWS Generative AI Accelerator** (cohort program — see program page for eligibility)                                |
+| I don't know         | Use mid-band estimate with ±25% accuracy caveat in `estimation-ai.json`                                                                                                                                    |
 
-**Activate eligibility (Founders & Portfolio):** Pre-Series B, founded in the last 10 years, AWS Account on Paid Tier Plan, and either new to Activate Credits or requesting more credits than previously received.
+**Do not map spend bands to AWS Activate Founders vs Portfolio.** Funding stage is not inferable from monthly AI spend — ask **Q27** instead.
 
 Interpret → `ai_monthly_spend`. Default: B → `"$500-$2K"`.
 
@@ -226,7 +241,7 @@ Interpret → `ai_priority`. Default: E → `"balanced"`.
 | Extended thinking / Chain-of-thought | Claude Sonnet 4.6 with extended thinking mode; Claude Opus 4.6 for most complex reasoning                                                                                                                                                                                                                                                                                            |
 | Prompt caching                       | Claude Sonnet 4.6 with prompt caching enabled; cost savings analysis included. **Caveat:** caching only helps for long, repeated context (system prompts, documents). Per-model minimum token thresholds (~1K–4K tokens) and TTL apply — short prompts won't cache. Verify current minimums at docs.aws.amazon.com/bedrock/latest/userguide/prompt-caching.html before recommending. |
 | RAG optimization                     | Amazon Bedrock Knowledge Bases recommended alongside model; Titan Embeddings for vector store                                                                                                                                                                                                                                                                                        |
-| Agentic workflows                    | Claude Sonnet 4.6 with Bedrock Agents; multi-agent orchestration guidance included                                                                                                                                                                                                                                                                                                   |
+| Agentic workflows                    | Claude Sonnet 4.6 with AgentCore (Harness); multi-agent orchestration guidance included                                                                                                                                                                                                                                                                                              |
 | Real-time speed (< 500ms)            | Claude Haiku 4.5 or Nova Micro; streaming response guidance included                                                                                                                                                                                                                                                                                                                 |
 | Multimodal with image generation     | Claude Sonnet 4.6 (vision) + Amazon Nova Canvas for generation                                                                                                                                                                                                                                                                                                                       |
 | Real-time conversational speech      | Amazon Nova 2 Sonic recommended for speech-to-speech; latency guidance included                                                                                                                                                                                                                                                                                                      |
@@ -257,6 +272,16 @@ Interpret → `ai_token_volume`: A → `"low"`, B → `"medium"`, C → `"high"`
 **Auto-detect signal:** If `ai-workload-profile.json` exists and `models[0].model_id` is set with detection confidence ≥ 0.8, map to the matching Q19 answer and **skip Q19**. Set `ai_model_baseline` with `chosen_by: "extracted"`. If multiple models detected with similar confidence, ask Q19.
 
 _Skip when:_ Primary model fully resolved from discovery. Use detected value with `chosen_by: "extracted"`.
+
+**Partial detection — confirm, don't re-ask:** When models were detected but below the confidence bar, or several tie, present a confirm card listing only the detected candidates — never the full catalog:
+
+> I found **[model_id 1]** and **[model_id 2]** in your code. Which is your primary production model?
+>
+> 1. [model_id 1]
+> 2. [model_id 2]
+> 3. Something else — show all options
+
+**Cold path — family first, then branch:** When nothing was detected, do NOT present the full option list below in one message. Ask a short family question first — "Which provider family is your primary model? 1. Gemini 2. OpenAI GPT 3. OpenAI o-series (reasoning) 4. Other / not sure" — then present only the matching subset of the options below. The full list remains the reference catalog for interpretation.
 
 Establishes baseline Bedrock recommendation. **Override hierarchy:** Q17 special features (hard override) > Q16 priority > Q18/Q21 volume and latency > Q19 source model (baseline only).
 
@@ -411,7 +436,7 @@ _Skip when:_ Auto-detection fully resolves AND user has no preference signal. Us
 > Your agent system can migrate to AWS in different ways, each with different effort and risk:
 >
 > A) **Retarget** — Keep your current framework ([framework name]), swap the model layer to Bedrock. Fastest path, lowest risk. Your orchestration code stays the same.
-> B) **AgentCore Harness** — Declare your agent as configuration (model + tools + prompt). Get managed runtime, memory, identity, and observability. Good for simpler agents or incremental migration. _(Preview — 4 regions: us-east-1, us-west-2, eu-central-1, ap-southeast-2)_
+> B) **AgentCore Harness** — Declare your agent as configuration (model + tools + prompt). Get managed runtime, memory, identity, and observability. Good for simpler agents or incremental migration. _(GA — all commercial regions where AgentCore is available)_
 > C) **Strands native** — Rewrite orchestration using AWS Strands SDK on AgentCore. Most AWS-integrated, highest effort. Best for teams wanting full AWS-native multi-agent capabilities.
 > D) **I'm not sure** — Help me decide based on my workload.
 
@@ -495,11 +520,13 @@ Interpret → `ai_constraints.agentic.incremental_migration`: A → `true`, B �
 
 ## Category H — Startup Programs (Always fires when Category F fires)
 
-_Fire when:_ `ai-workload-profile.json` exists (same trigger as Category F). Ask once, after Q26 if agentic, or after Q22 if non-agentic.
+_Fire when:_ `ai-workload-profile.json` exists (same trigger as Category F). **Q27 is ESSENTIAL** in wizard mode — ask in the Step 4 essentials batch after Q15 (and after Q26 if agentic). Do not place Q27 on the assumption sheet; funding stage cannot be defaulted from spend.
 
 ---
 
 ## Q27 — Have you applied for AWS Activate credits?
+
+**Presentation:** Ask Q27 as its own short follow-up **after** the technical AI essentials are answered — not mixed into the same numbered batch. It is a funding question, not a technical one; separating it keeps the technical batch focused and makes clear that skipping it never affects the architecture (only the credits guidance). One-line lead-in: "Last one, and it's about money rather than tech:".
 
 **Rationale:** AWS Activate credits apply directly to Bedrock usage (including Claude, Llama, Nova, and other third-party models). Surfacing eligibility at the migration decision moment helps startups reduce the cost of the migration itself. This takes 30 seconds to answer and can unlock $5K–$200K in credits.
 

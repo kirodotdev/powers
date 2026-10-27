@@ -129,11 +129,13 @@ AFTER generate-artifacts-docs.md completes:
 
 Produces: `migration-report.html`
 
-**Validation gate:** Report generation runs `steering/validate-artifacts.md` first. If validation emits `GATE_FAIL`: log the failure to the user, **do not write** `migration-report.html`, and continue to Phase Completion (report is optional output; validation failure is not a silent skip). Do **NOT** patch artifacts to pass validation.
+**Validation gate:** Report generation runs `validate-artifacts.md` first. If validation emits `GATE_FAIL`: log the failure to the user, **do not write** `migration-report.html`, and continue to Phase Completion (report is optional output; validation failure is not a silent skip). Do **NOT** patch artifacts to pass validation.
+
+After writing `migration-report.html`, run `validate-migration-report.md` (automated script). Branch on the shell exit code per that doc's table — `0` (`REPORT_OK`), `1` (`REPORT_FAIL`: remove or rename incomplete HTML and warn the user — do not present a stub report as complete), or anything else (validator did not run, e.g. `python3` missing — tell the user validation was skipped, do not treat it as pass or fail).
 
 ## Phase Completion
 
-Load `steering/handoff-gates.md`. **Re-read from disk** before checking.
+Load `handoff-gates.md`. **Re-read from disk** before checking.
 
 Verify both stages are complete:
 
@@ -142,7 +144,7 @@ Verify both stages are complete:
    - If `estimation-ai.json` exists -> require `generation-ai.json`
    - If `estimation-billing.json` exists -> require `generation-billing.json`
 2. **Stage 2 route gates (fail closed)**:
-   - If infra artifact route is active (`generation-infra.json` AND `aws-design.json`) -> require `terraform/`, `scripts/`, and `validation-report.json` (with `status` in `{passed, passed_degraded_offline, skipped_user_continue}`)
+   - If infra artifact route is active (`generation-infra.json` AND `aws-design.json`) -> require `terraform/`, `scripts/`, and `validation-report.json` (with `status` in `{passed, passed_degraded_offline, skipped_user_continue}` AND `policy_status` == `POLICY_OK`, unless the user chose skip/abort on a policy failure)
    - If AI artifact route is active (`generation-ai.json` AND `aws-design-ai.json`) -> require `ai-migration/`
    - If billing artifact route is active (`generation-billing.json` AND `aws-design-billing.json`) -> require `terraform/skeleton.tf`
 3. **Documentation gate (always)**:
@@ -158,7 +160,7 @@ After `HANDOFF_OK`, use the Phase Status Update Protocol (read-merge-write) to u
 
 ## Summary
 
-**Use structured completion reporting** (see `steering/validate-artifacts.md` Section 3). Present final summary to user:
+**Use structured completion reporting** (see `validate-artifacts.md` Section 3). Present final summary to user:
 
 ```
 Phase 5 (Generate) complete.
@@ -183,7 +185,7 @@ After the structured block, include:
 
 1. **Plans generated** — List all `generation-*.json` files produced
 2. **Artifacts generated** — List all directories and files created (terraform/, scripts/, ai-migration/, MIGRATION_GUIDE.md, README.md). Include `migration-report.html` only if it exists.
-3. **Validation status** — If `$MIGRATION_DIR/validation-report.json` exists, report its `status` field (`passed`, `passed_degraded_offline`, or `skipped_user_continue`). If `status == "passed_degraded_offline"`, add: "Provider registry was unreachable; `terraform validate` was skipped. Re-run `terraform init && terraform validate` from a network-connected shell to complete validation."
+3. **Validation status** — If `$MIGRATION_DIR/validation-report.json` exists, report its `status` field (`passed`, `passed_degraded_offline`, or `skipped_user_continue`). If `status == "passed_degraded_offline"`, add: "Provider registry was unreachable; `terraform validate` was skipped. Re-run `terraform init && terraform validate` from a network-connected shell to complete validation." Also report `policy_status` (`POLICY_OK`/`POLICY_FAIL`) — the tf-best-practices policy gate runs regardless of the offline path and must report `POLICY_OK` before infra Generate completes (see `generate-artifacts-infra.md` Step 6).
 4. **Key timelines** — Highlight migration timeline from the generation plans
 5. **Key risks** — Highlight top risks from the generation plans
 6. **TODO markers** — Note any TODO markers in generated artifacts that require manual attention

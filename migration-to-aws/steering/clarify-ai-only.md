@@ -55,7 +55,36 @@ If `migration-preview.json` exists and `ai_complexity_signal == "likely_simple"`
 
 Present **only Q2, Q3, Q4** (Q1 framework is extracted; Q5 model is extracted; Q6 capabilities are extracted; Q7–Q10 use defaults). After answering, skip directly to Step 3.
 
-If `ai_complexity_signal` is `"standard"` or `"complex"`, or `migration-preview.json` is absent, continue to Step 2 (full question set).
+If `ai_complexity_signal` is `"standard"` or `"complex"`, or `migration-preview.json` is absent, continue to Step 1.75 (mini assumption sheet), then Step 2.
+
+---
+
+## Step 1.75: Mini Assumption Sheet (before Batch 1)
+
+Before asking anything, present what discovery already answered and what will be assumed, as a compact confirm-or-edit sheet (same contract as the full Clarify wizard's Step 2.5 — sheet first, questions after the user responds):
+
+```
+### AI migration assumptions — confirm or correct
+
+**Detected from your code:**
+| Setting | Value | Source |
+| ------- | ----- | ------ |
+| Framework | [e.g. Direct SDK] | ai-workload-profile.json |
+| Primary model | [e.g. gpt-4o] | code scan (confidence [x]) |
+| Input types | [e.g. text only] | capabilities_summary |
+
+**Will be assumed unless you correct them:**
+| Setting | Assumed value | Consequence |
+| ------- | ------------- | ----------- |
+| Usage volume | Low | On-demand pricing, no provisioned-throughput analysis |
+| Response speed | Important (<2s) | Sonnet-class + streaming |
+| Task complexity | Moderate | Sonnet-class model |
+
+Reply "looks good" to continue to the remaining questions, correct any line
+("model: gemini-2.5-pro"), or describe the issue in plain words.
+```
+
+Questions resolved on this sheet are **not** re-asked in the batches below; record them with `chosen_by: "extracted"` (detected rows) or `"default"` (assumed rows, sheet-confirmed), and skip their entries in Batch 1/2. Rows the user corrects become `chosen_by: "user"`. Rows with no detection signal stay in the batches as normal questions.
 
 ---
 

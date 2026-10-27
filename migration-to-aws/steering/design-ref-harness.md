@@ -2,7 +2,7 @@
 
 > Loaded by `design-ai.md` Step 0.6 when `agentic_profile.is_agentic == true` AND `ai_constraints.agentic.migration_approach == "harness"`.
 
-**Prerequisites:** `steering/ai-migration-guardrails.md` must already be loaded (Step 0.6 loads it before this file). Do NOT duplicate regional caveats, pricing rules, or effort estimation rules here.
+**Prerequisites:** `ai-migration-guardrails.md` must already be loaded (Step 0.6 loads it before this file). Do NOT duplicate regional caveats, pricing rules, or effort estimation rules here.
 
 ---
 
@@ -16,6 +16,7 @@ Recommend Harness when:
 - Incremental migration: run existing OpenAI/Gemini models on AgentCore infrastructure, swap to Bedrock per-invocation
 - Agent tasks run < 8 hours (Harness session limit)
 - Team prefers config-first iteration over code-first
+- Production workload — Harness is GA in all commercial regions with full platform support
 
 ## When Harness Does NOT Fit
 
@@ -118,10 +119,11 @@ When Harness path is selected, write this to `aws-design-ai.json`:
       "memory_type": "session|cross_session",
       "incremental_migration": true,
       "source_model_provider": "open_ai|google",
-      "source_model_id": "from models[0].model_id"
+      "source_model_id": "from models[0].model_id",
+      "policy_recommended": true
     },
-    "regional_fit": "available|preview|unavailable",
-    "deployment_regions": ["us-west-2", "us-east-1"],
+    "regional_fit": "available|unavailable",
+    "deployment_regions": ["from preferences.json target_region"],
     "warnings": []
   }
 }
@@ -135,7 +137,8 @@ When Harness path is selected, write this to `aws-design-ai.json`:
 - `harness_config.tools` — Mapped from `tool_manifest[]` using the tool mapping decision tree above
 - `harness_config.source_model_provider` — `"open_ai"` or `"google"` based on `summary.ai_source`
 - `harness_config.source_model_id` — Original model ID from `models[0].model_id`
-- `regional_fit` — Result of Step 0.5 regional check for AgentCore Harness in target region
+- `harness_config.policy_recommended` — Set to `true` when `tool_manifest[]` contains tools with write operations (database mutations, API calls, file writes). Recommend AgentCore Policy for tool-call guardrails.
+- `regional_fit` — Result of Step 0.5 regional check for AgentCore Harness in target region. Harness is GA in all commercial regions — this should almost always be `"available"`.
 
 ---
 

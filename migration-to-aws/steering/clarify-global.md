@@ -13,6 +13,7 @@ Present questions with a conversational tone and brief context explaining why ea
 **Rationale:** Geography drives AWS region selection and CDN strategy.
 
 > I need to understand your user base to recommend the right AWS region and CDN strategy.
+> (This question is about where your **users** are — latency and placement. If you have **data residency** obligations, GDPR or similar, that's handled by the compliance question, not this one.)
 >
 > A) Single region (e.g., US-only, EU-only)
 > B) Multi-region (2–3 regions, e.g., US + EU)
@@ -68,17 +69,19 @@ Default: A — single region, closest AWS region to GCP region in inventory.
 Interpret:
 
 ```
-A -> (no constraint written — full service catalog available, any region)
+A -> (no constraint written — user explicitly confirmed no requirements; full service catalog, any region)
 B -> compliance: ["soc2"] — CloudTrail, Config, Security Hub enabled; encryption at rest required
 C -> compliance: ["pci"] — Dedicated VPC, WAF required, strict segmentation
 D -> compliance: ["hipaa"] — BAA-eligible services only, encryption mandatory, us-east-1/us-west-2 preferred
 E -> compliance: ["fedramp"] — GovCloud regions required (us-gov-east-1, us-gov-west-1)
 F -> compliance: ["gdpr"] — EU regions required (eu-west-1, eu-central-1), data residency constraints
 G -> compliance: ["ccpa"] — CCPA/CPRA: logging, retention, consumer-request readiness; document data flows; align region/subprocessor choices with legal review
-H -> same as default (A) — no constraint assumed; verify with compliance team before production
+H -> compliance: ["unknown"] — not confirmed; verify with compliance team before production
 ```
 
-Default: A — no constraint.
+**Defaulted / "I don't know" semantics:** When Q2 resolves without an explicit user selection — answer H, or "use defaults for the rest" — write `compliance: ["unknown"]` (`chosen_by: "user"` for H, `"default"` with `source: "default:Q2"` for defaults). Never silently record "no requirements". Downstream, `["unknown"]` behaves exactly like "none" for architecture and service selection (no speculative BAA-only stack), but it triggers the report's compliance caveat and counts as unverified in decision confidence.
+
+Default: `compliance: ["unknown"]` — unconfirmed, with report caveat (only reachable via "use defaults for the rest"; Q2 is otherwise always asked).
 
 ---
 
@@ -173,11 +176,11 @@ If `billing-profile.json` does not exist or `commitments.has_active_cuds == fals
 
 ---
 
-## Q4 — _(Skipped)_
+## Q4 — _(Skipped in wizard mode)_
 
-Credits program eligibility is inferred from Q3 (GCP spend) alone. No question asked.
+**Do not infer funding stage or AWS Activate tier from GCP spend (Q3) or AI spend (Q15).** Self-funded and VC-backed startups can have identical monthly bills.
 
-Default: `funding_stage`: not set.
+Activate package selection is owned by **Q27** (`startup_program_status`) when Category H fires. In full Clarify flow, Q4 may be asked explicitly if product adds a standalone funding-stage question; until then, `funding_stage` is not set.
 
 ---
 

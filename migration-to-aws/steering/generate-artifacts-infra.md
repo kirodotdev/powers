@@ -17,7 +17,7 @@ Read from `$MIGRATION_DIR/`:
 - `preferences.json` (REQUIRED) — User preferences including target region, sizing, compliance
 - `gcp-resource-clusters.json` (REQUIRED) — Cluster dependency graph for ordering
 
-Reference files (read as needed): `steering/design-ref-index.md` and domain-specific files (design-ref-compute.md, design-ref-database.md, design-ref-storage.md, design-ref-networking.md, design-ref-messaging.md, design-ref-security.md, design-ref-ai.md).
+Reference files (read as needed): `design-ref-index.md` and domain-specific files (design-ref-compute.md, design-ref-database.md, design-ref-storage.md, design-ref-networking.md, design-ref-messaging.md, design-ref-security.md, design-ref-ai.md).
 
 If any REQUIRED file is missing: **STOP**. Output: "Missing required artifact: [filename]. Complete the prior phase that produces it."
 
@@ -264,28 +264,79 @@ terraform.tfvars
 
 ## Step 3: Generate Per-Domain .tf Files
 
+### Step 3.0: Apply AWS authoring posture (before writing)
+
+**Before generating any `.tf`, load `tf-best-practices.md` for its authoring posture** —
+it is the single source of truth for "what good AWS Terraform looks like." Treat it as a **black
+box**: pass the context below and follow whatever posture it returns. Do **not** reach into its
+files or assume how it is organized internally — it evolves independently.
+
+> Load **`tf-best-practices.md`**, applying it as though you are **about to author `terraform/`**
+> (the authoring/pre-generation context), and emit Terraform that satisfies every rule it
+> returns.
+
+**Pass the caller context** the skill needs (these are gcp-to-aws's to supply; the skill reads
+none of our artifacts itself):
+
+- **`compliance`** — the value of `preferences.json` → `design_constraints.compliance` (array;
+  may be empty/absent). Empty ⇒ the skill emits no compliance-conditional hardening, keeping the
+  stack minimal and immediately applyable.
+- **`aws_config` values** — instance classes, CPU/memory, storage sizes, engine versions from
+  each resource's `aws_config` in `aws-design.json`. Populate resource attributes from these;
+  the skill's posture constrains the shape, not the numbers.
+
+**Do not re-specify the skill's posture here** — the skill owns it. Step 3.1 covers only the
+source-glue and resource wiring the skill does not (and should not) know about.
+
+### Step 3.1: gcp-to-aws generation rules (source glue — NOT AWS posture)
+
 For each domain with resources in the generation manifest:
 
 **General rules:**
 
-- Consult `steering/design-ref-*.md` for AWS configuration best practices
+- Consult `design-ref-*.md` for AWS configuration best practices
 - A single GCP resource may map to multiple AWS resources (1:Many expansion)
-- Use `gcp_config` values from `aws-design.json` to populate resource attributes
+- Use `gcp_config` / `aws_config` values from `aws-design.json` to populate resource attributes
 - For `confidence: "inferred"` resources, add comment: `# Tailored to your setup — verify configuration (JSON confidence: inferred)`
 - For `confidence: "deterministic"` resources, optional comment: `# Standard pairing (fixed mapping list)`
 - Include `secondary_resources` from the cluster (IAM roles, security groups)
 - Tag every resource: Project, Environment, ManagedBy, MigrationId
 
-**Domain-specific rules:**
+**GCP-source-specific rules (these stay here — the skill is source-agnostic and cannot own them):**
 
-| Domain     | Key Rules                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Networking | At least 2 AZs; public + private subnets; NAT gateway for private subnet internet; internet-facing ALB must terminate TLS on 443 and HTTP 80 must redirect to HTTPS; when `preferences.json.compliance` contains `pci`, `hipaa`, or `fedramp`, emit `aws_flow_log` for the VPC targeting a CloudWatch log group — add inline cost disclosure comment: `# VPC Flow Logs: ~$0.50/GB ingested. Enabled for compliance. Disable if cost is a concern and compliance posture allows.` — omit for non-compliance stacks                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| Security   | Least-privilege IAM (specific ARNs, never wildcards); per-service roles for Fargate/Lambda; Secrets Manager resources with no plaintext defaults; when `preferences.json.compliance` contains `soc2`, `pci`, `hipaa`, or `fedramp`, emit a companion `aws_secretsmanager_secret_rotation` block for every `aws_secretsmanager_secret` resource with `automatically_after_days = 30` and a TODO comment for the rotation Lambda ARN — omit the rotation block for non-compliance stacks to keep the generated Terraform immediately applyable; when `preferences.json.compliance` contains `pci`, `hipaa`, or `fedramp`, generate a customer-managed KMS key (`aws_kms_key`) and reference it via `kms_key_id` on every `aws_secretsmanager_secret` — omit for non-compliance stacks (AWS-managed key is sufficient)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| Storage    | Versioning enabled; SSE-S3 or SSE-KMS encryption; block public access by default; lifecycle policies; if public content is required use CloudFront/OAC instead of public bucket policy; when `preferences.json.compliance` contains `pci`, `hipaa`, or `fedramp`, emit `aws_s3_bucket_logging` for every application S3 bucket (not the CloudTrail/Config log buckets themselves) targeting a dedicated access-log bucket — add inline cost disclosure comment: `# S3 access logging: ~$0.023/GB stored. Enabled for compliance. Disable if cost is a concern and compliance posture allows.` — omit for non-compliance stacks                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| Database   | Private subnets; subnet group + parameter group + security group; backups; encryption at rest (`storage_encrypted = true`); `deletion_protection = true` by default; **`publicly_accessible = false` always** — never emit `publicly_accessible = true` unless the user has explicitly requested it via a compliance exception in `preferences.json`; **never emit a security group rule allowing ingress on port 5432 or 3306 from `0.0.0.0/0`** — database ports must only allow ingress from the application security group CIDR or security group ID; if GCP Cloud SQL `authorized_networks` contains `0.0.0.0/0`, emit a `warnings[]` entry in `aws-design.json`: "Cloud SQL authorized_networks includes 0.0.0.0/0 — mapped to private RDS with no public access" (add inline comment: `# Set to false only when intentionally destroying this cluster`); **never use `master_password = var.database_master_password`** — instead generate the master password into Secrets Manager and reference it via data source: emit `aws_secretsmanager_secret` + `aws_secretsmanager_secret_version` (with `secret_string = jsonencode({password = random_password.db_master.result})`) and `resource "random_password" "db_master"`, then set `master_password = jsondecode(data.aws_secretsmanager_secret_version.db_master.secret_string)["password"]` on the cluster — this keeps the password out of `terraform.tfvars` and Terraform state plaintext |
-| Compute    | Fargate in private subnets; task definitions from `aws_config` CPU/memory; auto-scaling; for EKS clusters set `endpoint_private_access = true` and `endpoint_public_access = false` by default — add inline comment: `# Public endpoint disabled. To enable kubectl access from outside the VPC set endpoint_public_access = true and restrict public_access_cidrs to known CIDRs.`; every `aws_ecr_repository` resource must include `image_scanning_configuration { scan_on_push = true }` — ECR basic scanning is free and catches known CVEs before images reach production                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| Monitoring | Log groups per service; dashboard with key metrics; alarms from `generation-infra.json` success_metrics; 30-day log retention                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+- **Cloud SQL `authorized_networks` → warning:** if a source `google_sql_database_instance` has
+  `authorized_networks` containing `0.0.0.0/0`, emit a `warnings[]` entry in `aws-design.json`:
+  "Cloud SQL authorized_networks includes 0.0.0.0/0 — mapped to private RDS with no public
+  access." (The skill already mandates a private, non-`0.0.0.0/0` RDS; this warning just records
+  that the source was public and was intentionally not carried over.)
+- **Monitoring alarms** derive from `generation-infra.json` success_metrics (a gcp-to-aws
+  artifact); wire them into the CloudWatch dashboard/alarms the skill's monitoring baseline calls
+  for.
+- **Domain resource wiring** the skill's rules assume you emit — DB subnet group + parameter
+  group; per-service Fargate/Lambda IAM roles; compute auto-scaling — populated with this
+  migration's `aws_config` values.
+- **CPU architecture (Graviton/ARM64):** read each compute resource's
+  `graviton.target_architecture` from `aws-design.json` (see `graviton.md`).
+  When `arm64`: emit `aws_ecs_task_definition` with
+  `runtime_platform { cpu_architecture = "ARM64" operating_system_family = "LINUX" }`,
+  `aws_lambda_function` with `architectures = ["arm64"]`, and the Graviton instance type from
+  `aws_config` (e.g., `m7g.xlarge`) on EC2/EKS launch templates — add inline comment
+  `# Graviton (ARM64) — ~15-20% cheaper than x86; build images with --platform linux/arm64`.
+  When `x86_64`: emit x86 types with a comment citing the blocker from `graviton.caveats`.
+  EKS arm64 node groups are single-arch on dev tier.
+
+**Domain-specific wiring** (posture is owned by the `tf-best-practices` skill — these rows list
+only the gcp-to-aws resource wiring / value population per domain; for every security rule,
+follow the posture the skill returned in Step 3.0):
+
+| Domain     | gcp-to-aws wiring (skill owns the posture)                                                                                                                                                                                                                                          |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Networking | Emit the VPC/subnets/NAT/SGs and (for compliance) flow logs per the skill's posture; populate CIDRs/AZ count from design. Wire an internet-facing ALB only if the design has one.                                                                                                   |
+| Security   | Emit per-service Fargate/Lambda IAM roles and Secrets Manager resources per the skill's posture (least-privilege, no plaintext master password, compliance-conditional rotation/KMS). Populate ARNs/role names from the cluster's `secondary_resources`.                            |
+| Storage    | Emit S3 buckets per the skill's posture (versioning, SSE, block-public-access, CloudFront/OAC for public, compliance-conditional access logging). Populate bucket names/lifecycle from design.                                                                                      |
+| Database   | Emit RDS/Aurora per the skill's posture (private, encrypted, `deletion_protection`, master-password-via-Secrets-Manager, DB-port SG scoping). Populate engine/version/instance class from `aws_config`; add the Cloud SQL `authorized_networks` warning (Step 3.1) when applicable. |
+| Compute    | Emit Fargate/EKS/ECR per the skill's posture (private subnets, EKS private endpoint, ECR scan-on-push). Populate task CPU/memory and autoscaling from `aws_config`. Apply Graviton/ARM64 wiring from the CPU architecture rule above.                                               |
+| Monitoring | Emit CloudWatch log groups/dashboard/alarms per the skill's monitoring baseline; source alarm thresholds from `generation-infra.json` success_metrics.                                                                                                                              |
 
 ## Step 4: Generate outputs.tf
 
@@ -322,17 +373,15 @@ output "migration_summary" {
 
 Verify these quality rules before reporting completion:
 
-- [ ] No wildcard IAM policies (`"Action": "*"` or `"Resource": "*"`)
+**Security posture (owned by the `tf-best-practices` skill; the Step 6 policy gate re-verifies the statically-checkable subset):**
+
+- [ ] Generated Terraform satisfies the authoring posture the `tf-best-practices` skill returned at Step 3.0, for the `compliance` context passed. (The skill defines the rules; do not re-enumerate them here.)
+
+**gcp-to-aws generation self-check (caller-specific — not owned by the skill):**
+
 - [ ] No default VPC references — all resources use the created VPC
 - [ ] No hardcoded credentials in any .tf file
 - [ ] Tags on every resource (Project, Environment, ManagedBy, MigrationId)
-- [ ] Encryption at rest on all storage (S3, EBS, RDS)
-- [ ] Databases and internal services use private subnets
-- [ ] All RDS/Aurora resources have `publicly_accessible = false`
-- [ ] No security group rule allows ingress on port 5432 or 3306 from `0.0.0.0/0`
-- [ ] ALB listeners enforce HTTPS (443) and HTTP (80) only redirects to HTTPS
-- [ ] No S3 bucket policy with `Principal = "*"` unless explicitly approved by user requirements
-- [ ] No `0.0.0.0/0` ingress except ALB port 443
 - [ ] Every variable has `type` and `description`
 - [ ] Every output has `description`
 - [ ] Region from `var.aws_region`, never hardcoded
@@ -354,6 +403,35 @@ Verify these quality rules before reporting completion:
 - [ ] `baseline.tf` does NOT mention "Trusted Advisor" anywhere (Trusted Advisor is docs-action only and out of scope).
 - [ ] Security Hub subscribes to FSBP (always when the compliance-conditional section is emitted) and PCI DSS (only when `compliance` contains `pci`). No other standards subscriptions.
 
+## Step 6: Validate generated Terraform (fmt / init / validate / policy)
+
+After the Step 5 self-check, validate `$MIGRATION_DIR/terraform` and write
+`$MIGRATION_DIR/validation-report.json`.
+
+**Load `tf-best-practices.md` for the post-writing validation context** — tell it the
+`terraform/` directory has been written and pass `$MIGRATION_DIR/terraform` as the target dir.
+Treat it as a **black box**: follow the validation protocol and policy verdict it returns (exit
+codes, `violations[]` shape). Do **not** reach into its internal files — it evolves
+independently.
+
+> The authoring posture was already applied at **Step 3.0**, so the generated Terraform should
+> pass by construction; this step re-verifies the statically checkable subset and produces the
+> machine-readable verdict.
+
+This phase is the **caller** in that protocol. `tf-best-practices` is a read-only verdict
+producer — it reports whether the Terraform passes. This phase owns everything the skill does
+NOT: pass `$MIGRATION_DIR/terraform` as the target dir, run the fmt/init/validate stages, apply
+the fix-and-retry edits to the reported `violations[]` sites (budget 3), run the retry/skip/abort
+prompt, and write `validation-report.json`.
+
+Caller responsibilities specific to this phase (not owned by the skill):
+
+- Record the skill's policy verdict into `validation-report.json` as `policy_status`
+  (+ `policy_violations` on failure). The verdict is recorded independently of the fmt/init/
+  validate outcome, so a policy failure is never masked by `passed_degraded_offline`.
+- An unresolved `POLICY_FAIL` that the user does not `skip`/`abort` sets top-level
+  `status: "policy_failed"` and blocks Phase Completion (see below).
+
 ## Phase Completion
 
 Report generated files to the parent orchestrator. **Do NOT update `.phase-status.json`** — the parent `generate.md` handles phase completion.
@@ -364,6 +442,9 @@ Before reporting completion, enforce artifact output gate:
 - At minimum: `terraform/main.tf`, `terraform/variables.tf`, and `terraform/outputs.tf` exist.
 - At least one domain file exists among: `vpc.tf`, `security.tf`, `storage.tf`, `database.tf`, `compute.tf`, `monitoring.tf`.
 - `terraform/baseline.tf` MUST exist (baseline is always emitted).
+- `validation-report.json` MUST exist with `policy_status: "POLICY_OK"` (per Step 6). A
+  `POLICY_FAIL` that was not resolved blocks completion unless the user explicitly chose
+  `skip`/`abort` in the Step 6 retry loop.
 
 If this gate fails: STOP and output: "generate-artifacts-infra did not produce required Terraform artifacts; do not complete Generate Stage 2."
 
