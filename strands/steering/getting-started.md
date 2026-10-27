@@ -107,7 +107,7 @@ response = agent("Your question here")
 
 ```bash
 # Option 1: Simple API key (development/exploration)
-export AWS_BEDROCK_API_KEY=your_bedrock_api_key
+export AWS_BEARER_TOKEN_BEDROCK=your_bedrock_api_key
 
 # Option 2: AWS credentials (production)
 aws configure
