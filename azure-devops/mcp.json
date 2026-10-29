@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "azure-devops": {
+      "command": "npx",
+      "args": ["-y", "@microsoft/azure-devops-mcp-server"],
+      "env": {
+        "AZURE_DEVOPS_ORG_URL": "https://dev.azure.com/YOUR_ORGANIZATION",
+        "AZURE_DEVOPS_PAT": "YOUR_PERSONAL_ACCESS_TOKEN"
+      },
+      "disabled": false,
+      "autoApprove": []
+    }
+  }
+}
