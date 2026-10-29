@@ -404,7 +404,16 @@ The `capabilities` object contains boolean flags and a required `extensions` arr
 | `webAppV2` | boolean | Yes | Web app v2 support flag |
 | `legacyRestartable` | boolean | Yes | Legacy restartable support flag |
 | `chatFileUpload` | boolean | No | Whether users can upload files directly via chat | 
+| `streaming` | boolean | No | Whether AWS Transform streams turns to this agent live (see note) |
 | `extensions` | array | Yes | Required extensions (see below) |
+
+> **`streaming` must match the server.** Set `capabilities.streaming: true` only when the agent's
+> server actually runs the streaming path, i.e. `AgentRuntimeServer` is given a `StreamingConfig`
+> (the scaffolding default — the `StreamingConfig()` in the agent's entry point; see `streaming.md`). If the card says
+> `true` but the server has no `StreamingConfig`, the platform streams to an agent that answers
+> `message/stream` with HTTP 404, so the turn fails. If the card is `false` (or the flag is absent),
+> the platform uses the buffered path even when the server could stream. New agents are scaffolded
+> with both on; a buffered-only agent sets both off. See `streaming.md`.
 
 ##### Required Extensions
 
@@ -602,6 +611,7 @@ The minimum structure that passes boto3 and server-side validation (works for bo
     "capabilities": {
       "restartable": true,
       "a2aSupported": true,
+      "streaming": true,
       "legacyDashboard": false,
       "legacyTaskLink": false,
       "webAppV2": true,
@@ -659,6 +669,7 @@ The minimum structure that passes boto3 and server-side validation (works for bo
     "capabilities": {
       "restartable": true,
       "a2aSupported": true,
+      "streaming": true,
       "legacyDashboard": false,
       "legacyTaskLink": false,
       "webAppV2": true,
@@ -720,6 +731,7 @@ An orchestrator card showing subagent dependencies, connectors, and owner metada
     "capabilities": {
       "restartable": true,
       "a2aSupported": true,
+      "streaming": true,
       "legacyDashboard": true,
       "legacyTaskLink": false,
       "webAppV2": true,

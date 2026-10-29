@@ -117,7 +117,8 @@ Use the simplified `AgentRuntimeServer` with a custom agent factory:
 import argparse
 import logging
 from agent_builder_sdk.server.agent_runtime_server import AgentRuntimeServer
-from agent_builder_sdk.agent_factory import create_default_orchestrator
+from agent_builder_sdk.agent_factory import create_default_async_orchestrator
+from agent_builder_sdk.streaming import StreamingConfig
 from agent_builder_sdk.utils import get_prompt_with_name
 
 # Configure logging
@@ -151,13 +152,17 @@ def main():
     parser = create_parser()
     args = parser.parse_args()
 
-    # Create agent factory with default configuration
-    def agent_factory(mcp_client, storage_dir=None):
-        return create_default_orchestrator(
+    # Create agent factory with default configuration. Streaming needs an async orchestrator and a
+    # factory that forwards conversation_repository and memory_manager, so the pooled per-user
+    # agents share one history and memory store (the server validates this at startup).
+    def agent_factory(mcp_client, storage_dir=None, **kwargs):
+        return create_default_async_orchestrator(
             mcp_client=mcp_client,
             storage_dir=storage_dir,
             system_prompt=get_prompt_with_name("test_orchestrator_prompt"),
             model_id="us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+            conversation_repository=kwargs.get("conversation_repository"),
+            memory_manager=kwargs.get("memory_manager"),
         )
 
     logger.info("Starting Agent Runtime Server...")
@@ -168,6 +173,12 @@ def main():
         binary_location=args.binary_location,
         storage_dir=args.storage_dir,
         delayed_timeout=3600,
+        # Streaming is the default for new agents. The agent card must set
+        # capabilities.streaming: true to match (see agent-registration.md), and the
+        # factory must forward conversation_repository and memory_manager. To ship a
+        # buffered-only agent, drop this line AND set the card flag false — the two must agree.
+        # See streaming.md for the concurrency contract this turns on.
+        streaming_config=StreamingConfig(),
     )
     
     # This will set up everything and run the server
@@ -268,13 +279,21 @@ Both require a full rebuild → new runtime → new version → re-register cycl
 Orchestrators MUST use `AgentRuntimeServer` (NOT `StatelessAgentRuntimeServer`) with `delayed_timeout=3600`. The stateless server has a hard 28s asyncio timeout that kills long-running subagent coordination. `AgentRuntimeServer` has queue support built-in — it acks after 28s and continues processing in the background for up to `delayed_timeout` seconds.
 
 ```python
-from agent_builder_sdk import AgentRuntimeServer
+from agent_builder_sdk.server.agent_runtime_server import AgentRuntimeServer
 
 server = AgentRuntimeServer(agent_factory=agent_factory, delayed_timeout=3600)
 server.start()
 ```
 
 > **WARNING:** Do NOT pass `queue=True` — that parameter does not exist and will crash with `TypeError: __init__() got an unexpected keyword argument 'queue'`. Queue behavior is always enabled internally.
+
+### Streaming is the default
+
+New orchestrators are scaffolded with streaming on: pass `streaming_config=StreamingConfig()` to
+`AgentRuntimeServer` and set `capabilities.streaming: true` on the agent card. The two must agree —
+see the caveat in `streaming.md` and `agent-registration.md`. Streaming also requires the factory to
+forward `conversation_repository` and `memory_manager`, and brings a concurrency contract (no
+per-request state in module/class globals). Read `streaming.md` before customizing the agent.
 
 ### mcp_clients Must Be Plural (List)
 
@@ -369,4 +388,5 @@ Use `model_id="us.anthropic.claude-sonnet-4-5-20250929-v1:0"` — bare model IDs
 - Build subagents: see `subagent-patterns.md`
 - Deploy: see `deploy-agent-workflow.md`
 - Register: see `agent-registration.md`
+- Stream turns live / serve several users concurrently: see `streaming.md`
 - Troubleshoot: see `troubleshooting.md`

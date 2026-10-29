@@ -333,6 +333,7 @@ Example workflow:
   - Skills are reusable capabilities that expand what an agent can do. The skill registry is a central repository where developers can choose from or contribute to a bank of skills to use with their agents.
 - Troubleshooting agent deployment or runtime issues → `steering/troubleshooting.md`
 - Adding an agent to an existing workflow → `steering/workflow-integration.md`
+- Streaming a turn live, or serving several users of one orchestrator concurrently → `steering/streaming.md`
 - **Deploying agents through Kiro (recommended workflow)** → `steering/deploy-agent-workflow.md`
 
 ## Next Steps
