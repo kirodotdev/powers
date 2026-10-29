@@ -1,0 +1,20 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "datadog",
+  "version": "1.0.0",
+  "description": "Datadog Observability: query logs, metrics, traces, RUM events, incidents, and monitors from Datadog for production debugging and performance analysis.",
+  "author": {
+    "name": "Datadog"
+  },
+  "homepage": "https://docs.datadoghq.com/bits_ai/mcp_server/",
+  "repository": "https://github.com/kirodotdev/powers",
+  "keywords": [
+    "datadog",
+    "observability",
+    "logs",
+    "metrics",
+    "apm",
+    "rum",
+    "incidents"
+  ]
+}
