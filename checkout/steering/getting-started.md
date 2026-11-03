@@ -33,24 +33,24 @@ Flow manages the entire payment experience: tokenization, payment method display
 - [Customize Flow](https://www.checkout.com/docs/payments/accept-payments/accept-a-payment-on-your-website/customize-your-flow-integration)
 - [Add localization](https://www.checkout.com/docs/payments/accept-payments/accept-a-payment-on-your-website/add-localization-to-your-flow-integration)
 
-Use `ApiSearch` with "payment session" to find the relevant operationId, then `GetOperation` and `GetSchema` for `PaymentSessionRequest` to explore the server-side setup.
+Use `api_search` with "payment session" to find the relevant operationId, then `get_operation` and `get_schema` for `PaymentSessionRequest` to explore the server-side setup.
 
 #### API-to-API (Direct Integration)
-If the user needs full control, custom UI, or server-to-server processing, they should use the payment API endpoints directly. Start exploring with `ApiSearch` for "payment" or `ListOperations` with tag "Payments".
+If the user needs full control, custom UI, or server-to-server processing, they should use the payment API endpoints directly. Start exploring with `api_search` for "payment" or `list_operations` with tag "Payments".
 
 ---
 
-Once the integration path is clear, you have access to six tools for exploring the API:
+Once the integration path is clear, you have access to eight tools for exploring the API, documentation, and support content. Tool names are shown exactly as they appear over the wire (snake_case).
 
-### 1. Get Integration Guidance (`Guide`)
+### 1. Get Integration Guidance (`guide`)
 
-Start here. The `Guide` tool returns structured guidance on the two integration paths (Flow vs API-to-API), including getting-started steps, relevant documentation links, and suggested next tools to call.
+Start here. The `guide` tool returns structured guidance on the two integration paths (Flow vs API-to-API), including getting-started steps, relevant documentation links, and suggested next tools to call.
 
 ```
-Call Guide to understand integration options
+Call guide to understand integration options
 ```
 
-### 2. Search for API Operations (`ApiSearch`)
+### 2. Search for API Operations (`api_search`)
 
 The fastest way to find relevant API endpoints is through keyword search:
 
@@ -58,12 +58,12 @@ The fastest way to find relevant API endpoints is through keyword search:
 Search for payment processing endpoints
 ```
 
-This will use the `ApiSearch` tool to find operations related to payments. Supports fuzzy matching so typos like "paymnt" still find results. You can search for:
+This will use the `api_search` tool to find operations related to payments. Supports fuzzy matching so typos like "paymnt" still find results. You can search for:
 - **Business functions**: "payment", "refund", "customer", "dispute"
 - **Technical terms**: "webhook", "authentication", "token"
 - **Specific operations**: "create", "update", "delete", "list"
 
-### 3. Browse Operations by Category (`ListOperations`)
+### 3. Browse Operations by Category (`list_operations`)
 
 To explore operations in a specific domain:
 
@@ -73,7 +73,7 @@ List all customer-related operations
 
 This helps you understand the full scope of functionality available in each API domain.
 
-### 4. Get Operation Information (`GetOperation`)
+### 4. Get Operation Information (`get_operation`)
 
 Once you find an interesting operation, get its details:
 
@@ -84,11 +84,11 @@ Get details for the createPayment operation
 This provides a simplified, token-efficient response including:
 - HTTP method and path
 - Parameter names, locations, and types
-- Request body schema names (with hints to use `GetSchema` for full details)
+- Request body schema names (with hints to use `get_schema` for full details)
 - Success and error response codes
 - Required authentication scopes
 
-### 5. Understand Data Structures (`GetSchema`)
+### 5. Understand Data Structures (`get_schema`)
 
 To understand the data structures used in requests and responses:
 
@@ -102,13 +102,35 @@ This is essential for:
 - Generating client code
 - Creating proper API requests
 
-### 6. Search Documentation (`DocsSearch`)
+### 6. Search Documentation (`docs_search`)
 
 For additional context and implementation guidance:
 
 ```
 Search for webhook implementation examples
 ```
+
+`docs_search` returns **document pointers**, not page content. Each result has a `urlPath`, a short `whyMatched` preview snippet, a `summary`, `totalChunks`, and `matchedChunk`. Use it to pick the right page, then read it with `docs_fetch`. Do not answer from the `whyMatched` snippet alone.
+
+### 7. Read a Documentation Page (`docs_fetch`)
+
+To read the actual content of a page found via `docs_search`:
+
+```
+Fetch the documentation page returned by docs_search
+```
+
+Pass the `urlPath` from a `docs_search` result and start with its `matchedChunk`. The response is `{ urlPath, chunk, totalChunks, hasMore, content }`. Most pages are a single chunk; page through the rest (1..`totalChunks`) while `hasMore` is true when you need more context. `docs_search` and `docs_fetch` are a two-step contract: search to find the page, fetch to read it.
+
+### 8. Search Support Content (`support_search`)
+
+For troubleshooting, FAQs, and account or operational questions:
+
+```
+Search support for a failed payment error
+```
+
+`support_search` queries Checkout.com's support site (troubleshooting guides, FAQs, account management, common error resolutions). Reach for it when the question is operational rather than an API-reference or developer-docs question.
 
 ## Common Use Cases
 
@@ -168,14 +190,26 @@ Search for webhook implementation examples
 
 1. **Find Webhook Information**
    ```
-   Search documentation for webhook setup
+   Search documentation for webhook setup, then fetch the best page
    Search for webhook-related operations
    ```
 
 2. **Understand Event Types**
    ```
    Get schema for WebhookEvent
-   Search documentation for event types
+   Search documentation for event types, then fetch the page to read it
+   ```
+
+### Troubleshooting a Problem
+
+1. **Check Support Content First**
+   ```
+   Search support for the error message or account question
+   ```
+
+2. **Go Deeper in the Docs if Needed**
+   ```
+   Search documentation for the underlying feature, then fetch the page
    ```
 
 ## Tips for Effective Usage
@@ -184,14 +218,19 @@ Search for webhook implementation examples
 - Start with broad terms like "payment" or "customer"
 - Fuzzy matching handles 1-character typos automatically
 - Use specific operation names when you know them
+- Match the tool to the source: `api_search` for the API reference, `docs_search` for developer guides, `support_search` for support articles
+
+### Reading Documentation
+- `docs_search` finds pages; `docs_fetch` reads them - always fetch before quoting
+- Start `docs_fetch` at the `matchedChunk`, then follow `hasMore` for longer pages
 
 ### Understanding Relationships
 - Operations often work together in workflows
-- Use `GetSchema` to understand data flow between operations
+- Use `get_schema` to understand data flow between operations
 - Look for common parameters that link operations
 
 ### Schema Exploration
-- `GetOperation` shows schema names in request bodies - use `GetSchema` to get full details
+- `get_operation` shows schema names in request bodies - use `get_schema` to get full details
 - Pay attention to required vs optional fields
 - Look for nested objects and their schemas
 
@@ -200,7 +239,8 @@ Search for webhook implementation examples
 If you need assistance:
 - Use broad search terms to discover relevant operations
 - Check schema definitions for data structure questions
-- Search documentation for implementation guidance
+- Search documentation for implementation guidance (then fetch the page to read it)
+- Search support content for troubleshooting and account questions
 - Explore related operations to understand complete workflows
 
 For additional resources and detailed implementation guides, visit:
