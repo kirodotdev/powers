@@ -27,7 +27,7 @@ To enable fallback: set `"disabled": false` on `aws-mcp` in `mcp.json`, set same
 
 ## Prerequisites
 
-- **Support plan:** Business, Enterprise On-Ramp, or Enterprise.
+- **Support plan:** Business Support+, Enterprise Support, or Unified Operations. Business Support and Enterprise On-Ramp also work until they are discontinued on January 1, 2027. See [AWS Support Plans](https://docs.aws.amazon.com/awssupport/latest/user/aws-support-plans.html).
 - **IAM:** `support:*` via `AWSSupportAccess` managed policy or custom policy below.
 - **`uvx`** installed ([install guide](https://docs.astral.sh/uv/getting-started/installation/)).
 - **Python 3.10+** for the dedicated server.
