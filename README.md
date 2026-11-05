@@ -30,7 +30,7 @@ Documentation is available at https://kiro.dev/docs/powers/
 ---
 
 ### aws-devops-agent
-**AWS DevOps Agent** - AI agent for AWS operational intelligence. Investigate incidents, optimize costs, review architecture, map topology, chat with the agent, get remediation, run automated release tests (UI and API), and trigger pre-merge release readiness reviews — all enhanced with your local workspace context.
+**AWS DevOps Agent** - AI agent for AWS operational intelligence. Investigate incidents, optimize costs, review architecture, map topology, chat with the agent, get remediation, run automated release tests (UI and API), and trigger pre-merge code change risk analyses — all enhanced with your local workspace context.
 
 **MCP Servers:** aws-devops-agent (remote MCP Server, supports Bearer token + SigV4 auth), aws-mcp
 

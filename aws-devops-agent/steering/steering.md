@@ -25,12 +25,13 @@ Use whichever server the user has configured. If both are active, prefer the one
 | Follow-up in existing conversation | `send_message` | `agent:operate` | Pass `execution_id` from prior `chat` or `create_chat` |
 | Incident / outage / error spike | `investigate` | `agent:operate` | Starts 5-8 min async analysis |
 | Run release testing | `create_release_testing_job` | `agent:operate` | Starts 5-15 min test execution |
-| Trigger release readiness review | `create_release_readiness_review` | `agent:operate` | Starts 3-8 min analysis |
+| Trigger code change risk analysis | `create_code_change_risk_analysis` | `agent:operate` | Starts 3-8 min analysis |
 | Poll task progress | `get_task` | `agent:read` | Every 30-45s until COMPLETED |
 | Get task findings | `list_journal_records` | `agent:read` | Pass `execution_id` from `get_task` |
 | Get mitigations | `list_recommendations` + `get_recommendation` | `agent:read` | After investigation completes |
 | Get release testing report | `get_release_ui_testing_report` or `get_release_api_testing_report` | `agent:read` | After release testing job completes |
-| Get release readiness report | `get_release_readiness_report` | `agent:read` | After release readiness review completes |
+| Get code change risk analysis report | `get_code_change_risk_analysis_report` | `agent:read` | After code change risk analysis completes |
+| Find an earlier code change risk analysis | `list_code_change_risk_analyses` | `agent:read` | Newest first |
 | Find agent space | `get_agent_space` | `agent:read` | Call once, cache the ID |
 | Multi-space discovery | `list_agent_spaces` | **SigV4 only** | Not available on bearer tokens |
 
@@ -40,7 +41,7 @@ Use whichever server the user has configured. If both are active, prefer the one
 
 - **Incidents** (alarm, outage, 5xx, OOM, crash, sev1, timeout, degraded, unhealthy, throttling, rollback) → `investigate`
 - **Release testing** (run tests, UAT, test profile, UI test, API test, QA, regression, end-to-end) → `create_release_testing_job` (load `steering/release-testing.md`)
-- **Release readiness review** (analyze PR, release analysis, risk analysis, safe to ship, ready to merge, before merging) → `create_release_readiness_review` (load `steering/release-readiness.md`)
+- **Code change risk analysis** (also called release readiness review; analyze PR, review PR, code review, change review, release analysis, risk analysis, safe to ship, ready to merge, before merging) → `create_code_change_risk_analysis` (load `steering/release-readiness.md`)
 - **Everything else** (cost, architecture, topology, knowledge, review, what-if, audit, compare) → `chat`
 - **Unclear** → Default to `chat`
 
@@ -129,9 +130,9 @@ Tell the user: what phase, what's new since last poll, what's next.
 
 ---
 
-## Release Readiness Review Workflow
+## Code Change Risk Analysis Workflow
 
-> ⚠️ **MANDATORY**: You MUST load `steering/release-readiness.md` before executing this workflow. Do NOT attempt to call release readiness review tools without reading the full instructions first.
+> ⚠️ **MANDATORY**: You MUST load `steering/release-readiness.md` before executing this workflow. Do NOT attempt to call code change risk analysis tools without reading the full instructions first.
 
 ---
 
@@ -201,9 +202,9 @@ aws___call_aws(cli_command="aws devops-agent create-backlog-task --agent-space-i
 # Report: list-journal-records --record-type qa_ui_testing_report (or qa_api_testing_report)
 ```
 
-**Release readiness review fallback (aws-mcp):**
+**Code change risk analysis fallback (aws-mcp):**
 ```
-aws___call_aws(cli_command="aws devops-agent create-backlog-task --agent-space-id SPACE_ID --task-type RELEASE_READINESS_REVIEW --title 'Release Readiness Review' --priority MEDIUM --description '{\"agentInput\": {\"content\": {\"githubPrContent\": [...]}}}' --region us-east-1")
+aws___call_aws(cli_command="aws devops-agent create-backlog-task --agent-space-id SPACE_ID --task-type CODE_CHANGE_RISK_ANALYSIS --title 'Code Change Risk Analysis' --priority MEDIUM --description '{\"agentInput\": {\"content\": {\"githubPrContent\": [...]}}}' --region us-east-1")
 → taskId
 
 # Poll + stream same as investigation
