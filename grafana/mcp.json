@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "grafana": {
+      "command": "npx",
+      "args": ["-y", "@grafana/mcp-server"],
+      "env": {
+        "GRAFANA_URL": "https://YOUR_GRAFANA_INSTANCE.grafana.net",
+        "GRAFANA_API_KEY": "YOUR_GRAFANA_SERVICE_ACCOUNT_TOKEN"
+      },
+      "disabled": false,
+      "autoApprove": []
+    }
+  }
+}
