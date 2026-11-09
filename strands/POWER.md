@@ -67,7 +67,7 @@ usePower("strands", "strands-agents", "fetch_doc", {
 - Use Bedrock as default provider (included in base package)
 - Install provider extensions only when needed: `pip install 'strands-agents[provider]'`
 - Always install community tools: `pip install strands-agents-tools`
-- Set API keys as environment variables (AWS_BEDROCK_API_KEY, ANTHROPIC_API_KEY, etc.)
+- Set API keys as environment variables (AWS_BEARER_TOKEN_BEDROCK, ANTHROPIC_API_KEY, etc.)
 - Use clear docstrings for custom tools - models read them
 - Test agents immediately after creation with simple queries
 - Use lower temperature (0.1-0.3) for factual tasks, higher (0.7-0.9) for creative
@@ -98,7 +98,7 @@ usePower("strands", "strands-agents", "fetch_doc", {
 
 3. **Set Environment Variable**:
    ```bash
-   export AWS_BEDROCK_API_KEY=your_bedrock_api_key
+   export AWS_BEARER_TOKEN_BEDROCK=your_bedrock_api_key
    ```
 
 4. **Install SDK**:
@@ -149,7 +149,7 @@ usePower("strands", "strands-agents", "fetch_doc", {
 ### Error: "Invalid API key" or "Authentication failed"
 **Cause:** API key not set or incorrect
 **Solution:**
-1. Verify environment variable is set: `echo $AWS_BEDROCK_API_KEY`
+1. Verify environment variable is set: `echo $AWS_BEARER_TOKEN_BEDROCK`
 2. Check for typos in the key
 3. For Bedrock API keys, verify it hasn't expired (30-day limit)
 4. Regenerate key if needed from provider console
@@ -174,7 +174,7 @@ usePower("strands", "strands-agents", "fetch_doc", {
 ### Error: "AWS credentials not found"
 **Cause:** Using AWS credentials instead of Bedrock API key
 **Solution:**
-1. For development: Use Bedrock API key: `export AWS_BEDROCK_API_KEY=your_key`
+1. For development: Use Bedrock API key: `export AWS_BEARER_TOKEN_BEDROCK=your_key`
 2. For production: Configure AWS credentials: `aws configure`
 3. Or set: `export AWS_ACCESS_KEY_ID=...` and `export AWS_SECRET_ACCESS_KEY=...`
 
