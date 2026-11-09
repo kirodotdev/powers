@@ -54,6 +54,10 @@ backend/
 │   └── usage/         # Usage metering utilities
 ├── db/                # Data access layer (tenant-aware queries)
 └── infrastructure/    # IaC (CDK, SAM, Terraform)
+    ├── cloudfront/    # Multi-tenant distributions, distribution tenants
+    ├── certificates/  # ACM certificate management and validation
+    ├── dns/           # Route53 hosted zones and records
+    ├── waf/           # Web ACL, managed rules, rate limiting
     ├── api.yaml       # API Gateway definition
     ├── database.yaml  # DynamoDB tables
     └── auth.yaml      # Cognito/Auth0 config
