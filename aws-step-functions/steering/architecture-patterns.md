@@ -63,6 +63,23 @@ See `examples/human-in-the-loop-with-timeout-escalation.asl.json`
 
 ---
 
+## Agent Orchestration with Bedrock AgentCore
+
+Use the `bedrockagentcore:invokeHarness` optimized integration to chain multiple AI agent calls with role-specific system prompts. Each call gets a unique `RuntimeSessionId` (derived from the execution name) so sessions don't collide. Parse structured JSON from model output using the assistant-prefill technique and JSONata `$parse`.
+
+See `examples/agent-orchestration-with-agentcore.asl.json`
+
+Key elements:
+- Resource: `arn:aws:states:::bedrockagentcore:invokeHarness` — Request/Response only (`.sync` and `.waitForTaskToken` not supported).
+- `RuntimeSessionId` scoped per step (`$states.context.Execution.Name & '-analyze'`) to keep sessions independent.
+- Assistant prefill (`"Role": "assistant", "Content": [{"Text": "{"}]`) forces JSON output from the model.
+- `$parse('{' & $substringBefore($substringAfter(..., '{'), '}') & '}')` extracts structured data from the response.
+- `Assign` stores parsed results as workflow variables (`$analysis`, `$recommendation`) for downstream states.
+- Retry on `BedrockAgentCore.ThrottlingException` and `BedrockAgentCore.InternalServerException` with exponential backoff.
+- IAM requires `bedrock-agentcore:InvokeHarness` and `bedrock-agentcore:InvokeAgentRuntime` on the harness ARN (note: hyphen in IAM service name, no hyphen in resource URI).
+
+---
+
 ## Express → Standard Handoff
 
 Express workflows are more cost-effective for high volume State Machine Invocations, but don't support callbacks or long waits. Standard workflows handle those but cost per state transition. Use Express for fast, high-volume ingest and kick off a Standard execution for the long-running tail.

@@ -158,6 +158,38 @@ Note: The `.sync:2` suffix waits for completion. The child output is a JSON stri
 
 ---
 
+### Bedrock AgentCore (Invoke Harness)
+
+#### Optimized Integration (Request/Response Only)
+
+```json
+"InvokeAgent": {
+  "Type": "Task",
+  "Resource": "arn:aws:states:::bedrockagentcore:invokeHarness",
+  "Arguments": {
+    "HarnessArn": "arn:aws:bedrock-agentcore:us-east-1:123456789012:harness/my-agent",
+    "RuntimeSessionId": "{% $states.context.Execution.Name & '-step1' %}",
+    "Messages": [
+      {
+        "Role": "user",
+        "Content": [{ "Text": "{% $states.input.userMessage %}" }]
+      }
+    ],
+    "SystemPrompt": [{ "Text": "You are a helpful assistant." }],
+    "MaxIterations": 75,
+    "TimeoutSeconds": 600
+  },
+  "Output": "{% $states.result.Output.Message.Content[0].Text %}",
+  "Next": "NextState"
+}
+```
+
+Note: Only Request/Response is supported — `.sync` and `.waitForTaskToken` are not available. The resource URI uses `bedrockagentcore` (no hyphen), but IAM ARNs use `bedrock-agentcore` (with hyphen). Maximum `TimeoutSeconds` is 900. IAM role needs both `bedrock-agentcore:InvokeHarness` and `bedrock-agentcore:InvokeAgentRuntime` permissions on the harness ARN.
+
+Response shape: `$states.result` contains `Output.Message` (Converse-shaped), `StopReason`, `Usage` (InputTokens, OutputTokens, TotalTokens), and `Metrics` (LatencyMs).
+
+---
+
 ### Cross-Account Access
 
 Use the `Credentials` field to assume a role in another account:
