@@ -1,7 +1,7 @@
 ---
 name: "aws-devops-agent"
 displayName: "AWS DevOps Agent"
-description: "AI agent for AWS operational intelligence. Investigate incidents, optimize costs, review architecture, map topology, chat with the agent, get remediation, run automated release tests (UI and API), and trigger pre-merge release readiness reviews — all enhanced with your local workspace context."
+description: "AI agent for AWS operational intelligence. Investigate incidents, optimize costs, review architecture, map topology, chat with the agent, get remediation, run automated release tests (UI and API), and trigger pre-merge code change risk analyses — all enhanced with your local workspace context."
 keywords:
   - "devops"
   - "investigation"
@@ -33,6 +33,9 @@ keywords:
   - "end-to-end"
   - "release"
   - "release readiness"
+  - "code change risk analysis"
+  - "ccra"
+  - "change review"
   - "release testing"
   - "code review"
   - "pull request"
@@ -67,7 +70,7 @@ You are enhanced with the **AWS DevOps Agent**, an AI-powered operational intell
 
 **Your superpower**: Combine local workspace knowledge (files, git, terminal) with the DevOps Agent's cloud knowledge (CloudWatch, X-Ray, IAM, topology) by packing local context into tool parameters.
 
-**Extended capabilities**: In addition to investigations and chat, you can run **automated release testing** (UI and API) against pre-configured test profiles, and trigger **pre-merge release readiness reviews** on GitHub PRs, GitLab MRs, or local branches.
+**Extended capabilities**: In addition to investigations and chat, you can run **automated release testing** (UI and API) against pre-configured test profiles, and trigger **pre-merge code change risk analyses** on GitHub PRs, GitLab MRs, or local branches.
 
 ---
 
@@ -122,13 +125,14 @@ Two auth options. Both connect to the same remote DevOps Agent endpoint — they
 | `get_release_ui_testing_report` | Retrieve the final UI test report | `agent:read` |
 | `get_release_api_testing_report` | Retrieve the final API test report | `agent:read` |
 
-### Release Readiness Review
+### Code Change Risk Analysis
 
 | Tool | Purpose | Scope |
 |------|---------|-------|
-| `create_release_readiness_review` | Start release readiness review on a PR | `agent:operate` |
-| `cancel_release_readiness_review` | Cancel a running release readiness review | `agent:operate` |
-| `get_release_readiness_report` | Retrieve the final release readiness report | `agent:read` |
+| `create_code_change_risk_analysis` | Start code change risk analysis on a PR | `agent:operate` |
+| `list_code_change_risk_analyses` | List code change risk analyses, newest first | `agent:read` |
+| `cancel_code_change_risk_analysis` | Cancel a running code change risk analysis | `agent:operate` |
+| `get_code_change_risk_analysis_report` | Retrieve the final code change risk analysis report | `agent:read` |
 
 ### Recommendations
 
@@ -169,8 +173,8 @@ The tools visible to you depend on the authentication method and token scope:
 
 | Scope | Available Tools | Notes |
 |-------|----------------|-------|
-| Bearer `agent:read` | `get_agent_space`, `list_associations`, `get_task`, `list_tasks`, `list_journal_records`, `list_executions`, `list_recommendations`, `get_recommendation`, `list_goals`, `list_chats`, QA reports | Read-only — can poll investigations but NOT start them |
-| Bearer `agent:operate` | All read tools + `investigate`, `chat`, `create_chat`, `send_message`, `create_investigation`, `update_recommendation`, `start_evaluation`, `create_release_testing_job`, `cancel_release_testing_job`, `create_release_readiness_review`, `cancel_release_readiness_review` | Full agent interaction — **this is the recommended scope** |
+| Bearer `agent:read` | `get_agent_space`, `list_associations`, `get_task`, `list_tasks`, `list_journal_records`, `list_executions`, `list_recommendations`, `get_recommendation`, `list_goals`, `list_chats`, QA reports, `list_code_change_risk_analyses`, `get_code_change_risk_analysis_report` | Read-only — can poll investigations but NOT start them |
+| Bearer `agent:operate` | All read tools + `investigate`, `chat`, `create_chat`, `send_message`, `create_investigation`, `update_recommendation`, `start_evaluation`, `create_release_testing_job`, `cancel_release_testing_job`, `create_code_change_risk_analysis`, `cancel_code_change_risk_analysis` | Full agent interaction — **this is the recommended scope** |
 | SigV4 (fallback `aws-mcp`) | All tools + `list_agent_spaces`, `list_services`, `get_service` | Limited only by IAM policy, not token scope |
 
 **Key behaviors:**
@@ -197,11 +201,11 @@ When the user describes a problem, **automatically choose the right workflow**:
 
 **Action**: Load `steering/release-testing.md` for workflow details, then `create_release_testing_job(test_profile_id="...")` → poll `get_task` + `list_journal_records` → `get_release_ui_testing_report` or `get_release_api_testing_report`
 
-### → Release Readiness Review (pre-merge, 10+ min)
+### → Code Change Risk Analysis (pre-merge, 10+ min)
 
-**Triggers**: release analysis, analyze PR, analyze MR, review PR, risk analysis, pre-merge, safe to ship, ready to merge, ready to commit, any risks, before merging, validate changes, release management, pull request
+**Triggers**: code change risk analysis, CCRA, release readiness review, RRR, code review, change review, release analysis, analyze PR, analyze MR, review PR, risk analysis, pre-merge, safe to ship, ready to merge, ready to commit, any risks, before merging, validate changes, release management, pull request
 
-**Action**: Load `steering/release-readiness.md` for content format, then `create_release_readiness_review(content={...})` → poll `get_task` + `list_journal_records` → `get_release_readiness_report`
+**Action**: Load `steering/release-readiness.md` for content format, then `create_code_change_risk_analysis(content={...})` → poll `get_task` + `list_journal_records` → `get_code_change_risk_analysis_report`
 
 ### → Chat (fast, real-time 5-30s)
 **Triggers**: cost, optimize, architecture, review, topology, dependency, security, audit, what if, compare, plan, knowledge, skills, runbooks, capabilities, what do you know
@@ -220,7 +224,7 @@ Default to `chat` — it's instant and the agent can suggest investigation if wa
 | `chat` | 5-30s | Depends on query complexity; simple questions ~5s, detailed analysis ~20-30s |
 | `investigate` | 5-8 min | Async — poll with `get_task` every 30-45s |
 | `create_release_testing_job` | 10+ min | Async — poll with `get_task` every 30-45s |
-| `create_release_readiness_review` | 10+ min | Async — poll with `get_task` every 30-45s |
+| `create_code_change_risk_analysis` | 10+ min | Async — poll with `get_task` every 30-45s |
 | `get_task`, `list_journal_records` | 1-3s | Standard API calls |
 | `list_agent_spaces`, `get_agent_space` | 1-2s | Lightweight discovery (`list_agent_spaces` SigV4 only) |
 
@@ -274,9 +278,9 @@ send_message(execution_id="exec-123", content="Detail the ECS costs") → answer
 
 > ⚠️ **MANDATORY**: You MUST load the steering file `steering/release-testing.md` before executing this workflow. Do NOT attempt to call release testing tools without reading the full instructions first.
 
-### Release Readiness Review (Pre-Merge, 10+ min)
+### Code Change Risk Analysis (Pre-Merge, 10+ min)
 
-> ⚠️ **MANDATORY**: You MUST load the steering file `steering/release-readiness.md` before executing this workflow. Do NOT attempt to call release readiness review tools without reading the full instructions first.
+> ⚠️ **MANDATORY**: You MUST load the steering file `steering/release-readiness.md` before executing this workflow. Do NOT attempt to call code change risk analysis tools without reading the full instructions first.
 
 ---
 
@@ -348,7 +352,7 @@ Stream: aws___call_aws("aws devops-agent list-journal-records --agent-space-id S
 
 **Release testing fallback** — see `steering/release-testing.md` for the aws-mcp flow.
 
-**Release readiness review fallback** — see `steering/release-readiness.md` for the aws-mcp flow.
+**Code change risk analysis fallback** — see `steering/release-readiness.md` for the aws-mcp flow.
 
 See `steering/steering.md` for complete fallback instructions.
 
@@ -409,26 +413,26 @@ Pass `agent_space_id` explicitly in tool args when targeting a specific space.
 Check if `.kiro/hooks/devops-agent-post-spec-completion.kiro.hook` already exists in the workspace.
 - If it exists → continue silently (do not mention it).
 - If it does NOT exist:
-  - Tell the user: "Adding a hook that will suggest a release readiness review after each spec task completes. You can opt out — just say 'skip the hook' or delete `.kiro/hooks/devops-agent-post-spec-completion.kiro.hook` anytime."
+  - Tell the user: "Adding a hook that will suggest a code change risk analysis after each spec task completes. You can opt out — just say 'skip the hook' or delete `.kiro/hooks/devops-agent-post-spec-completion.kiro.hook` anytime."
   - **Default action: install the hook.** Only skip if the user replies with an opt-out ("skip", "no", "don't install", "not now").
   - Create `.kiro/hooks/devops-agent-post-spec-completion.kiro.hook` with:
     ```json
     {
       "enabled": true,
-      "name": "Release Readiness Review — Auto-run on Spec Task Completion",
-      "description": "After each spec task completes, automatically run release readiness review if changes are substantial",
+      "name": "Code Change Risk Analysis — Auto-run on Spec Task Completion",
+      "description": "After each spec task completes, automatically run code change risk analysis if changes are substantial",
       "version": "1",
       "when": {
         "type": "postTaskExecution"
       },
       "then": {
         "type": "askAgent",
-        "prompt": "A spec task just completed. Evaluate the changes made during this task. If the changes are substantial enough to warrant a release readiness review (e.g., multiple files modified, logic changes, new APIs, dependency updates, security-sensitive code, infrastructure changes), immediately run the release readiness review workflow from the aws-devops-agent power autonomously — do not ask the user for confirmation. Skip the branch creation confirmation step in the local flow and proceed without asking for approval to create/push the branch. If the changes are trivial (e.g., a single typo fix, comment update, formatting-only, renaming a variable), do nothing."
+        "prompt": "A spec task just completed. Evaluate the changes made during this task. If the changes are substantial enough to warrant a code change risk analysis (e.g., multiple files modified, logic changes, new APIs, dependency updates, security-sensitive code, infrastructure changes), immediately run the code change risk analysis workflow from the aws-devops-agent power autonomously — do not ask the user for confirmation. Skip the branch creation confirmation step in the local flow and proceed without asking for approval to create/push the branch. If the changes are trivial (e.g., a single typo fix, comment update, formatting-only, renaming a variable), do nothing."
       }
     }
     ```
-  - Confirm: "Hook installed. I'll automatically run release readiness review after spec tasks that make substantial changes."
-  - If the user opts out: "Skipping the hook. Say 'install release-readiness-review hook' anytime to set it up later." Do not ask again this session.
+  - Confirm: "Hook installed. I'll automatically run code change risk analysis after spec tasks that make substantial changes."
+  - If the user opts out: "Skipping the hook. Say 'install the code change risk analysis hook' anytime to set it up later." Do not ask again this session.
 
 ---
 
@@ -457,7 +461,8 @@ These tools are read-only and cannot modify any AWS resource or DevOps Agent sta
         "list_chats",
         "get_release_ui_testing_report",
         "get_release_api_testing_report",
-        "get_release_readiness_report"
+        "list_code_change_risk_analyses",
+        "get_code_change_risk_analysis_report"
       ]
     },
     "aws-mcp": {
@@ -478,7 +483,7 @@ These tools are read-only and cannot modify any AWS resource or DevOps Agent sta
 
 ### What still requires approval
 
-**aws-devops-agent**: Mutation tools (`chat`, `send_message`, `investigate`, `create_investigation`, `create_release_testing_job`, `create_release_readiness_review`, `cancel_release_testing_job`, `cancel_release_readiness_review`, `create_agent_space`, `update_recommendation`).
+**aws-devops-agent**: Mutation tools (`chat`, `send_message`, `investigate`, `create_investigation`, `create_release_testing_job`, `create_code_change_risk_analysis`, `cancel_release_testing_job`, `cancel_code_change_risk_analysis`, `create_agent_space`, `update_recommendation`).
 
 **aws-mcp**: `aws___call_aws` and `aws___run_script` can perform both reads and writes, so they cannot be safely auto-approved.
 
