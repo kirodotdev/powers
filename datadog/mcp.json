@@ -1,7 +1,8 @@
 {
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
   "mcpServers": {
     "datadog": {
-      "type": "http",
+      "type": "streamable-http",
       "url": "https://mcp.datadoghq.com/v1/mcp"
     }
   }

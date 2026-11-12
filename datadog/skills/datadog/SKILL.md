@@ -1,19 +1,23 @@
 ---
 name: "datadog"
-displayName: "Datadog Observability"
-description: "Query logs, metrics, traces, RUM events, incidents, and monitors from Datadog for production debugging and performance analysis"
-keywords: ["datadog", "observability", "monitoring", "logs", "metrics", "apm", "traces", "rum", "incidents"]
-author: "Datadog"
+description: "Query Datadog logs, metrics, APM traces, RUM events, incidents, monitors, services and dashboards through the Datadog MCP server for production debugging and performance analysis. Use when investigating production issues, analyzing performance or user experience, or checking incidents and monitors."
+metadata:
+  author: "Datadog"
+  version: "1.0.0"
 ---
 
 # Onboarding
 
-Before proceeding, let the user know that the MCP server is currently in preview and they may need to request access by visiting https://docs.datadoghq.com/bits_ai/mcp_server/
+The Datadog MCP server is generally available. Before proceeding, let the user know what it needs:
+- An organization admin must allow MCP access in Organization Settings.
+- The user's Datadog role needs MCP Server permissions (the Standard Role has them by default; custom roles need `mcp_read` and/or `mcp_write`).
+- Datadog government sites (`app.ddog-gov.com`, `us2.ddog-gov.com`) are not supported.
 
+Setup details: https://docs.datadoghq.com/bits_ai/mcp_server/setup
 
 # Overview
 
-The Datadog Observability Power provides comprehensive access to your Datadog monitoring data across logs, metrics, APM traces, Real User Monitoring (RUM), incidents, and monitors. Query and analyze production systems for debugging, performance optimization, and incident response.
+The Datadog Observability plugin provides comprehensive access to your Datadog monitoring data across logs, metrics, APM traces, Real User Monitoring (RUM), incidents, and monitors. Query and analyze production systems for debugging, performance optimization, and incident response.
 
 **Key capabilities:**
 - **Log Search**: Query application and infrastructure logs with powerful filtering
@@ -22,20 +26,19 @@ The Datadog Observability Power provides comprehensive access to your Datadog mo
 - **RUM**: Analyze user experience, page performance, and frontend errors
 - **Incidents**: Track and manage production incidents
 - **Monitors**: Search alerting rules and monitor status
-- **Documentation**: Look up Datadog setup, instrumentation, and best practices
 
-**Authentication**: Requires Datadog API key and application key.
+**Authentication**: OAuth 2.0 (recommended; your MCP client completes the login flow). A Datadog Personal or Service Access Token, or a Datadog API key and application key, can be used instead when OAuth is not possible. See [Configuration](#configuration).
 
-## Available Steering Files
+## Related Skills
 
-This power has the following steering files:
-- **steering** - Comprehensive query syntax guide with examples, workflows, and troubleshooting
+This plugin has the following related skill:
+- **[datadog-query-syntax](../datadog-query-syntax/SKILL.md)** - Comprehensive query syntax guide with examples, workflows, and troubleshooting
 
 ## Available MCP Servers
 
 ### datadog
-**Package:** `mcp-remote` + `https://mcp.datadoghq.com/api/unstable/mcp-server/mcp`
-**Connection:** Remote MCP server via npx
+**Connection:** Remote MCP server over streamable HTTP
+**Endpoint:** `https://mcp.datadoghq.com/v1/mcp` (US1), configured in this plugin's `mcp.json`. No npx or `mcp-remote` is needed.
 
 **Tools:**
 
@@ -102,17 +105,15 @@ This power has the following steering files:
     - Optional: `max_queries_per_dashboard` (number) - Extract widget queries
     - Returns: Dashboards with metadata and widget queries
 
-11. **search_datadog_docs** - Search Datadog documentation
-    - Required: `query` (string) - Documentation search query
-    - Returns: Relevant documentation pages and guides
-
 ## Tool Usage Examples
+
+In the examples below, `tool_name({...})` means: call that MCP tool with the given arguments.
 
 ### Searching Logs
 
 **Find error logs:**
 ```javascript
-usePower("datadog", "datadog", "search_datadog_logs", {
+search_datadog_logs({
   "query": "service:api env:prod status:error",
   "from": "now-1h",
   "to": "now"
@@ -122,7 +123,7 @@ usePower("datadog", "datadog", "search_datadog_logs", {
 
 **Search with custom attributes:**
 ```javascript
-usePower("datadog", "datadog", "search_datadog_logs", {
+search_datadog_logs({
   "query": "service:checkout @http.status_code:[400 TO 599]",
   "from": "now-1h",
   "to": "now",
@@ -135,7 +136,7 @@ usePower("datadog", "datadog", "search_datadog_logs", {
 
 **Service response time:**
 ```javascript
-usePower("datadog", "datadog", "get_datadog_metric", {
+get_datadog_metric({
   "query": "avg:trace.servlet.request.duration{service:api,env:prod} by {resource_name}",
   "from": "now-4h",
   "to": "now"
@@ -145,7 +146,7 @@ usePower("datadog", "datadog", "get_datadog_metric", {
 
 **CPU usage by host:**
 ```javascript
-usePower("datadog", "datadog", "get_datadog_metric", {
+get_datadog_metric({
   "query": "avg:system.cpu.user{env:prod} by {host}",
   "from": "now-1h",
   "to": "now"
@@ -155,7 +156,7 @@ usePower("datadog", "datadog", "get_datadog_metric", {
 
 **Cloud costs:**
 ```javascript
-usePower("datadog", "datadog", "get_datadog_metric", {
+get_datadog_metric({
   "query": "sum:all.cost{*} by {providername}.rollup(sum, daily)",
   "from": "now-30d",
   "to": "now",
@@ -168,7 +169,7 @@ usePower("datadog", "datadog", "get_datadog_metric", {
 
 **Find slow requests:**
 ```javascript
-usePower("datadog", "datadog", "search_datadog_spans", {
+search_datadog_spans({
   "query": "service:api @duration:>100000000",  // >100ms in nanoseconds
   "from": "now-1h",
   "to": "now"
@@ -178,7 +179,7 @@ usePower("datadog", "datadog", "search_datadog_spans", {
 
 **Get full trace details:**
 ```javascript
-usePower("datadog", "datadog", "get_datadog_trace", {
+get_datadog_trace({
   "trace_id": "7d5d747be160e280504c099d984bcfe0"
 })
 // Returns: Complete trace with all spans and timing
@@ -188,7 +189,7 @@ usePower("datadog", "datadog", "get_datadog_trace", {
 
 **Find slow page loads:**
 ```javascript
-usePower("datadog", "datadog", "search_datadog_rum_events", {
+search_datadog_rum_events({
   "query": "@type:view @view.loading_time:>3000",
   "from": "now-1h",
   "to": "now",
@@ -199,7 +200,7 @@ usePower("datadog", "datadog", "search_datadog_rum_events", {
 
 **Frontend errors:**
 ```javascript
-usePower("datadog", "datadog", "search_datadog_rum_events", {
+search_datadog_rum_events({
   "query": "@type:error @application.name:\"My App\" @device.type:mobile",
   "from": "now-1h",
   "to": "now"
@@ -211,7 +212,7 @@ usePower("datadog", "datadog", "search_datadog_rum_events", {
 
 **List active incidents:**
 ```javascript
-usePower("datadog", "datadog", "search_datadog_incidents", {
+search_datadog_incidents({
   "query": "state:(active OR stable)"
 })
 // Returns: Current incidents being worked on
@@ -219,7 +220,7 @@ usePower("datadog", "datadog", "search_datadog_incidents", {
 
 **Get incident details:**
 ```javascript
-usePower("datadog", "datadog", "get_datadog_incident", {
+get_datadog_incident({
   "incident_id": "12345"
 })
 // Returns: Full incident timeline and updates
@@ -229,7 +230,7 @@ usePower("datadog", "datadog", "get_datadog_incident", {
 
 **Find alerting monitors:**
 ```javascript
-usePower("datadog", "datadog", "search_datadog_monitors", {
+search_datadog_monitors({
   "query": "status:alert muted:false env:prod"
 })
 // Returns: Active unmuted alerts in production
@@ -241,7 +242,7 @@ usePower("datadog", "datadog", "search_datadog_monitors", {
 
 ```javascript
 // Step 1: Find recent errors in logs
-const errorLogs = usePower("datadog", "datadog", "search_datadog_logs", {
+const errorLogs = search_datadog_logs({
   "query": "service:checkout env:prod status:error",
   "from": "now-1h",
   "to": "now",
@@ -249,24 +250,24 @@ const errorLogs = usePower("datadog", "datadog", "search_datadog_logs", {
 })
 
 // Step 2: Find related error traces
-const errorSpans = usePower("datadog", "datadog", "search_datadog_spans", {
+const errorSpans = search_datadog_spans({
   "query": "service:checkout status:error",
   "from": "now-1h",
   "to": "now"
 })
 
 // Step 3: Get full trace for first error
-const fullTrace = usePower("datadog", "datadog", "get_datadog_trace", {
+const fullTrace = get_datadog_trace({
   "trace_id": errorSpans[0].trace_id
 })
 
 // Step 4: Check if there's an active incident
-const incidents = usePower("datadog", "datadog", "search_datadog_incidents", {
+const incidents = search_datadog_incidents({
   "query": "state:active"
 })
 
 // Step 5: Check related monitors
-const monitors = usePower("datadog", "datadog", "search_datadog_monitors", {
+const monitors = search_datadog_monitors({
   "query": "tag:\"service:checkout\" status:alert"
 })
 ```
@@ -275,35 +276,35 @@ const monitors = usePower("datadog", "datadog", "search_datadog_monitors", {
 
 ```javascript
 // Step 1: Identify slow requests
-const slowSpans = usePower("datadog", "datadog", "search_datadog_spans", {
+const slowSpans = search_datadog_spans({
   "query": "service:api @duration:>100000000",  // >100ms
   "from": "now-1h",
   "to": "now"
 })
 
 // Step 2: Check response time metrics
-const latencyMetrics = usePower("datadog", "datadog", "get_datadog_metric", {
+const latencyMetrics = get_datadog_metric({
   "query": "avg:trace.servlet.request.duration{service:api} by {resource_name}",
   "from": "now-4h",
   "to": "now"
 })
 
 // Step 3: Check infrastructure metrics
-const cpuMetrics = usePower("datadog", "datadog", "get_datadog_metric", {
+const cpuMetrics = get_datadog_metric({
   "query": "avg:system.cpu.user{service:api} by {host}",
   "from": "now-4h",
   "to": "now"
 })
 
 // Step 4: Check for deployment correlation
-const deploymentLogs = usePower("datadog", "datadog", "search_datadog_logs", {
+const deploymentLogs = search_datadog_logs({
   "query": "service:api @deployment.version:*",
   "from": "now-4h",
   "to": "now"
 })
 
 // Step 5: Get full trace of slowest request
-const slowestTrace = usePower("datadog", "datadog", "get_datadog_trace", {
+const slowestTrace = get_datadog_trace({
   "trace_id": slowSpans[0].trace_id
 })
 ```
@@ -312,7 +313,7 @@ const slowestTrace = usePower("datadog", "datadog", "get_datadog_trace", {
 
 ```javascript
 // Step 1: Find slow page loads
-const slowPages = usePower("datadog", "datadog", "search_datadog_rum_events", {
+const slowPages = search_datadog_rum_events({
   "query": "@type:view @view.loading_time:>3000",
   "from": "now-1h",
   "to": "now",
@@ -320,21 +321,21 @@ const slowPages = usePower("datadog", "datadog", "search_datadog_rum_events", {
 })
 
 // Step 2: Check for frontend errors
-const frontendErrors = usePower("datadog", "datadog", "search_datadog_rum_events", {
+const frontendErrors = search_datadog_rum_events({
   "query": "@type:error",
   "from": "now-1h",
   "to": "now"
 })
 
 // Step 3: Check backend API performance
-const apiLatency = usePower("datadog", "datadog", "get_datadog_metric", {
+const apiLatency = get_datadog_metric({
   "query": "avg:trace.servlet.request.duration{service:api,env:prod}",
   "from": "now-1h",
   "to": "now"
 })
 
 // Step 4: Check resource loading issues
-const resourceErrors = usePower("datadog", "datadog", "search_datadog_rum_events", {
+const resourceErrors = search_datadog_rum_events({
   "query": "@type:resource @resource.status_code:[400 TO 599]",
   "from": "now-1h",
   "to": "now"
@@ -345,24 +346,24 @@ const resourceErrors = usePower("datadog", "datadog", "search_datadog_rum_events
 
 ```javascript
 // Step 1: List all services
-const services = usePower("datadog", "datadog", "search_datadog_services", {
+const services = search_datadog_services({
   "detailed_output": true
 })
 
 // Step 2: Find traces for a service
-const serviceSpans = usePower("datadog", "datadog", "search_datadog_spans", {
+const serviceSpans = search_datadog_spans({
   "query": "service:frontend",
   "from": "now-1h",
   "to": "now"
 })
 
 // Step 3: Get full trace to see downstream calls
-const dependencyTrace = usePower("datadog", "datadog", "get_datadog_trace", {
+const dependencyTrace = get_datadog_trace({
   "trace_id": serviceSpans[0].trace_id
 })
 
 // Step 4: Check latency between services
-const serviceLatency = usePower("datadog", "datadog", "get_datadog_metric", {
+const serviceLatency = get_datadog_metric({
   "query": "avg:trace.servlet.request.duration{env:prod} by {service}",
   "from": "now-4h",
   "to": "now"
@@ -513,7 +514,6 @@ tag:"service:api" status:alert
 - **Group similar logs** with `group_by_message: true`
 - **Set appropriate max_tokens** (5000 for overview, 50000 for details)
 - **Use extra_fields/custom_attributes** for custom data
-- **Leverage documentation search** for setup and instrumentation questions
 - **Check incidents first** when investigating issues
 
 ### ❌ Don't:
@@ -563,60 +563,41 @@ tag:"service:api" status:alert
 
 ## Configuration
 
-**Authentication Required**: Datadog API key and application key
+This plugin's `mcp.json` connects to the Datadog remote MCP server (streamable HTTP) at `https://mcp.datadoghq.com/v1/mcp`, the US1 endpoint. Nothing needs to be installed locally.
 
-**Setup Steps:**
+**Authentication:**
 
-1. **Get Datadog Credentials:**
-   - Log in to Datadog
-   - Navigate to Organization Settings → API Keys
-   - Create or copy API key
-   - Navigate to Organization Settings → Application Keys
-   - Create or copy application key
+1. **OAuth 2.0 (recommended):** Your MCP client starts the login flow when the server connects. Complete the OAuth login flow when prompted. You don't manage long-lived credentials.
+2. **Personal or Service Access Token:** When OAuth is not possible, for example on a server or in CI, pass the token as a bearer token in the `Authorization` header. No API key is required.
+3. **API key and application key:** Alternatively, provide a Datadog API key and application key as the `DD_API_KEY` and `DD_APPLICATION_KEY` HTTP headers. Use a scoped key pair from a service account that has only the required permissions.
 
-2. **Configure in mcp.json:**
-   ```json
-   {
-     "mcpServers": {
-       "datadog": {
-         "command": "npx",
-         "args": [
-           "mcp-remote",
-           "https://mcp.datadoghq.com/api/unstable/mcp-server/mcp"
-         ],
-         "env": {
-           "DD_API_KEY": "your-api-key-here",
-           "DD_APP_KEY": "your-app-key-here",
-           "DD_SITE": "datadoghq.com"
-         }
-       }
-     }
-   }
-   ```
+Don't commit tokens or keys to a shared `mcp.json`.
 
-3. **Set DD_SITE** based on your region:
-   - US1: `datadoghq.com` (default)
-   - US3: `us3.datadoghq.com`
-   - US5: `us5.datadoghq.com`
-   - EU: `datadoghq.eu`
-   - AP1: `ap1.datadoghq.com`
+**Other Datadog sites:** The bundled endpoint is for US1. On another site, point the server at that site's endpoint:
+- US3: `https://mcp.us3.datadoghq.com/v1/mcp`
+- US5: `https://mcp.us5.datadoghq.com/v1/mcp`
+- EU: `https://mcp.datadoghq.eu/v1/mcp`
+- AP1: `https://mcp.ap1.datadoghq.com/v1/mcp`
+- AP2: `https://mcp.ap2.datadoghq.com/v1/mcp`
+- UK1: `https://mcp.uk1.datadoghq.com/v1/mcp`
+
+The US1-FED and US2-FED sites are not supported. For client-specific setup, toolsets and other options, see [Set Up the Datadog MCP Server](https://docs.datadoghq.com/bits_ai/mcp_server/setup/).
 
 ## Tips
 
 1. **Start narrow** - Use 15m-1h time ranges, expand if needed
-2. **Use steering file** - Comprehensive syntax guide with examples
+2. **Use the [datadog-query-syntax](../datadog-query-syntax/SKILL.md) skill** - Comprehensive syntax guide with examples
 3. **Check incidents first** - Active incidents often point to root cause
 4. **Leverage unified tags** - Always use service, env, version together
-5. **Search docs** - Use `search_datadog_docs` for setup questions
-6. **Group logs** - Use `group_by_message` to reduce duplicate entries
-7. **Get full traces** - Use trace_id from spans to get complete picture
-8. **Monitor your monitors** - Check alert status during investigations
-9. **Analyze dependencies** - Use full traces to understand service relationships
-10. **Remember units** - Nanoseconds for spans, milliseconds for logs/RUM
+5. **Group logs** - Use `group_by_message` to reduce duplicate entries
+6. **Get full traces** - Use trace_id from spans to get complete picture
+7. **Monitor your monitors** - Check alert status during investigations
+8. **Analyze dependencies** - Use full traces to understand service relationships
+9. **Remember units** - Nanoseconds for spans, milliseconds for logs/RUM
 
 ---
 
-**Package:** `mcp-remote` + Datadog MCP Server  
+**Server:** Datadog remote MCP server (streamable HTTP)  
 **Source:** Official Datadog  
 **License:** Apache 2.0  
-**Connection:** Remote MCP server with API/App key authentication
+**Connection:** Remote MCP server with OAuth 2.0 authentication (or access token / API and application keys)
