@@ -189,26 +189,26 @@ When the user references a repository without a PR/MR link, use this flow:
 
 > ⚠️ **STRICT SEQUENCING**: Steps below are numbered. You MUST complete each step before moving to the next. In particular, step 1 (automated testing prompt) MUST NOT happen until the entire "Gathering execution parameters" flow above is fully complete — all git operations done, branch pushed (if local flow), content object built, and user informed of the branch. Only THEN proceed to step 1.
 
-#### 1. Determine `skip_automated_testing` (ask ONLY after content is ready)
+#### 1. Determine `review_depth` (ask ONLY after content is ready)
 
-The `skip_automated_testing` parameter controls whether the agent runs automated testing (automated verification testing in a simulated environment) or only static analysis.
+The `review_depth` parameter controls how deep the analysis goes: static analysis only, or static analysis plus automated testing (automated verification testing in a simulated environment).
 
 | Value | Behavior |
 |-------|----------|
-| `true` | Skip automated testing, run static analysis only (fast — code review, risk assessment, dependency checks) |
-| `false` | Full analysis including automated testing (longer, spins up a testing environment, builds code, runs automated verification tests) |
+| `static-analysis` | Static analysis only, no automated testing (fast — code review, risk assessment, dependency checks) |
+| `verification-testing` | Full analysis including automated testing (longer, spins up a testing environment, builds code, runs automated verification tests). Automated testing runs only on repositories where it is enabled in the agent space. |
 
 **How to determine mode**: If triggered by a hook or spec task → spec mode. Otherwise → vibe mode (prompt the user).
 
-**Spec mode (default)**: Always pass `skip_automated_testing=true`. Spec mode prioritizes speed — customers use this for a quick review before merging. Do NOT prompt the user; just run static analysis. Proceed directly to step 2.
+**Spec mode (default)**: Always pass `review_depth="static-analysis"`. Spec mode prioritizes speed — customers use this for a quick review before merging. Do NOT prompt the user; just run static analysis. Proceed directly to step 2.
 
 **Vibe mode (interactive/user-driven)**: Present the choice and wait for a response:
 > "Would you like a quick static analysis (code review, risk assessment, dependency checks), or a full analysis that also includes automated testing? Automated testing spins up a testing environment, builds your code, and runs automated verification tests — it's more thorough but takes longer."
 
 **Do NOT move on to the next step until the user answers.**
 
-- If the user says "yes" / "include testing" / "full analysis" / "run tests" → pass `skip_automated_testing=false`
-- If the user says "no" / "static only" / "skip automated testing" / "quick" / "go ahead" / declines → pass `skip_automated_testing=true`
+- If the user says "yes" / "include testing" / "full analysis" / "run tests" → pass `review_depth="verification-testing"`
+- If the user says "no" / "static only" / "skip automated testing" / "quick" / "go ahead" / declines → pass `review_depth="static-analysis"`
 
 #### 2. Check tool availability
 
@@ -218,7 +218,7 @@ Verify that the `create_code_change_risk_analysis` tool is available. If it is n
 
 Call `create_code_change_risk_analysis` with:
 - `content`: the content object built above (containing `githubPrContent` or `gitlabMrContent`)
-- `skip_automated_testing`: `true` in spec mode (always). In vibe mode, `true` or `false` based on user's response to the prompt in step 1.
+- `review_depth`: `"static-analysis"` in spec mode (always). In vibe mode, `"static-analysis"` or `"verification-testing"` based on user's response to the prompt in step 1.
 
 Record the **taskId** and **executionId** from the response.
 
@@ -308,12 +308,12 @@ aws___call_aws(cli_command="aws devops-agent create-backlog-task \
   --task-type CODE_CHANGE_RISK_ANALYSIS \
   --title 'Code Change Risk Analysis' \
   --priority MEDIUM \
-  --description '{\"agentInput\": {\"content\": <CONTENT_JSON>, \"metadata\": {\"skipAutomatedTesting\": true}}}' \
+  --description '{\"agentInput\": {\"content\": <CONTENT_JSON>, \"metadata\": {\"reviewDepth\": \"static-analysis\", \"skipAutomatedTesting\": true}}}' \
   --region us-east-1")
 ```
 
 > **CRITICAL:** The `content` value must be a single object — NOT wrapped in a list. Correct: `"content": {"githubPrContent": [...]}`. Incorrect: `"content": [{"githubPrContent": [...]}]`. The values in the content should all be of string format e.g. the PR number should be a string.
-- `"skipAutomatedTesting"`: `true` in spec mode (always). In vibe mode, `true` or `false` based on user's response to the prompt in step 1.
+- `"reviewDepth"` and `"skipAutomatedTesting"`: `"static-analysis"` and `true` in spec mode (always). In vibe mode, `"static-analysis"` and `true`, or `"verification-testing"` and `false`, based on user's response to the prompt in step 1. Always set both together.
 
 Record the **taskId** and **executionId** from the response.
 
