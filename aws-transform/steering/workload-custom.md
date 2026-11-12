@@ -68,28 +68,14 @@ ask the user to pick.
 Prerequisite checks run ONCE at the start of a session. Do not repeat per repo.
 Do NOT run prerequisite checks until the user has stated what they want to do.
 
-### 0. Platform Check (Required — All Modes)
+### 0. Platform Note (All Modes)
 
-Detect the user's operating system. If on Windows (not WSL), stop immediately and
-inform the user:
+`atx custom` is supported on Linux, macOS, native Windows (Windows Terminal and
+PowerShell), and WSL. Do NOT block or redirect native Windows users to WSL, and do
+NOT probe the OS with `uname` (it does not exist in PowerShell).
 
-> AWS Transform custom does not support native Windows. You need to install
-> Windows Subsystem for Linux (WSL) and run this from within WSL.
->
-> Install WSL: `wsl --install` in PowerShell (as Administrator), then restart.
-> After that, open a WSL terminal and re-run this power from there.
-
-Check by running:
-
-```bash
-uname -s
-```
-
-- `Linux` or `Darwin` → proceed normally
-- `MINGW*`, `MSYS*`, `CYGWIN*`, or any Windows-like output → block and show the WSL message above
-- Command fails, errors, or is not found → treat as native Windows, block and show the WSL message above
-
-Do NOT proceed with any other steps on native Windows.
+`atx ct` (continuous modernization) is not yet supported on native Windows; tell
+the user if they ask for it.
 
 ### 1. AWS CLI (Required — All Modes)
 
