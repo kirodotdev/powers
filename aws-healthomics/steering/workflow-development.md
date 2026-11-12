@@ -63,7 +63,8 @@ This SOP defines how you, the agent, create and deploy genomics workflows for AW
   - Use the `ListECRRepositories`, `CheckContainerAvailability` tools to find existing containers
   - Use the `CloneContainerToECR` tool to add containers to ECR 
 - IF suitable containers cannot be found you SHOULD create appropriate Dockerfiles, build the images and push them to ECR
-  - You MUST use x86_64 architecture containers `--platform linux/amd64`
+  - By default, build x86_64 containers (`--platform linux/amd64`).
+  - WHEN the user wants ARM64 / AWS Graviton, build images that include an ARM64 variant; prefer multi-architecture images (`docker buildx build --platform linux/amd64,linux/arm64 ...`) so tasks can also run on x86_64. See the [Runtime Platform SOP](./runtime-platform.md).
 
 ### parameters.json
 - You MUST define an example `parameters.json` for the workflow.

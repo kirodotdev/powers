@@ -41,6 +41,14 @@ Follow this SOP WHEN:
 
 > **Tooling support**: `sessionPolicy` is part of the HealthOmics REST API but is not exposed by every AWS CLI/SDK/MCP client version. Confirm the client you use accepts it before relying on it (e.g., `aws omics start-run help` should list `--session-policy`); older clients reject it as an unknown parameter.
 
+### Storage Type, Run Mode, and Architecture
+
+- `storageType` — `DYNAMIC` (default, recommended), `STATIC`, or `S3`. `S3` keeps the run's intermediates and logs in your own S3 location (`workDirUri` — always set it for S3 runs) and needs extra service-role permissions. See the [S3 Run Storage SOP](./s3-run-storage.md).
+- `runMode` — `STANDARD` (default) or `EXPRESS`, which starts the workflow engine on faster-startup compute for short runs. `EXPRESS` requires `storageType: S3` and a run that completes within 8 hours, and has no effect with `VPC` networking. See the [EXPRESS Run Mode SOP](./express-run-mode.md).
+- `runtimePlatformPreference` — `X86_64` or `ARM64` for tasks that do not set their own architecture; inferred from the container image if omitted. See the [Runtime Platform SOP](./runtime-platform.md).
+
+> **Tooling support**: `storageType: S3`, `workDirUri`, `runMode`, and `runtimePlatformPreference` are part of the HealthOmics API but are not exposed by every AWS CLI/SDK/MCP client version. Confirm the client accepts them (e.g., `aws omics start-run help` lists `--work-dir-uri`, `--run-mode`, `--runtime-platform-preference`). IF the HealthOmics MCP tool rejects them, use the AWS CLI for that call — DO NOT silently drop the setting.
+
 ### Engine Settings
 
 `StartRun` accepts an `engineSettings` map that customizes how HealthOmics invokes the workflow engine. The map is engine-agnostic in concept; today only Nextflow keys are implemented, so pass it only for Nextflow workflows. Pass it only when the user requests the corresponding behavior.
