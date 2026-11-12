@@ -18,8 +18,8 @@ Run these checks the first time in a session, or when a tool fails with an auth 
 2. **No account.** If they don't have a Shipyard account, they can sign up with GitHub from that sign-in page, or first
    at https://shipyard.build/signup. Don't add tracking parameters to that link. Wait until they say they're done.
 3. **Org.** Every call acts on the org they picked when they connected, and no tool changes it. Before adding an app,
-   tell the user which org that is, or ask them. To use another org, they disconnect and connect again, picking that
-   one.
+   tell the user which org that is (a plan's `org` field names it), or ask them if there's no plan yet. To use
+   another org, they disconnect and connect again, picking that one.
 
 Never ask the user to paste a token into the chat or put one in a file: the client keeps it.
 
@@ -36,7 +36,8 @@ Shipyard dashboard.
    - After `git fetch`, the branch is pushed and `git rev-parse HEAD` equals `git rev-parse @{u}`.
    - `git status --porcelain` is empty: no modified tracked files and no untracked files that aren't ignored.
 
-   If something isn't pushed, ask before you commit or push anything. Never push without the user's yes.
+   If something isn't pushed, ask before you commit or push anything. Never push without the user's yes. Push with
+   `git push -u origin <branch>`, so `@{u}` exists for the next preflight.
 2. **Compose file.** Shipyard needs a Docker Compose file. If the repo has none at its root, or plan returns
    `add_compose_file` or says the file isn't valid, read `references/compose.md` (next to this file) and follow it
    before planning. Never overwrite or replace a compose file the user already has.
@@ -129,4 +130,3 @@ still building, failed, stopped, or serving a different commit.
   anything that looks like a secret, token, key or password out of them.
 - Never print, paste or commit a `bypass_token`. A command that sends it reads it from an environment variable.
 - Ask before you commit, push or install anything, and before every `update_application`.
-- If calls fail with an auth error, ask the user to reconnect Shipyard in their client's MCP settings.
