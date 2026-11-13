@@ -38,7 +38,7 @@ description: "Field-tested troubleshooting guide for common AWS Transform agent 
 | 26 | JobManager auto-transitions status | Job goes EXECUTING→PLANNING→PLANNED→EXECUTING | Harmless; SDK auto-transitions during init |
 | 27 | ATX_CHAT messaging undocumented | Chat messages don't appear | Use A2A format with `extensions` + `userSelection: "jobCreator"` (see orchestrator-patterns.md) |
 | 28 | Background execution undocumented | Orchestrator exceeds delayed_timeout | Spawn daemon thread from LLM tool |
-| 29 | S3 connector auth denied | `Partner not authorized to access this type of connector` | Fall back to direct S3 tools; request connector access from AWS Transform team |
+| 29 | S3 connector auth denied | `Partner not authorized to access this type of connector` | Ask for the platform connector with `create_platform_connector_hitl_task` (see connectors.md) |
 | 30 | Stale SDK install or `uvx` cache | `Models OK` check raises `UnknownServiceError`, MCP server reports placeholder v0.0.1, or `pip` reports `Package(s) not found` | Re-run upgrade install + `aws configure add-model`; for the MCP server, bust the `uvx` cache once |
 
 ## Detailed Issues
@@ -190,8 +190,8 @@ Forward-looking field for A2A agent discovery. Required by `PublishAgentVersion`
 ### 29. S3 Connector Authorization Denied
 
 **Symptom:** `ValidationException: Partner 'X' is not authorized to access this type of connector`.
-**Cause:** Publisher not authorized for S3 connector type at AWS Transform level. `list_s3_connectors()` succeeds but data plane calls fail.
-**Fix:** Fall back to direct S3 tools (`download_s3_file`/`upload_s3_file`). Contact AWS Transform team to request S3 connector authorization. Always register both connector and direct S3 tools.
+**Cause:** The connector has a workload-owned type (`mainframe_modernization|s3|1` or `dotnet_modernization|s3|1`). These types are allowlisted per agent publisher, and this agent is not on the list. The connector can still be created and become ACTIVE; only the credential call (`GetTemporaryCredentialsForConnector`) fails.
+**Fix:** Ask the user for the platform connector (type `platform|s3|1`, works for every agent, no allowlisting) with the MCP tool `create_platform_connector_hitl_task`, then use the new connector id. See `connectors.md`.
 
 ### 30. Stale SDK Install or `uvx` Cache
 

@@ -781,7 +781,7 @@ An orchestrator card showing subagent dependencies, connectors, and owner metada
           "params": {
             "connectors": [
               {
-                "connectorTypeId": "my_service|s3|1",
+                "connectorTypeId": "platform|s3|1",
                 "displayName": "Amazon S3",
                 "required": false,
                 "description": "S3 bucket for storing artifacts"
