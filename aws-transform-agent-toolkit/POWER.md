@@ -334,6 +334,7 @@ Example workflow:
 - Troubleshooting agent deployment or runtime issues → `steering/troubleshooting.md`
 - Adding an agent to an existing workflow → `steering/workflow-integration.md`
 - Streaming a turn live, or serving several users of one orchestrator concurrently → `steering/streaming.md`
+- Reading or writing files in a customer's S3 bucket (platform S3 connector, temporary credentials) → `steering/connectors.md`
 - **Deploying agents through Kiro (recommended workflow)** → `steering/deploy-agent-workflow.md`
 
 ## Next Steps
