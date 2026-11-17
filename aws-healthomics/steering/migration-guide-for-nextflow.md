@@ -106,11 +106,16 @@ You MUST complete the following steps
 4. For **workflow-level content** (provenance reports, pipeline DAGs, etc.):
    - Write to `/mnt/workflow/output/` (e.g., via `params.outdir = "/mnt/workflow/output/"`).
    - HealthOmics exports files from this directory to the `output/` prefix in the run's S3 output location.
+5. For **execution reports** (`dag`, `report`, `timeline`, `trace` config scopes):
+   - Nextflow v26.10+: you MAY set a relative `directory` in each scope (e.g., `report { enabled = true; directory = 'pipeline_info' }`). HealthOmics exports the reports to that subdirectory, next to the `output { }` results. `directory` MUST be relative, and you MUST NOT combine it with an absolute `file` — Nextflow aborts the run in both cases.
+   - Any version: set an absolute `file` under `/mnt/workflow/output/` (e.g., `report.file = '/mnt/workflow/output/pipeline_info/report.html'`). HealthOmics exports it to the `output/` prefix.
+   - A relative `file` without `directory` is NOT exported on any version.
 
 **Done WHEN**:
 - All legacy `publishDir` paths use `/mnt/workflow/pubdir/` prefix.
 - **ALL** Nextflow 25.10+ output block `path` directives use relative paths (no absolute paths).
 - Workflow-level content (provenance reports, DAGs) writes to `/mnt/workflow/output/`.
+- Execution reports, if enabled, use a relative `directory` (v26.10+) or an absolute `file` under `/mnt/workflow/output/`.
 - No references to ${params.outdir} in publishDir directives — all use the literal /mnt/workflow/pubdir/ path or a subdirectory.
 - Relative path structure preserved.
 
@@ -185,28 +190,40 @@ You MUST complete the following steps
 | v24.10 | `nf-schema@2.3.0` |
 | v25.10 | `nf-schema@2.6.1`, `nf-core-utils@0.4.0`, `nf-prov@1.7.0`, `nf-fgbio@1.0.1` |
 | v26.04 | `nf-schema@2.7.2`, `nf-core-utils@0.4.0`, `nf-prov@1.7.0`, `nf-fgbio@1.0.1` |
+| v26.10 | `nf-schema@2.7.2`, `nf-core-utils@0.4.0`, `nf-prov@1.7.0`, `nf-fgbio@1.0.1` |
 
 For Nextflow v24+, `nf-schema` replaces the deprecated `nf-validation`.
 
 **Steps**:
 1. Determine the target engine version. Read `manifest.nextflowVersion` if pinned; otherwise ASK the user.
+   - To run on v26.10, you MUST pin it exactly: `manifest.nextflowVersion = '=26.10.0'` — see [Pinning the Nextflow Version](./running-a-workflow.md#pinning-the-nextflow-version).
 2. Verify every plugin the workflow uses appears in the matrix above for the chosen version. Remove or replace plugin references that aren't pre-installed.
-3. IF the target version is v26.04, audit the workflow for v26 breaking changes and deprecations:
+3. IF the target version is v26.04 or v26.10, audit the workflow for v26 breaking changes and deprecations:
    - **Strict (v2) syntax is the default.** v1-only syntax will fail to parse. The user has two options — present BOTH and let them choose:
      - Migrate the workflow to v2 syntax (see the [Strict syntax reference](https://docs.seqera.io/nextflow/strict-syntax)).
-     - Keep v1 syntax and pass `engineSettings.syntaxVersion = "v1"` on `StartRun`.
+     - Keep v1 syntax and pass `engineSettings.syntaxVersion = "v1"` on `StartRun`. This currently requires the AWS CLI or an SDK — see [Engine Settings](./running-a-workflow.md#engine-settings).
    - Replace `listFiles()` with `listDirectory()` (deprecation warning otherwise).
    - Remove `nextflow.enable.strict` from config (no longer needed; strict is the default).
    - Remove `manifest.defaultBranch` from config (not used; HealthOmics has never supported Git-based pipeline checkout).
-4. IF the target version is v25.10 or v26.04, the workflow MAY use the top-level `output { }` block and write workflow-level content (provenance reports, DAGs) to `/mnt/workflow/output/` — see Phase 4.
-5. The following Nextflow v26.04 features are NOT supported on HealthOmics. Remove or avoid them:
-   - **Nextflow Registry module fetching** — HealthOmics workflows run in an isolated network; include modules directly in the workflow zip.
-   - **Static typing (preview)**.
-   - **Auto-load collection params from files** — depends on static typing.
+4. IF the target version is v26.10, also audit for v26.10 breaking changes and deprecations:
+   - **The `echo` process directive is removed.** Replace `echo true` with `debug true` — the behavior is identical. You MUST tell the user that `engineSettings.syntaxVersion = "v1"` does NOT help: v1 is the parser that newly rejects `echo` (`Unknown process directive: echo`). The run fails in the engine before any task starts, and CreateWorkflow does not catch it.
+   - **`storeDir` is deprecated** (lint warning only). Replace it with workflow logic that reuses an existing output.
+   - **`eval` outputs re-run once on existing run caches.** The hash of `eval(...)` outputs changed, so tasks that declare one miss the cache the first time a 26.10 run uses a run cache created on an earlier version, then cache normally. Recent nf-core modules commonly use `eval` for version reporting. Tell the user to expect this; it is not a failure.
+5. IF the target version is v25.10 or later, the workflow MAY use the top-level `output { }` block and write workflow-level content (provenance reports, DAGs) to `/mnt/workflow/output/` — see Phase 4. On v26.10+, an output's `path` closure MAY also return a map of source files to target paths.
+6. IF the target version is v26.10, the following features are supported:
+   - **Static typing** (no longer preview). Typed processes and typed workflows MUST set `nextflow.enable.types = true`. `nextflow lint` reports type errors; `nextflow run` only warns. Typed `params` that have default values are currently treated as required by HealthOmics — the user MUST pass every typed param in the run parameters.
+   - **Vendored modules.** Install modules locally (`nextflow module install` or nf-core tools) and include the populated `modules/` directory in the workflow zip. You MUST include them by relative path (e.g., `include { FASTQC } from './modules/nf-core/fastqc/main.nf'`). Registry-style includes (`from 'nf-core/fastqc'`) fail on HealthOmics even when the module is vendored.
+7. The following features are NOT supported on HealthOmics. Remove or avoid them:
+   - **Nextflow Registry module fetching** (v26.04+) — HealthOmics workflows run in an isolated network; include modules directly in the workflow zip.
+   - **Static typing** on v26.04 (preview on that version). Use v26.10 for static typing.
+   - **Auto-load collection params from files** on v26.04 — depends on static typing.
+   - **Agents (preview)** (v26.10).
+   - **Global cache** (v26.10) — use HealthOmics run caches instead.
 
 **Done WHEN**:
 - All plugins referenced by the workflow are in the pre-install matrix for the selected engine version.
-- For v26.04 targets: deprecated symbols/configs removed, syntax decision documented, unsupported features absent.
+- For v26.04 and v26.10 targets: deprecated symbols/configs removed, syntax decision documented, unsupported features absent.
+- For v26.10 targets: `manifest.nextflowVersion = '=26.10.0'`, no `echo` directives remain, modules are included by relative path, and the static-typing decision is documented.
 
 ## Technical Patterns
 
@@ -269,6 +286,18 @@ output {
         path 'aligned'
     }
 }
+```
+
+### Execution Reports in the Output Directory (Nextflow 26.10+)
+```groovy
+// nextflow.config — reports are exported to pipeline_info/ next to the output { } results
+dag      { enabled = true; directory = 'pipeline_info' }
+report   { enabled = true; directory = 'pipeline_info' }
+timeline { enabled = true; directory = 'pipeline_info' }
+trace    { enabled = true; directory = 'pipeline_info' }
+
+// Any version — use an absolute file under /mnt/workflow/output/ (exported to output/pipeline_info/)
+report { enabled = true; file = '/mnt/workflow/output/pipeline_info/report.html' }
 ```
 
 ### S3 Reference (Before/After)
