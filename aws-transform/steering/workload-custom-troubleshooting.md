@@ -12,7 +12,7 @@
 | Transform not found | Run `atx custom def list --json` to check available transformation definitions |
 | Configuration fails with commas | Do not use commas inside `additionalPlanContext` values — they break the CLI parser. Rephrase to avoid commas |
 | Conversation expired | Conversations expire after 30 days. Start a new one |
-| Windows not supported | Tell user to use Windows Subsystem for Linux (WSL) |
+| `atx ct` fails on Windows | `atx ct` (continuous modernization) is not yet supported on native Windows (WSL is an option). `atx custom` works on native Windows |
 | Git clone fails in remote container | See "Private Repo Credential Issues" section below |
 | Timeout | Set `export ATX_SHELL_TIMEOUT=1800` (default: 900s) |
 | Stale .exit file | The `.exit` file in `atx-agent-session/` may be left over from a previous run. Always use `kill -0 <pid>` to check if the process is still running — do not rely solely on the `.exit` file |
