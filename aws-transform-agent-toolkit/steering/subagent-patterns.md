@@ -235,7 +235,7 @@ my-subagent/
 │   ├── __init__.py
 │   ├── custom_tools.py      # CUSTOMIZE: domain-specific tools
 │   ├── hitl_tools.py        # HITL AutoForm tools
-│   └── s3_tools.py          # Direct S3 upload/download
+│   └── s3_tools.py          # Direct S3 upload/download: the agent's own buckets, never the customer's
 ├── prompts/
 │   └── subagent_prompt.md   # CUSTOMIZE: domain-specific system prompt
 ├── requirements.txt
@@ -309,7 +309,7 @@ The `description` field in HITL tasks has a max length of 1024 characters — tr
 
 ### S3 Access: Platform Connector
 
-To read or write files in a customer's S3 bucket, ask the user for the platform S3 connector with the MCP tool `create_platform_connector_hitl_task`, then get temporary credentials for it with the SDK class `Connector`. See `connectors.md` for the flow, the code sample and the limits.
+To read or write files in a customer's S3 bucket, ask the user for the platform S3 connector with the MCP tool `create_platform_connector_hitl_task`, then get temporary credentials for it with the SDK class `ConnectorClient`. See `connectors.md` for the flow, the code sample and the limits.
 
 The tool needs a `step_id` of the job plan. A subagent gets it from its orchestrator, as in the HITL AutoForm pattern above.
 
