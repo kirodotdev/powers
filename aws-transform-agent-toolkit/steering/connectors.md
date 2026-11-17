@@ -61,8 +61,11 @@ tool to the model, except a deny-list.
 - **Other tool:** do not use `create_s3_connector_hitl_task` here. It asks for a workload-owned
   connector type (see the error below). An agent that is allowlisted for such a type keeps it when
   its system prompt asks for that connector by name (for example "the mainframe modernization S3
-  connector"), or when it hides the new tool with
-  `excluded_mcp_tool_names={"create_platform_connector_hitl_task"}`.
+  connector"), or when it hides the new tool: pass
+  `excluded_mcp_tool_names={"create_platform_connector_hitl_task"}` to the `BaseOrchestrator`,
+  `AsyncBaseOrchestrator`, `BaseSubagent` or `AsyncBaseSubagent` constructor, or to
+  `create_default_async_orchestrator_with_subagent`. The other `create_default_*` helpers do not
+  take it: the orchestrator helpers raise `TypeError`, and the subagent helpers ignore it.
 - **Your own task:** a `GeneralConnector` task that you build without the tool needs the wrapper
   `{"properties": {"connector": {...}}}` in its input artifact.
 
@@ -143,6 +146,8 @@ ValidationException: ... Partner '<name>' is not authorized to access this type 
 | `agent-builder-sdk-aws-transform` | The class `ConnectorClient` | 1.2.0 |
 
 To upgrade an agent, pin `agent-builder-agentic-mcp-aws-transform>=1.1.0` and
-`agent-builder-sdk-aws-transform>=1.2.0` in the `pip install` line of its Dockerfile, and rebuild the
-image without the cache (for example `docker build --no-cache`). The install layer is cached, so a
-plain rebuild can keep the old versions, and then the tool is missing with no error.
+`agent-builder-sdk-aws-transform>=1.2.0` in the `pip install` line of its Dockerfile, then rebuild
+the image. The pin is the step that matters: a changed line makes the build run the install again.
+With an unchanged line, the build reuses the cached install layer and keeps the old versions, and
+then the tool is missing with no error. Only a hand-run `docker build` of an unchanged Dockerfile
+needs `--no-cache`.
