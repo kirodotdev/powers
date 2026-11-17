@@ -109,7 +109,8 @@ def s3_for_connector(connector_id: str) -> tuple[Any, str]:
 
 | Topic | Rule |
 |-------|------|
-| Approval | `get_connector` returns the status at `accountConnection.awsAccountConnection.status`: `PENDING`, `ACTIVE` or `REJECTED`. An administrator of the target AWS account approves a `PENDING` connector; then it is `ACTIVE`. Check it after the user submits the task: do not assume that the approval came first. Ask for credentials only when it is `ACTIVE`. If it is not, tell the user, and try again after they confirm. |
+| Approval | `get_connector` returns the status at `accountConnection.awsAccountConnection.status`: `PENDING`, `ACTIVE` or `REJECTED`. An administrator of the target AWS account approves a `PENDING` connector; then it is `ACTIVE`. The web application enables the Submit button of the task only after the approval, but the model can pass any connector id, so check the status before you ask for credentials. For a connector that is not `ACTIVE`, the credentials call raises a `ValidationException` that says the connector "is not in active state". If it is not `ACTIVE`, tell the user, and try again after they confirm. |
+| Scope | A connector belongs to its workspace. Another job in the same workspace can use it with no new task; it then writes under that job's prefix. A connector of another workspace is not found (`ResourceNotFoundException`). |
 | Expiry | The credentials last 1 hour (`expirationTime`). After that, call `get_temporary_credentials_for_connector` again and build a new S3 client. |
 | Read | The credentials can read the bucket. |
 | Write | Only under `transform-output/<jobId>/`: `s3.put_object(Bucket=bucket, Key=f"transform-output/{job_id}/{file_name}", Body=data)`, where `job_id` is `get_agent_context_from_env().job_id`. S3 denies a write under another job's prefix with `AccessDenied`. |
