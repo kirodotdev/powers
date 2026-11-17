@@ -51,7 +51,7 @@ tool to the model, except a deny-list.
 | Argument `step_id` | The id of a step of the current job plan. Any step works. `list_job_plan_steps` returns the ids. An orchestrator whose plan has no step creates one first with `put_job_plan`, then reads the id with `list_job_plan_steps`. |
 | Argument `connector` | `"s3"` |
 | Result key `hitl_task_id` | The id of the HITL task (component `GeneralConnector`, `NON_BLOCKING`). The tool starts the task and does not wait for the user. |
-| Connector settings | `s3BucketArn` (required), `s3BucketKmsKeyArn` (optional) |
+| Connector settings | `s3BucketArn` (required), `s3BucketKmsKeyArn` (optional: the ARN of a KMS key, not of an alias) |
 | Task output | After the user submits the task, `retrieve_hitl_output_as_string` (argument `hitl_task_id`) returns it: the result key `payload` holds the JSON text `{"connectorId": "..."}` |
 
 - **Subagents:** a subagent cannot create plan steps (`put_job_plan` is not among its tools by
@@ -59,7 +59,10 @@ tool to the model, except a deny-list.
 - **System prompt:** give the model the order: call the tool, ask the user to say when the task is
   submitted, then read `connectorId` and pass it to your custom tool.
 - **Other tool:** do not use `create_s3_connector_hitl_task` here. It asks for a workload-owned
-  connector type (see the error below).
+  connector type (see the error below). An agent that is allowlisted for such a type keeps it when
+  its system prompt asks for that connector by name (for example "the mainframe modernization S3
+  connector"), or when it hides the new tool with
+  `excluded_mcp_tool_names={"create_platform_connector_hitl_task"}`.
 - **Your own task:** a `GeneralConnector` task that you build without the tool needs the wrapper
   `{"properties": {"connector": {...}}}` in its input artifact.
 
@@ -81,6 +84,9 @@ from agent_builder_sdk.env_var import get_agent_context_from_env
 
 
 def s3_for_connector(connector_id: str) -> tuple[Any, str]:
+    # At DEBUG, botocore logs requests and responses, and they hold secrets. The SDK's
+    # configure_logging() sets DEBUG when STAGE is not prod.
+    logging.getLogger("botocore").setLevel(logging.INFO)
     ctx = get_agent_context_from_env()
     connector_client = ConnectorClient(workspace_id=ctx.workspace_id, job_id=ctx.job_id,
                                        agent_instance_id=ctx.agent_instance_id,
@@ -96,9 +102,6 @@ def s3_for_connector(connector_id: str) -> tuple[Any, str]:
     if not match:
         raise ValueError(f"Connector {connector_id}: {arn!r} is not an S3 bucket ARN")
     creds = connector_client.get_temporary_credentials_for_connector(connector_id)
-    # At DEBUG, botocore logs the access key id and the session token of each request, and
-    # the SDK's configure_logging() sets DEBUG when STAGE is not prod.
-    logging.getLogger("botocore").setLevel(logging.INFO)
     s3 = boto3.client("s3", aws_access_key_id=creds["accessKey"],
                       aws_secret_access_key=creds["secretKey"],
                       aws_session_token=creds["accessToken"])
@@ -138,3 +141,8 @@ ValidationException: ... Partner '<name>' is not authorized to access this type 
 |---------|----------|-----------------|
 | `agent-builder-agentic-mcp-aws-transform` | The tool `create_platform_connector_hitl_task` | 1.1.0 |
 | `agent-builder-sdk-aws-transform` | The class `ConnectorClient` | 1.2.0 |
+
+To upgrade an agent, pin `agent-builder-agentic-mcp-aws-transform>=1.1.0` and
+`agent-builder-sdk-aws-transform>=1.2.0` in the `pip install` line of its Dockerfile, and rebuild the
+image without the cache (for example `docker build --no-cache`). The install layer is cached, so a
+plain rebuild can keep the old versions, and then the tool is missing with no error.
