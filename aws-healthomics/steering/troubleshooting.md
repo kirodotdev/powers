@@ -30,6 +30,20 @@ IF a workflow fails to reach `ACTIVE` status, check these causes in order:
     4. IF the previous run used a Run Cache you MUST reference that when starting the new run. Otherwise, you MAY create a Run Cache for this run.
     5. Start a new run of the workflow/ workflow version using identical or modified inputs and Run Cache as appropriate.
 
+## Nextflow Version-Specific Issues
+
+IF a Nextflow run fails or behaves unexpectedly, match the symptom before deeper diagnosis:
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| `Unknown process directive: echo` or `Unrecognized process directive echo`, before any task starts | The `echo` directive was removed in v26.10 | Replace `echo true` with `debug true`. `engineSettings.syntaxVersion = "v1"` does NOT help |
+| `NoClassDefFoundError: io/seqera/serde/gson/GsonEncodingStrategy` | A registry-style module include (`include { X } from 'nf-core/foo'`) | Vendor the module into the workflow zip and include it by relative path (`'./modules/nf-core/foo/main.nf'`) |
+| `Missing workflow parameters: ...` for typed `params` that have defaults | Typed params with defaults are treated as required | Pass every typed param in the run parameters |
+| Execution reports (report, timeline, trace, DAG) missing from the run output | A relative `file` without `directory` is not exported | On v26.10+, set a relative `directory`. On any version, use an absolute `file` under `/mnt/workflow/output/` |
+| The run used an unexpected engine version (the engine log states the version used) | `manifest.nextflowVersion` is missing or is a range | Pin the version exactly (e.g. `'=26.10.0'`) — see [Pinning the Nextflow Version](./running-a-workflow.md#pinning-the-nextflow-version) |
+| Tasks with `eval(...)` outputs re-ran on a run cache after moving to v26.10 | The `eval` output hash changed in v26.10 | Expected, once per run cache. Later v26.10 runs cache normally |
+| Every task missed the run cache | A container referenced by a mutable tag (e.g. `:latest`) was republished; the image digest is part of the task hash | Reference containers by digest when using run caches |
+
 ## VPC Connected Workflow Run Failures
 
 IF a workflow run using VPC networking fails with connectivity-related errors:
