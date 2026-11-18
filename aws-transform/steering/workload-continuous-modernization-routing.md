@@ -75,6 +75,7 @@ continuous modernization flow (recommended for adoption).
 - "What tech debt do we have?"
 - "Find security vulnerabilities / CVEs" (continuous modernization-exclusive)
 - "Are our repos ready for AI agents?"
+- "Are our Java repos ready for Graviton / ARM64?"
 - "Which repos can be modernized?"
 - "Generate a modernization plan"
 - "Where do I start with these 200 repos?"
@@ -119,7 +120,7 @@ continuous modernization flow (recommended for adoption).
 **Prerequisite:** Before running any `atx ct` command, verify it's installed AND up to date:
 
 ```bash
-INSTALLED=$(atx ct --version 2>/dev/null | head -1)
+INSTALLED=$(atx ct --version 2>/dev/null | head -1 | sed 's/^Version: //')
 LATEST=$(curl -fsSL "https://transform-cli.awsstatic.com/index.json" 2>/dev/null | grep -o '"latest"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/.*"latest"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')
 echo "Installed: ${INSTALLED:-not found}, Latest: ${LATEST:-unknown}"
 ```
@@ -149,20 +150,22 @@ After a Custom transformation completes successfully, present this message:
 | Skill                                                                  | When to Use                                                                           |
 | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
 | [workload-continuous-modernization-guide.md](workload-continuous-modernization-guide.md)                     | New user onboarding, "how do I start?"                                                |
-| [workload-continuous-modernization-discovery.md](workload-continuous-modernization-discovery.md)             | Analyze/discover repos from sources                                                   |
-| [workload-continuous-modernization-analysis.md](workload-continuous-modernization-analysis.md)               | Run security, tech-debt, agentic-readiness, modernization-readiness analyses          |
-| [workload-continuous-modernization-findings.md](workload-continuous-modernization-findings.md)               | List/filter/manage findings                                                           |
-| [workload-continuous-modernization-remediation.md](workload-continuous-modernization-remediation.md)         | Create remediation campaigns, auto-fix findings                                       |
-| [workload-continuous-modernization-status.md](workload-continuous-modernization-status.md)                   | System overview and health check                                                      |
-| [workload-continuous-modernization-source.md](workload-continuous-modernization-source.md)                   | Manage source connections                                                             |
-| [workload-continuous-modernization-setup.md](workload-continuous-modernization-setup.md)                     | Infrastructure setup and configuration                                                |
+| [workload-continuous-modernization-discovery.md](workload-continuous-modernization-discovery.md)             | `atx ct discovery scan` — discover repos from sources                                 |
+| [workload-continuous-modernization-analysis.md](workload-continuous-modernization-analysis.md)               | `atx ct analysis *` — run security, tech-debt, agentic-readiness, modernization-readiness, graviton-readiness, aws-health-readiness, custom analyses |
+| [workload-continuous-modernization-findings.md](workload-continuous-modernization-findings.md)               | `atx ct findings *` — list/filter/manage findings                                     |
+| [workload-continuous-modernization-remediation.md](workload-continuous-modernization-remediation.md)         | `atx ct remediation *` — create remediation campaigns, auto-fix findings              |
+| [workload-continuous-modernization-status.md](workload-continuous-modernization-status.md)                   | `atx ct status` — system overview and health check                                    |
+| [workload-continuous-modernization-source.md](workload-continuous-modernization-source.md)                   | `atx ct source *` and `atx ct repository *` — source connections, repo catalog, labels, tags |
+| [workload-continuous-modernization-setup.md](workload-continuous-modernization-setup.md)                     | `atx ct setup <component>` — infrastructure setup and configuration                   |
 | [workload-continuous-modernization-troubleshooting.md](workload-continuous-modernization-troubleshooting.md) | Diagnose setup and command execution failures                                         |
-| [workload-continuous-modernization-ec2-execution.md](workload-continuous-modernization-ec2-execution.md)     | Run remote analysis/remediation on EC2 via `atx ct remote` CLI commands                |
-| [workload-continuous-modernization-batch-execution.md](workload-continuous-modernization-batch-execution.md) | Run remote analysis/remediation on AWS Batch (Fargate) via `atx ct remote` CLI commands |
-| [workload-continuous-modernization-aws-managed-execution.md](workload-continuous-modernization-aws-managed-execution.md) | Run remote analysis on the AWS-managed fleet (`--mode aws-managed`) — no customer infrastructure |
-| [workload-continuous-modernization-schedule.md](workload-continuous-modernization-schedule.md)               | Schedule recurring analyses via `atx ct schedule` CLI commands (analyses only)           |
+| [workload-continuous-modernization-ec2-execution.md](workload-continuous-modernization-ec2-execution.md)     | `atx ct remote *` (EC2 mode) — remote analysis/remediation on EC2, from provision to teardown |
+| [workload-continuous-modernization-batch-execution.md](workload-continuous-modernization-batch-execution.md) | `atx ct remote *` (Batch mode) — remote analysis/remediation on AWS Batch (Fargate), from provision to teardown |
+| [workload-continuous-modernization-aws-managed-execution.md](workload-continuous-modernization-aws-managed-execution.md) | `atx ct remote analysis --mode aws-managed` — remote analysis on the AWS-managed fleet, no customer infrastructure |
+| [workload-continuous-modernization-schedule.md](workload-continuous-modernization-schedule.md)               | `atx ct schedule *` — schedule recurring analyses (analyses only)                     |
 | [workload-continuous-modernization-reporting.md](workload-continuous-modernization-reporting.md)             | Generate an HTML report of continuous modernization analyses                                             |
-| [workload-continuous-modernization-security-agent.md](workload-continuous-modernization-security-agent.md)   | Security agent setup (admin) and runtime verification (executor)                      |
+| [workload-continuous-modernization-security-agent.md](workload-continuous-modernization-security-agent.md)   | `atx ct setup security-agent` — security agent setup (admin) and runtime verification (executor) |
+
+Two `atx ct` commands have no skill of their own: `atx ct schema` prints every command and option as JSON — run it (or `--help`) to confirm exact flags before guessing. `atx ct mcp` starts a long-running MCP server (its HTTP mode listens on `127.0.0.1` only, and there is no host option); never start it unless the user asks.
 
 ## Custom Skills Reference
 

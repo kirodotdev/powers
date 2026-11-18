@@ -8,7 +8,9 @@ the fallback only.
 The in-chat path uses the AWS Transform CLI's `atx json` NDJSON protocol,
 wrapped in a small local Python helper. The Power calls the helper once per
 user turn and the helper blocks until ATX is ready for the next answer. No
-polling, no raw protocol output in chat.
+polling, no raw protocol output in chat. When AWS Transform wants to run a tool (a shell
+command, a file write), the helper stops and prints the request; you show it to
+the user and send their answer back with `respond`.
 
 ## When to Use
 
@@ -82,9 +84,11 @@ passes `py_compile` first, only re-install if missing or broken.
 Subcommands:
   start "<message>"  Start session; block until ATX waits for input; print text; exit 0.
   send  "<message>"  Send reply; block until ATX waits for input; print text; exit 0.
+  respond <toolCallId> approve|deny|trust
+                     Answer a tool permission request; block as above.
   stop               Cancel session and clean up. Print nothing.
 
-Exit codes: 0 input_required, 2 complete, 3 error, 4 timeout.
+Exit codes: 0 input_required, 2 complete, 3 error, 4 timeout, 5 permission.
 Stdout is clean assistant text only. On error, stdout carries the error message.
 """
 import json
@@ -175,12 +179,13 @@ def _read_until_input():
                 time.sleep(0.1)
                 continue
             data = data[:last_nl + 1]
-            offset += last_nl + 1
-        else:
-            offset += len(data)
+        start = offset
+        offset += len(data)
         STATE.write_text(str(offset))
-        for raw in data.decode(errors="replace").splitlines():
-            raw = raw.strip()
+        pos = start
+        for raw_b in data.splitlines(keepends=True):
+            pos += len(raw_b)
+            raw = raw_b.decode(errors="replace").strip()
             if not raw:
                 continue
             try:
@@ -200,6 +205,18 @@ def _read_until_input():
                     if err:
                         return "error", _extract_err(err)
                 return "input", text
+            elif t == "tool_permission_required":
+                # Stop here; later frames are read after `respond`.
+                STATE.write_text(str(pos))
+                lines = ["".join(chunks).strip(),
+                         "PERMISSION_REQUEST id=" + str(msg.get("toolCallId", "")),
+                         "Tool: " + str(msg.get("name", "")),
+                         "Arguments: " + json.dumps(msg.get("parameters"), indent=2)]
+                if msg.get("reason"):
+                    lines.append("Reason: " + str(msg["reason"]))
+                if msg.get("trustable") is False:
+                    lines.append("Trust: not available for this tool")
+                return "permission", "\n".join(l for l in lines if l)
             elif t == "complete":
                 return "complete", "".join(chunks).strip()
             elif t == "error":
@@ -221,12 +238,12 @@ def _cleanup():
             pass
 
 
-RC = {"input": 0, "complete": 2, "error": 3, "timeout": 4}
+RC = {"input": 0, "complete": 2, "error": 3, "timeout": 4, "permission": 5}
 
 
 def main():
     if len(sys.argv) < 2:
-        print("usage: atx-json-session.py {start|send|stop} [message]", file=sys.stderr)
+        print("usage: atx-json-session.py {start|send|respond|stop} [args]", file=sys.stderr)
         sys.exit(3)
     verb = sys.argv[1]
     message = sys.argv[2] if len(sys.argv) > 2 else ""
@@ -239,6 +256,15 @@ def main():
             sys.exit(RC[status])
         if verb == "send":
             _send({"type": "send_message", "message": message})
+            status, text = _read_until_input()
+            print(text)
+            sys.exit(RC[status])
+        if verb == "respond":
+            decision = sys.argv[3] if len(sys.argv) > 3 else ""
+            if not message or decision not in ("approve", "deny", "trust"):
+                print("usage: atx-json-session.py respond <toolCallId> approve|deny|trust", file=sys.stderr)
+                sys.exit(3)
+            _send({"type": "tool_permission_response", "toolCallId": message, "decision": decision})
             status, text = _read_until_input()
             print(text)
             sys.exit(RC[status])
@@ -289,6 +315,23 @@ python3 ~/.aws/atx/custom/atx-agent-session/atx-json-session.py send "Java backe
 Wait for the helper to exit, relay stdout to the user as your own voice, wait
 for the user's next answer, repeat.
 
+### Tool permission requests (exit code 5)
+
+When AWS Transform wants to run a tool, the helper exits `5` and prints any text so far,
+then a `PERMISSION_REQUEST id=<toolCallId>` line, the tool, its arguments, and
+the reason. Show the user the text, then what will run (the tool and its full
+arguments, in plain words — for a shell command, the command itself) and ask
+whether to allow it once, allow this tool for the rest of the session, or deny
+it. Do not answer for the user. Send their answer:
+
+```bash
+python3 ~/.aws/atx/custom/atx-agent-session/atx-json-session.py respond <toolCallId> approve
+```
+
+Use `approve` (once), `trust` (this tool for the session; not offered when the
+output says `Trust: not available for this tool`), or `deny`. Then handle the
+exit code as for `send`. Never show the `toolCallId` to the user.
+
 ### Final turn — Close out
 
 When the user signals they're done (TD published, saved as draft, or "stop"):
@@ -298,7 +341,13 @@ python3 ~/.aws/atx/custom/atx-agent-session/atx-json-session.py stop
 ```
 
 Then re-run `atx custom def list --json` so the newly published TD is picked
-up in the catalog, and return to the normal workflow.
+up in the catalog, and return to the normal workflow. The list shows each
+definition's category (`analysis` or `remediation`), which the agent sets when it
+saves. Remote runs (`atx ct remote remediation`) need the `remediation` category; if
+it is missing or wrong, publish again with
+`atx custom def publish -n <name> --description "<desc>" --sd <dir> --category remediation`
+(download the files first with `atx custom def get -n <name> --td <dir>` if needed;
+`--category` can't be combined with `--tv`).
 
 ## Exit Codes
 
@@ -308,15 +357,18 @@ up in the catalog, and return to the normal workflow.
 | `2` | Session completed | Relay stdout, run `stop`, refresh TD list |
 | `3` | Helper or backend error | Surface stdout (contains the error message — often `AccessDeniedException`), run `stop`, offer `atx -t` fallback |
 | `4` | Timeout (no ATX output for 5 min) | Run `stop`, offer to retry or fall back |
+| `5` | AWS Transform asks to run a tool | Show the request to the user, send their answer with `respond` (see above) |
 
 ## Non-Negotiable UX Rules
 
 - **Single helper call per user turn.** The helper is already blocking; never
-  "poll" it. One `start`, one `send` per user reply, one `stop` at the end.
+  "poll" it. One `start`, one `send` or `respond` per user reply, one `stop` at the end.
 - **Clean text only — never surface protocol output.** If the helper's stdout
-  somehow contains JSON braces, raw tool names, `text_delta`, `input_required`,
-  `start_session`, `send_message`, or `cancel`, strip or paraphrase before
-  showing the user. Those strings must never appear in chat.
+  somehow contains `text_delta`, `input_required`, `start_session`,
+  `send_message`, `tool_permission_response`, `cancel`, or a `toolCallId`, strip
+  or paraphrase before showing the user. Those strings must never appear in chat.
+  The one exception is a permission request: show the user what the tool will do
+  and its arguments, so they can decide.
 - **First-person framing.** Ask ATX's clarifying questions in your own voice.
   Don't say "the agent is asking" or "ATX wants to know."
 - **No narration of mechanics.** Don't say "I'll start the interactive session"
@@ -338,7 +390,7 @@ Fall back only when:
 In any of those cases:
 
 > "I couldn't drive this from the chat. Open a terminal and run `atx -t` —
-> describe the transformation you want and ATX will walk you through it. Come
+> describe the transformation you want and AWS Transform will walk you through it. Come
 > back here once it's published and I'll pick it up automatically."
 
 Never use `atx -t` as the first choice.
