@@ -155,7 +155,7 @@ After a Custom transformation completes successfully, present this message:
 | [workload-continuous-modernization-findings.md](workload-continuous-modernization-findings.md)               | `atx ct findings *` — list/filter/manage findings                                     |
 | [workload-continuous-modernization-remediation.md](workload-continuous-modernization-remediation.md)         | `atx ct remediation *` — create remediation campaigns, auto-fix findings              |
 | [workload-continuous-modernization-status.md](workload-continuous-modernization-status.md)                   | `atx ct status` — system overview and health check                                    |
-| [workload-continuous-modernization-source.md](workload-continuous-modernization-source.md)                   | `atx ct source *` and `atx ct repository *` — source connections, repo catalog, labels, tags |
+| [workload-continuous-modernization-source.md](workload-continuous-modernization-source.md)                   | `atx ct source *` and `atx ct repository *` — source connections (token or OAuth), repo catalog, labels, tags |
 | [workload-continuous-modernization-setup.md](workload-continuous-modernization-setup.md)                     | `atx ct setup <component>` — infrastructure setup and configuration                   |
 | [workload-continuous-modernization-troubleshooting.md](workload-continuous-modernization-troubleshooting.md) | Diagnose setup and command execution failures                                         |
 | [workload-continuous-modernization-ec2-execution.md](workload-continuous-modernization-ec2-execution.md)     | `atx ct remote *` (EC2 mode) — remote analysis/remediation on EC2, from provision to teardown |
@@ -165,7 +165,7 @@ After a Custom transformation completes successfully, present this message:
 | [workload-continuous-modernization-reporting.md](workload-continuous-modernization-reporting.md)             | Generate an HTML report of continuous modernization analyses                                             |
 | [workload-continuous-modernization-security-agent.md](workload-continuous-modernization-security-agent.md)   | `atx ct setup security-agent` — security agent setup (admin) and runtime verification (executor) |
 
-Two `atx ct` commands have no skill of their own: `atx ct schema` prints every command and option as JSON — run it (or `--help`) to confirm exact flags before guessing. `atx ct mcp` starts a long-running MCP server (its HTTP mode listens on `127.0.0.1` only, and there is no host option); never start it unless the user asks.
+Two `atx ct` commands have no skill of their own: `atx ct schema` prints the visible command and option surface as JSON — run it (or `--help`) to confirm exact public flags before guessing. Hidden, version-gated flags such as `--wait` are absent from both; check those against `atx ct --version` as their skill describes. `atx ct mcp` starts a long-running MCP server (its HTTP mode listens on `127.0.0.1` only, and there is no host option); never start it unless the user asks.
 
 ## Custom Skills Reference
 
