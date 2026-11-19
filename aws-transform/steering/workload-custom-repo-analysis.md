@@ -30,8 +30,11 @@ Names change over time. Always use actual names from the live output.
 | `AWS/java-aws-sdk-v1-to-v2` | Migrate AWS SDK for Java v1 → v2 (Maven or Gradle) | None required |
 | `AWS/python-boto2-to-boto3` | Migrate Python boto2 → boto3 | None required |
 | `AWS/nodejs-aws-sdk-v2-to-v3` | Migrate AWS SDK for JavaScript v2 → v3 | None required |
-| `AWS/early-access-java-x86-to-graviton` | Migrate Java x86 code to ARM64/Graviton | None required |
+| `AWS/java-x86-to-graviton` | Migrate Java x86 code to ARM64/Graviton | None required |
 | `AWS/comprehensive-codebase-analysis` | Tech debt analysis + documentation generation | Optional: `additionalPlanContext` for focus area |
+
+`atx ct analysis run --type graviton-readiness` is the read-only Graviton check. Its
+findings point at `AWS/java-x86-to-graviton` as the fix.
 
 ## Transformation Patterns
 
