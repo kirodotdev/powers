@@ -53,6 +53,29 @@ client = boto3.client(
 
 **NEVER omit the endpoint URL** — without it, the CLI/SDK will attempt to resolve a non-existent endpoint and fail.
 
+## Agentic API Endpoint (Runtime)
+
+The Agentic API (`transformagenticservice`) is used at runtime for operations like InvokeAgent, SendMessage, ListAgentInstances, and subagent discovery. Like the Registry API, it requires an explicit endpoint.
+
+**In managed compute** (Bedrock AgentCore, MDE): The `QT_AGENTIC_API_ENDPOINT` environment variable is automatically injected by the platform.
+
+**For local development**: Set it explicitly:
+
+```bash
+export QT_AGENTIC_API_ENDPOINT=https://iad.prod.agenticapi.elastic-gumby.ai.aws.dev
+```
+
+| Stage | Region | Endpoint URL |
+|-------|--------|-------------|
+| prod | us-east-1 | `https://iad.prod.agenticapi.elastic-gumby.ai.aws.dev` |
+| prod | eu-central-1 | `https://fra.prod.agenticapi.elastic-gumby.ai.aws.dev` |
+| gamma | us-east-1 | `https://iad.gamma.agenticapi.elastic-gumby.ai.aws.dev` |
+| gamma | us-west-2 | `https://pdx.gamma.agenticapi.elastic-gumby.ai.aws.dev` |
+
+The SDK's `get_agentic_api_client()` factory reads this variable. Without it, boto3 attempts to resolve a non-existent public endpoint and fails.
+
+**NEVER use raw `boto3.client('transformagenticservice')` without setting `endpoint_url`** — use `get_agentic_api_client()` from the SDK which handles this automatically.
+
 ## Registration Flow
 
 1. **Build & containerize** your agent
