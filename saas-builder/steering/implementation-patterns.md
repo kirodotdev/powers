@@ -21,6 +21,7 @@ inclusion: always
 ### Request/Response Models
 - Define schemas in `schema/` (language-agnostic format preferred)
 - Validate at API boundary with appropriate validation library
+- API request validation with format and type checking
 - Success: Return JSON object or array
 - Error: `{ "error": { "code": "...", "message": "..." } }`
 - Never expose internal database fields directly
@@ -105,6 +106,116 @@ handler(event) {
   return 200 OK
 }
 ```
+### CloudFront and Custom Domains
+
+**Multi-Tenant Distribution Setup**:
+- Create one distribution per tier (for example; Basic, Premium, Enterprise)
+- Use parameters for tenant-specific values:
+  - S3 origin: `${tenantId}.s3.${region}.amazonaws.com`, `/tenants/${tenantId}`
+  - API Gateway origin: `${apiId}.execute-api.${region}.amazonaws.com`, `/${stage}/tenants/${tenantId}`
+- Attach shared Web ACL ARN to distribution
+- Create distribution tenant per tenant with domain names and certificate ARN
+- Pass parameter values (tenantId, apiId, stage, region) to distribution tenant
+
+**ACM Certificate Implementation**:
+- Wildcard for Basic tier: `*.yourplatform.com` with DNS validation (auto-validates via Route53)
+- Tenant-specific for Premium/Enterprise: DNS validation (tenant adds CNAME records)
+- Poll certificate status: `PENDING_VALIDATION` → `ISSUED`
+- Associate certificate ARN with CloudFront distribution tenant once issued
+- All CloudFront certificates must be in us-east-1 region
+- Never use email validation (manual renewal, not scalable)
+
+**DNS Configuration**:
+
+Platform subdomain (instant onboarding):
+- Create CNAME in platform hosted zone: `${tenantId}.yourplatform.com` → CloudFront endpoint
+- TTL: Low value for flexibility during onboarding (e.g., 5 minutes)
+- Uses wildcard certificate
+
+Platform-managed tenant domain (automated validation):
+- Create Route53 hosted zone for tenant domain
+- Request ACM certificate with HTTP(1st choice) or DNS(2nd choice) validation (auto-creates validation CNAME in zone)
+- Create CNAME for traffic: `${tenantDomain}` → CloudFront endpoint
+- Provide Route53 name servers to tenant for domain delegation
+
+Tenant-managed DNS (manual coordination):
+- Request ACM certificate for tenant domain
+- Provide DNS validation CNAME records to tenant
+- Tenant adds CNAME to their DNS provider
+- Poll ACM status until validated
+- Provide CloudFront endpoint CNAME to tenant
+- Tenant adds traffic CNAME to their DNS
+
+**Tenant Onboarding Workflows**:
+- Platform subdomain: Create CNAME → instant access
+- Tenant vanity (manual): Request cert → provide validation records → tenant adds → poll status → associate cert → provide endpoint
+- Platform-managed: Create zone → request cert → auto-validate → add CNAME → provide name servers → tenant delegates
+
+**Critical Implementation Rules**:
+- All CloudFront certificates must be in us-east-1 region
+- Use DNS validation (never email - requires manual renewal)
+- Keep validation CNAMEs in DNS permanently (enables auto-renewal)
+- Use Alias records for apex domains (no query charges)
+- Set TTL low during onboarding for flexibility, increase after stable
+- Monitor certificate validation status and alert tenant if stuck
+- Test DNS propagation (can take minutes to days depending on DNS provider)
+
+### AWS WAF and Security
+
+**Web ACL Configuration**:
+Key settings for CloudFront WAF integration:
+
+- **Scope**: `CLOUDFRONT` (required for CloudFront distributions)
+- **Associate with CloudFront**: Attach Web ACL ARN to multi-tenant distribution
+
+**Positive Security Model** (if using default deny):
+If changing default action to `Block`, add terminating allow rule lower in the rule order:
+- Allow `/api/v1/*` with valid JWT token label, count/label match, with a rate limit
+- Allow static assets: `\.(css|js|png|jpg|gif|ico|woff2?)$`, with a rate limit
+- Allow health check: `/health`, with a rate limit
+
+**API use-case: Positive Security Model Pattern**:
+- Reference WAF Rule Priority Order table above for complete configuration
+- Default action: Allow (with comprehensive rule-based blocking)
+- Alternative: Default Block with explicit allow rules for known good patterns
+- Use labels from managed rules to identify and allow authenticated requests
+
+**DDoS Protection**:
+- AWS Shield Standard: Automatic with CloudFront (no config needed)
+- CloudFront absorbs layer 3/4 attacks at edge locations
+- Route53 provides DNS query flood protection
+- WAF rate limiting prevents application layer attacks
+
+**AWS WAF Rule Priority Order**:
+Configure based on your security requirements. Default action depends on use case:
+- **Websites**: Default Allow with rule-based blocking
+- **APIs**: Default Block (positive security model) with explicit allow rules
+
+**Rule Priority Guidelines** (adjust priorities in increments of 10 for flexibility):
+
+| Priority Range | Rule Type | Action | Purpose |
+|----------------|-----------|--------|---------|
+| 0-10 | AntiDDoS (AMR) | Count/Challenge | DDoS protection (exclude API endpoints from challenge using regex) |
+| 10-20 | IP Allowlist | Allow | Trusted IPs bypass all rules (if applicable) |
+| 30-40 | IP Blocklist | Block | Known malicious IPs, headers, user-agents |
+| 50-60 | Geo-Blocking | Block | High-risk countries based on your requirements |
+| 60-90 | Rate Limiting | Count | Global, per-method (GET, POST/PUT/DELETE) |
+| 90-100 | Body Size Restriction | Count | Tune based on your API requirements (default: 16KB, max: 64KB with additional cost) |
+| 100-110 | IP Reputation (AMR) | None/Challenge | Block/challenge known DDoS IPs, count reconnaissance |
+| 110-120 | DDoS IP Rate Limit | Count | Rate limit for labeled DDoS IPs |
+| 120-130 | Anonymous IP (AMR) | None | Block VPNs, proxies, Tor (if required) |
+| 130-140 | Core Rule Set (AMR) | None | OWASP Top 10 protection |
+| 140-150 | Known Bad Inputs (AMR) | None | Malicious patterns, directory traversal |
+| 150-160 | Language-Specific (AMR) | None | PHP, Linux, etc. (based on your stack) |
+| 160-170 | SQL Injection (AMR) | None | SQLi attack prevention |
+| 170-180 | Admin Protection (AMR) | None | Protect admin paths |
+| 180-190 | Bot Control (AMR) | Count | Common bot detection (optional: upgrade to Targeted for enterprise) |
+
+**Important Configurations**:
+- **Body Inspection**: Default 16KB, up to 64KB available (additional cost)
+- **Token Domains**: Configure for your application domains for use with WAF tokens
+- **CSP Headers**: Set appropriate Content Security Policy headers (if AWS WAF Bot Control required)
+- **Regex Handling**: Exclude static assets and API endpoints from challenges where appropriate (use AWS WAF regex)
 
 ### Environment Configuration
 - Use environment variables for runtime config
