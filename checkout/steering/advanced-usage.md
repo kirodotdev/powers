@@ -2,6 +2,8 @@
 
 This guide covers advanced techniques and patterns for maximizing the value of the Checkout.com Developer Experience MCP in complex integration scenarios.
 
+Tool names are shown exactly as they appear over the wire (snake_case). The server exposes eight read-only tools: `guide`, `api_search`, `list_operations`, `get_operation`, `get_schema`, `docs_search`, `docs_fetch`, and `support_search`.
+
 ## Official Resources
 
 Before diving into advanced usage, familiarize yourself with Checkout.com's official resources:
@@ -19,24 +21,24 @@ For complex integrations, use a systematic approach to discover and understand r
 
 1. **Domain Exploration**
    ```
-   ListOperations with tag "Payments"
-   ListOperations with tag "Workflows"
-   ApiSearch for "webhook"
+   list_operations with tag "Payments"
+   list_operations with tag "Workflows"
+   api_search for "webhook"
    ```
 
 2. **Relationship Mapping**
    ```
-   GetOperation for createPayment
-   GetSchema for PaymentRequest
-   GetSchema for PaymentResponse
-   ApiSearch for "payment capture"
+   get_operation for createPayment
+   get_schema for PaymentRequest
+   get_schema for PaymentResponse
+   api_search for "payment capture"
    ```
 
 3. **Error Scenario Planning**
    ```
-   ApiSearch for "void"
-   ApiSearch for "refund"
-   GetOperation for disputePayment
+   api_search for "void"
+   api_search for "refund"
+   get_operation for disputePayment
    ```
 
 ### Schema Deep Diving
@@ -45,14 +47,14 @@ Understanding complex data structures requires systematic schema exploration:
 
 1. **Identify Core Schemas**
    ```
-   GetSchema for PaymentRequest
-   GetSchema for CustomerRequest
-   GetSchema for WebhookEvent
+   get_schema for PaymentRequest
+   get_schema for CustomerRequest
+   get_schema for WebhookEvent
    ```
 
 2. **Explore Nested Objects**
-   - `GetOperation` shows schema names referenced in request bodies
-   - Use `GetSchema` to follow those references and understand full structures
+   - `get_operation` shows schema names referenced in request bodies
+   - Use `get_schema` to follow those references and understand full structures
    - Map required vs optional fields across related schemas
 
 3. **Validate Data Flow**
@@ -68,24 +70,24 @@ For sophisticated payment processing:
 
 1. **Authorization and Capture Pattern**
    ```
-   GetOperation for authorizePayment
-   GetOperation for capturePayment
-   GetSchema for AuthorizationRequest
-   GetSchema for CaptureRequest
+   get_operation for authorizePayment
+   get_operation for capturePayment
+   get_schema for AuthorizationRequest
+   get_schema for CaptureRequest
    ```
 
 2. **Payment Instrument Management**
    ```
-   ApiSearch for "instrument"
-   GetOperation for createPaymentInstrument
-   GetOperation for updatePaymentInstrument
+   api_search for "instrument"
+   get_operation for createPaymentInstrument
+   get_operation for updatePaymentInstrument
    ```
 
 3. **Recurring Payment Setup**
    ```
-   ApiSearch for "recurring"
-   ApiSearch for "subscription"
-   GetSchema for RecurringPaymentRequest
+   api_search for "recurring"
+   api_search for "subscription"
+   get_schema for RecurringPaymentRequest
    ```
 
 ### Platform and Marketplace Integrations
@@ -94,23 +96,23 @@ For multi-entity scenarios:
 
 1. **Sub-Entity Management**
    ```
-   ListOperations with tag "Platforms"
-   GetOperation for createSubEntity
-   GetSchema for SubEntityRequest
+   list_operations with tag "Platforms"
+   get_operation for createSubEntity
+   get_schema for SubEntityRequest
    ```
 
 2. **Split Payment Scenarios**
    ```
-   ApiSearch for "split"
-   ApiSearch for "marketplace"
-   GetSchema for SplitPaymentRequest
+   api_search for "split"
+   api_search for "marketplace"
+   get_schema for SplitPaymentRequest
    ```
 
 3. **Onboarding Workflows**
    ```
-   ApiSearch for "onboard"
-   GetOperation for uploadDocument
-   GetSchema for OnboardingRequest
+   api_search for "onboard"
+   get_operation for uploadDocument
+   get_schema for OnboardingRequest
    ```
 
 ### Advanced Dispute Management
@@ -119,18 +121,45 @@ For comprehensive dispute handling:
 
 1. **Dispute Lifecycle Management**
    ```
-   GetOperation for getDispute
-   GetOperation for acceptDispute
-   GetOperation for provideDisputeEvidence
-   GetSchema for DisputeEvidence
+   get_operation for getDispute
+   get_operation for acceptDispute
+   get_operation for provideDisputeEvidence
+   get_schema for DisputeEvidence
    ```
 
 2. **Chargeback Prevention**
    ```
-   ApiSearch for "alert"
-   ApiSearch for "prevention"
-   GetOperation for getDisputeAlert
+   api_search for "alert"
+   api_search for "prevention"
+   get_operation for getDisputeAlert
    ```
+
+## Working With Documentation and Support Content
+
+### The docs_search / docs_fetch Two-Step Contract
+
+`docs_search` returns document pointers (`urlPath`, `whyMatched`, `summary`, `totalChunks`, `matchedChunk`), never full page text. Always follow up with `docs_fetch` to read the page.
+
+1. **Find the Page**
+   ```
+   docs_search for "3D Secure setup"
+   ```
+
+2. **Read the Page**
+   ```
+   docs_fetch with the best result's urlPath, starting at its matchedChunk
+   ```
+
+3. **Page Through Longer Guides**
+   - Read `totalChunks` and `hasMore` from the response
+   - Fetch chunks 1..totalChunks while `hasMore` is true
+   - Most pages are a single chunk, so one fetch is usually the whole page
+
+### Choosing the Right Search Tool
+
+- `api_search` - the OpenAPI reference (operations and schemas)
+- `docs_search` + `docs_fetch` - developer documentation (guides, tutorials, concepts)
+- `support_search` - the support site (troubleshooting, FAQs, account and operational topics)
 
 ## Workflow Automation Patterns
 
@@ -140,16 +169,16 @@ Understanding webhook and event patterns:
 
 1. **Event Type Discovery**
    ```
-   DocsSearch for "webhook events"
-   GetSchema for WebhookEvent
-   ApiSearch for "event"
+   docs_search for "webhook events", then docs_fetch the best page
+   get_schema for WebhookEvent
+   api_search for "event"
    ```
 
 2. **Workflow Configuration**
    ```
-   ListOperations with tag "Workflows"
-   GetOperation for createWorkflow
-   GetSchema for WorkflowRequest
+   list_operations with tag "Workflows"
+   get_operation for createWorkflow
+   get_schema for WorkflowRequest
    ```
 
 ### Identity Verification Workflows
@@ -158,36 +187,37 @@ For KYC and compliance:
 
 1. **Verification Process Discovery**
    ```
-   ListOperations with tag "Identity Verification"
-   GetOperation for createIdentityVerification
-   GetSchema for IdentityVerificationRequest
+   list_operations with tag "Identity Verification"
+   get_operation for createIdentityVerification
+   get_schema for IdentityVerificationRequest
    ```
 
 2. **Document Management**
    ```
-   ApiSearch for "document"
-   GetOperation for uploadDocument
-   GetSchema for DocumentRequest
+   api_search for "document"
+   get_operation for uploadDocument
+   get_schema for DocumentRequest
    ```
 
 ## Performance and Optimization
 
 ### Efficient Tool Usage
 
-1. **Start with Search** - Use `ApiSearch` or `DocsSearch` to find relevant operations first
-2. **Get Simplified Details** - `GetOperation` returns token-efficient responses (~300 tokens)
-3. **Drill into Schemas** - Only call `GetSchema` when you need full data structure details
-4. **Use Tag Filtering** - `ListOperations` with a tag is more efficient than broad searches
+1. **Start with Search** - Use `api_search` or `docs_search` to find relevant operations or pages first
+2. **Get Simplified Details** - `get_operation` returns token-efficient responses
+3. **Drill into Schemas** - Only call `get_schema` when you need full data structure details
+4. **Use Tag Filtering** - `list_operations` with a tag is more efficient than broad searches
+5. **Fetch Docs on Demand** - `docs_search` returns compact pointers; only `docs_fetch` the pages you actually need
 
 ### Token-Efficient Workflows
 
-The `GetOperation` tool returns simplified responses by default:
+The `get_operation` tool returns simplified responses by default:
 - Parameters show only name, location, required status, and type
-- Request bodies show schema names with hints to use `GetSchema()`
+- Request bodies show schema names with hints to use `get_schema`
 - Responses are grouped into success/error code arrays
 - Security shows only required scopes
 
-This means a typical workflow uses ~300 tokens per operation lookup instead of ~1,200.
+Similarly, `docs_search` keeps result payloads small by returning pointers plus short preview snippets, deferring full page text to `docs_fetch`.
 
 ## Security and Compliance
 
@@ -195,29 +225,29 @@ This means a typical workflow uses ~300 tokens per operation lookup instead of ~
 
 1. **Auth Method Discovery**
    ```
-   DocsSearch for "authentication"
-   DocsSearch for "authorization"
+   docs_search for "authentication", then docs_fetch the page
+   docs_search for "authorization", then docs_fetch the page
    ```
 
 2. **Token Management**
    ```
-   ApiSearch for "token"
-   GetOperation for createToken
-   GetSchema for TokenRequest
+   api_search for "token"
+   get_operation for createToken
+   get_schema for TokenRequest
    ```
 
 ### PCI and Compliance
 
 1. **Secure Data Handling**
    ```
-   DocsSearch for "PCI compliance"
-   DocsSearch for "sensitive data"
+   docs_search for "PCI compliance", then docs_fetch the page
+   docs_search for "sensitive data", then docs_fetch the page
    ```
 
 2. **Audit and Logging**
    ```
-   ApiSearch for "audit"
-   ApiSearch for "log"
+   api_search for "audit"
+   api_search for "log"
    ```
 
 ## Best Practices for Power Usage
