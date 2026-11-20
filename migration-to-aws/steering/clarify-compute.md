@@ -184,3 +184,46 @@ F -> same as default (B)
 ```
 
 Default: B — `cloud_run_monthly_spend: "$100-$500"`.
+
+---
+
+## Q11b — Target Graviton (ARM64) for eligible compute?
+
+_Applies when:_ Compute resources are present in the inventory. (If no compute resources, skip — do not write `cpu_architecture`.)
+
+**Risk signals (precise definition):** a `graviton_profile` entry carries a risk signal when its `tier` is `incompatible`, or its `tier` is `conditional`/`unknown` due to any of: native C extensions (`node-gyp`, niche Python C packages), native gem extensions, JNI (`System.loadLibrary`/`JNI_OnLoad`), recompile-required languages (Rust/C/C++) or x86 SIMD/intrinsics, a `platform: linux/amd64` pin, proprietary/vendor AMIs, or an architecture that could not be determined (`unknown`). These mirror the detection tables in `schema-graviton.md`.
+
+**Decision table (evaluate top-down; first match wins):**
+
+| Discovery state                                                                                                                                                                                           | Action                                                                                                                                                                                                        |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| No `graviton_profile` emitted at all (e.g., billing-only, or Discover produced none) but compute is present                                                                                               | **Ask** Q11b — architecture is unconfirmed                                                                                                                                                                    |
+| ALL compute entries `tier: ready`                                                                                                                                                                         | **Skip.** Write `cpu_architecture = {"value": "graviton", "chosen_by": "default"}` (matches existing `db.t4g` default)                                                                                        |
+| Mix of `ready` + `incompatible` only (no `conditional`/`unknown`)                                                                                                                                         | **Skip the question** but write `cpu_architecture = {"value": "mixed", "chosen_by": "default"}` (Graviton where ready, x86 for incompatible) and state this in the AI/Clarify summary so the user is informed |
+| All profiles for not-all-`ready` compute are `source: "iac"` with no `app_code` profile for the same service (architecture unconfirmed by code — e.g. a `conditional` from a `machine_type` signal alone) | **Ask** Q11b                                                                                                                                                                                                  |
+| Any entry `conditional` or `unknown` with a risk signal                                                                                                                                                   | **Ask** Q11b                                                                                                                                                                                                  |
+| Any entry `incompatible` only, no `ready` compute at all                                                                                                                                                  | **Skip.** Write `cpu_architecture = {"value": "x86", "chosen_by": "default"}`                                                                                                                                 |
+
+**Rationale:** Graviton (ARM64) is ~15–20% cheaper per hour at the same vCPU/memory, so we default to it whenever every service is confirmed compatible. We only spend a question when a service has a real compatibility caveat or the architecture is unconfirmed — never defaulting Graviton onto an `unknown` workload without asking.
+
+> Some of your services have ARM64 compatibility considerations. Graviton (ARM64) instances are ~15–20% cheaper per hour. Your [language] workloads appear compatible; [service X] has [caveat]. How would you like to proceed?
+>
+> A) Yes — target Graviton for all eligible services (recommended)
+> B) No — stay on x86 for everything
+> C) Let me decide per-service (Graviton where ready, x86 for flagged services)
+
+| Answer             | Recommendation Impact                                                                  |
+| ------------------ | -------------------------------------------------------------------------------------- |
+| Yes — all eligible | Graviton for ready + conditional services; x86 only for incompatible ones              |
+| No — stay x86      | x86 everywhere; forgoes the ~15–20% hourly discount                                    |
+| Per-service        | Graviton for `ready`; flagged `conditional`/`unknown` services stay x86 pending review |
+
+Interpret:
+
+```
+A -> cpu_architecture: {"value": "graviton", "chosen_by": "user"}
+B -> cpu_architecture: {"value": "x86", "chosen_by": "user"}
+C -> cpu_architecture: {"value": "mixed", "chosen_by": "user"}
+```
+
+Default (if skipped/unsure): `{"value": "graviton", "chosen_by": "default"}` when all-ready; otherwise `{"value": "mixed", "chosen_by": "default"}`. See `graviton.md` and `schema-graviton.md`.

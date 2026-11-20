@@ -1,0 +1,34 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://awslabs.github.io/startups/migration-to-aws/state/phase-status.schema.json",
+  "title": ".phase-status.json",
+  "description": "Canonical schema for the shared migration state file (.phase-status.json) that DSL-driven migration skills read and advance. The valid phase NAMES are NOT enumerated here — they are whatever phases the skill declares (its phase files). This schema is skill-agnostic: adding a phase to a skill requires no change to this file.",
+  "type": "object",
+  "required": ["migration_id", "last_updated", "phases"],
+  "additionalProperties": false,
+  "properties": {
+    "migration_id": {
+      "type": "string",
+      "description": "Matches the $MIGRATION_DIR folder name (e.g. 0226-1430). Set at creation; never changes."
+    },
+    "last_updated": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp; updated after each phase-status change."
+    },
+    "current_phase": {
+      "type": "string",
+      "description": "The phase to run next: a declared phase name, or the 'complete' terminal. Optional but recommended; when present it is authoritative for phase selection."
+    },
+    "phases": {
+      "type": "object",
+      "description": "One entry per phase the skill declares (backbone and sidebar). Keys are the skill's phase names — this schema does not enumerate them.",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "string",
+        "enum": ["pending", "in_progress", "completed"],
+        "description": "Phase status. Progresses pending -> in_progress -> completed and never goes backward, except a confirmed re-entry reset (see INTERPRETER.md § _re_entry_guard). At most one backbone phase is in_progress at a time."
+      }
+    }
+  }
+}

@@ -6,6 +6,7 @@ Lightweight orchestrator that delegates to domain-specific discoverers. Each sub
 ## Sub-Discovery Files
 
 - **discover-iac.md** → `gcp-resource-inventory.json` + `gcp-resource-clusters.json` (if Terraform found); may also write `ai-workload-profile.json` when **Vertex-strong** (see `discover-iac.md` Step 7d)
+- **discover-live.md** → `gcp-resource-inventory.json` + `gcp-resource-clusters.json` from the user's authenticated `gcloud` CLI (read-only, consent-gated); merges into the IaC inventory with drift when both run
 - **discover-app-code.md** → `ai-workload-profile.json` when AI confidence ≥ 70% (may **merge** with an existing `iac_vertex` profile)
 - **discover-billing.md** → `billing-profile.json` (if billing data found)
 
@@ -18,7 +19,7 @@ Multiple artifacts can be produced in a single run — they are not mutually exc
      - `[A] Resume: Continue with [latest run]`
      - `[B] Fresh: Create new migration run`
      - `[C] Cancel`
-   - **If resuming:** Set `$MIGRATION_DIR` to the selected run's directory. Read its `.phase-status.json` and skip to the appropriate phase per the State Machine in POWER.md.
+   - **If resuming:** Set `$MIGRATION_DIR` to the selected run's directory. Read its `.phase-status.json` and skip to the appropriate phase per the State Machine in gcp-orchestrator.md.
    - **If fresh or no existing runs:** Continue to step 2.
 2. Create `.migration/[MMDD-HHMM]/` directory (e.g., `.migration/0226-1430/`) using current timestamp (MMDD = month/day, HHMM = hour/minute). Set `$MIGRATION_DIR` to this new directory.
 3. Create `.migration/.gitignore` file (if not already present) with exact content:
@@ -43,6 +44,7 @@ Multiple artifacts can be produced in a single run — they are not mutually exc
        "clarify": "pending",
        "design": "pending",
        "estimate": "pending",
+       "workshop": "pending",
        "generate": "pending",
        "feedback": "pending"
      }
@@ -58,20 +60,20 @@ Scan the project directory for each input type. Only load sub-discovery files wh
 **1a. Check for Terraform files:**
 Glob for: `**/*.tf`, `**/*.tfvars`, `**/*.tfstate`, `**/.terraform.lock.hcl`
 
-- If found → Load `steering/discover-iac.md`
+- If found → Load `discover-iac.md`
 - If not found → Skip. Log: "No Terraform files found — skipping IaC discovery."
 
 **1b. Check for source code / dependency manifests:**
 Glob for: `**/*.py`, `**/*.js`, `**/*.ts`, `**/*.jsx`, `**/*.tsx`, `**/*.go`, `**/*.java`, `**/*.scala`, `**/*.kt`, `**/*.rs`, `**/requirements.txt`, `**/setup.py`, `**/pyproject.toml`, `**/Pipfile`, `**/package.json`, `**/go.mod`, `**/pom.xml`, `**/build.gradle`
 
-- If found → Load `steering/discover-app-code.md`
+- If found → Load `discover-app-code.md`
 - If not found → Skip. Log: "No source code found — skipping app code discovery."
 
 **1c. Check for billing data:**
 Glob for: `**/*billing*.csv`, `**/*billing*.json`, `**/*cost*.csv`, `**/*cost*.json`, `**/*usage*.csv`, `**/*usage*.json`
 
 - If not found → Skip. Log: "No billing files found — skipping billing discovery."
-- If found AND **no** Terraform files from 1a → Load `steering/discover-billing.md` (billing is the primary source — needs full processing for the billing-only design path).
+- If found AND **no** Terraform files from 1a → Load `discover-billing.md` (billing is the primary source — needs full processing for the billing-only design path).
 - If found AND Terraform files **were** found in 1a → Use lightweight extraction below. Do **not** load `discover-billing.md`.
 
 **Lightweight billing extraction (when IaC is the primary source):**
@@ -85,7 +87,7 @@ When Terraform is present, billing data is supplementary — only service-level 
    - Extracts top 3 SKU descriptions per service by cost
    - Scans service and SKU descriptions (case-insensitive) for AI keywords: `vertex ai`, `ai platform`, `bigquery ml`, `generative ai`, `gemini`, `document ai`, `vision ai`, `speech-to-text`, `natural language`, `dialogflow`, `translation`
    - Outputs JSON to stdout matching the schema in step 4
-3. Run the script: try `python3 _extract_billing.py` first. If `python3` is not found, try `python _extract_billing.py`. If neither is available, delete the script and fall back to loading `steering/discover-billing.md`.
+3. Run the script: try `python3 _extract_billing.py` first. If `python3` is not found, try `python _extract_billing.py`. If neither is available, delete the script and fall back to loading `discover-billing.md`.
 4. Write the script's JSON output to `$MIGRATION_DIR/billing-profile.json` with this exact schema:
 
    ```json
@@ -110,7 +112,31 @@ When Terraform is present, billing data is supplementary — only service-level 
 
 **Critical:** Do **not** Read the billing file with the Read tool. Do **not** load `discover-billing.md` or `schema-discover-billing.md`.
 
-**If NONE of the three checks found files**: STOP and output: "No GCP sources detected. Provide at least one source type (Terraform files, application code, or billing exports) and try again."
+**1d. Live discovery (gcloud CLI):**
+Runs AFTER 1a–1c sub-discoveries complete, so its IaC merge sees their output.
+
+- If `$MIGRATION_DIR/live-capture/manifest.json` already exists (a prior capture,
+  e.g. a resumed run) → Load `discover-live.md` and
+  execute from its Step 3 (parse the existing captures; skip consent/preflight/
+  capture — they already happened).
+- Else if Terraform files were found in 1a → offer ONCE as an optional cross-check:
+  "I found Terraform covering your infrastructure. Want me to cross-check it
+  against your live GCP project via your authenticated gcloud CLI (read-only,
+  with your consent)? This catches resources managed outside Terraform."
+  On yes → Load `discover-live.md`. On no → continue
+  (do not re-ask this run).
+- Else if NO Terraform was found (regardless of whether 1b/1c found app code or
+  billing files — those cannot produce an infrastructure inventory) → offer live
+  discovery as the primary infrastructure source: "No Terraform detected — I can
+  discover your project's infrastructure directly via your authenticated gcloud
+  CLI (read-only, with your consent). Proceed?" On yes → Load
+  `discover-live.md`. On no → continue with whatever
+  1b/1c produced (billing-only design path remains the fallback).
+- If, after the offer, NO sub-discovery produced or will produce any artifact
+  (nothing found by 1a–1c AND live was declined or unavailable) → STOP and
+  output: "No GCP sources detected. Provide at least one source type (Terraform
+  files, application code, or billing exports), or re-run and accept live
+  discovery."
 
 ## Step 2: Check Outputs
 
@@ -128,16 +154,17 @@ After all loaded sub-discoveries complete, check what artifacts were produced in
      - If its Step 4 exit gate applied (overall AI confidence **below** 70%) **and** no `ai-workload-profile.json` exists -> **allow completion** (app-code route may produce no AI profile).
      - If Step 4 exit applied with confidence below 70% **but** `ai-workload-profile.json` exists with `metadata.profile_source` = `"iac_vertex"` -> **allow completion** (IaC-inferred profile retained).
      - If execution continued to Steps 5–8 (confidence **≥** 70%) -> **require** `ai-workload-profile.json`.
+   - If `discover-live.md` ran AND capture happened (`$MIGRATION_DIR/live-capture/manifest.json` exists) -> require `gcp-resource-inventory.json` and `gcp-resource-clusters.json`, with `live_metadata` present in the inventory. (If the user declined consent or gcloud was unavailable, the sub-file exited cleanly — no artifact required.)
    - If full `discover-billing.md` ran OR lightweight billing extraction ran -> require `billing-profile.json`
    - If any triggered route is missing its required artifact(s): STOP and output: "Discover route [name] did not produce required artifacts. Resolve the sub-discovery failure before completing Phase 1."
 
 ## Step 3: Migration Preview
 
-Load and execute `steering/discover-preview.md` to compute the migration preview. This produces `migration-preview.json` and the preview chat block. Skip only if Step 2 found no artifacts (already STOPped).
+Load and execute `discover-preview.md` to compute the migration preview. This produces `migration-preview.json` and the preview chat block. Skip only if Step 2 found no artifacts (already STOPped).
 
 ## Completion Handoff Gate (Fail Closed)
 
-Load `steering/handoff-gates.md`. **Re-read from disk** every artifact below before checking.
+Load `handoff-gates.md`. **Re-read from disk** every artifact below before checking.
 
 **Re-entry guard:** If `preferences.json` exists and `phases.clarify` is `"completed"`: STOP unless the user explicitly confirms re-running Discover. Emit:
 
@@ -166,12 +193,13 @@ Only after `HANDOFF_OK`. In the **same turn** as the output message below, use t
 Output to user — build message from whichever artifacts exist:
 
 - If `gcp-resource-inventory.json` exists: "Discovered X total resources across Y clusters."
+- If live discovery ran: "Live discovery captured N resources from project [id]." Plus, when IaC also ran: "Drift check: A resources live but not in Terraform, B in Terraform but not live, C config conflicts (live values used)." Plus, when `live_metadata.unmapped_asset_types` is non-empty: "Skipped M unmapped asset types (top: X, Y, Z) — full list in live_metadata."
 - If `ai-workload-profile.json` exists: "Detected AI workloads (source: [ai_source])."
 - If `billing-profile.json` exists: "Parsed billing data ($Z/month across N services)."
 
 Append the preview block from Step 3 to the output message below.
 
-Format: "Discover phase complete. [artifact summaries joined by space] [preview block from discover-preview.md Step 6] Next required step: Phase 2 — Clarify. Load `steering/clarify.md` now. Do not load Design, Estimate, or Generate until Clarify completes and `.phase-status.json` marks `phases.clarify` as `completed`."
+Format: "Discover phase complete. [artifact summaries joined by space] [preview block from discover-preview.md Step 6] Next required step: Phase 2 — Clarify. Load `clarify.md` now. Do not load Design, Estimate, or Generate until Clarify completes and `.phase-status.json` marks `phases.clarify` as `completed`."
 
 ## Output Files
 

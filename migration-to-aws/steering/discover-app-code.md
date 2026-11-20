@@ -119,6 +119,23 @@ If **no source code files were found** (Step 0 exit gate), do **not** set `webso
 
 ---
 
+## Step 2.7: Graviton (ARM64) Compatibility Scan
+
+After Step 2.5, assess each detected compute workload for Graviton (ARM64) compatibility and emit a `graviton_profile` entry per service. **Load** `schema-graviton.md` for the detection-signal tables and the `graviton_profile` schema; **load** `graviton.md` for tier definitions.
+
+For each compute workload (web service, worker, function, container) detected from source code and manifests:
+
+1. Determine the **language runtime** from the dependency manifest. Python, Node.js, Go, PHP, Ruby, and pure-JVM Java (Corretto/OpenJDK, no JNI) → `tier: "ready"`.
+2. Scan for **risk signals** (downgrade to `conditional`): native C extensions (`node-gyp`, niche Python C packages), native gem extensions, JNI (`System.loadLibrary`, `JNI_OnLoad`), recompile-required languages (Rust/C/C++ without x86 assembly), `platform: linux/amd64` pinned in `docker-compose.yml` or build config.
+3. Scan for **blockers** (`tier: "incompatible"`): GPU/CUDA usage (`import cuda`, `torch.cuda`, `nvidia`) → caveat `"route to G5/G6"`; Windows/.NET Framework targets.
+4. If a `Dockerfile` is present, record whether its `FROM` base image has a multi-arch variant as a `signal`.
+
+Write a `graviton_profile` array into the discovery output (alongside `models[]`/`workloads[]` when present, otherwise in the discovery metadata). Each entry uses the schema in `schema-graviton.md` with `source: "app_code"`. `graviton_profile` is an empty array when no compute workloads are detected.
+
+If **no source code files were found** (Step 0 exit gate), do **not** emit `graviton_profile` from this file — `discover-iac.md` will emit coarser profiles from `machine_type` signals, and Clarify will confirm architecture.
+
+---
+
 ## Step 3: Flag AI Signals
 
 Scan source code files and dependency manifests for AI-relevant patterns. For each match, record the pattern, file location, and confidence score.
@@ -296,7 +313,7 @@ Scan files that contained AI signals for specific model information:
 
 After extracting model details (Step 5), split the detected AI usage into distinct **workloads** — one per unique combination of `(model_id, sdk_method, structured_output)`. This enables downstream phases to produce one Bedrock recommendation per workload instead of collapsing multiple capabilities into a single recommendation.
 
-**Load** `steering/sdk-capability-map.json` from the plugin source. If missing or malformed, halt with diagnostic: `"[Discover] Failed to load sdk-capability-map.json"`.
+**Load** `sdk-capability-map.json` from the plugin source. If missing or malformed, halt with diagnostic: `"[Discover] Failed to load sdk-capability-map.json"`.
 
 **For each AI call site detected in Steps 3–5:**
 
@@ -546,7 +563,7 @@ If no Terraform files were provided, set `infrastructure: []`.
 
 ## Step 8: Generate ai-workload-profile.json
 
-Load `steering/schema-discover-ai.md` and generate output following the `ai-workload-profile.json` schema.
+Load `schema-discover-ai.md` and generate output following the `ai-workload-profile.json` schema.
 
 ### Pre-existing IaC profile (`profile_source: "iac_vertex"`)
 
@@ -630,7 +647,7 @@ After generating the output file, the parent `discover.md` handles the phase sta
 
 ## Design Phase Integration
 
-The Design phase (`steering/design.md`) uses `ai-workload-profile.json`:
+The Design phase (`design.md`) uses `ai-workload-profile.json`:
 
 1. **`summary.ai_source`** — Routes to the correct design reference: `"gemini"` → `design-ref-ai-gemini-to-bedrock.md`, `"openai"` → `design-ref-ai-openai-to-bedrock.md`, `"anthropic"` → `design-ref-ai-anthropic-to-bedrock.md` (Anthropic SDK → Bedrock Converse API client swap), `"both"` → load both Gemini and OpenAI refs, `"other"` → `design-ref-ai.md` (traditional ML / Vision API / Speech API only)
 2. **`models`** — Determines which Bedrock models to recommend via the model selection decision tree

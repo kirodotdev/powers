@@ -16,7 +16,7 @@ The fields **`aws_monthly_premium`**, **`aws_monthly_balanced`**, **`aws_monthly
 
 **How to read:** Scenario order is **highest -> middle -> lowest** monthly AWS estimate for the modeled architecture. **Balanced** is the **primary** comparison row vs the GCP baseline. **Premium** and **Optimized** are **bounds** (HA vs cost-optimization skew).
 
-**Terraform:** When the Generate phase produces `terraform/`, it implements **one** infrastructure baseline aligned with the **Balanced** scenario (`aligned_with_estimate_tier` in the `migration_summary` output). **Premium** and **Optimized** remain **estimate-only** unless the customer edits IaC. See `steering/generate-artifacts-infra.md` (`terraform/README.md`, `main.tf` header comment).
+**Terraform:** When the Generate phase produces `terraform/`, it implements **one** infrastructure baseline aligned with the **Balanced** scenario (`aligned_with_estimate_tier` in the `migration_summary` output). **Premium** and **Optimized** remain **estimate-only** unless the customer edits IaC. See `generate-artifacts-infra.md` (`terraform/README.md`, `main.tf` header comment).
 
 ---
 
@@ -47,10 +47,14 @@ The fields **`aws_monthly_premium`**, **`aws_monthly_balanced`**, **`aws_monthly
 
   "current_costs": {
     "source": "billing_data|inventory_estimate|preferences|user_provided|unavailable",
+    "accuracy": "±5% (billing) | ±20-30% (inventory_estimate) — states the SOURCE's confidence; distinct from top-level accuracy_confidence, which covers AWS pricing mode",
     "gcp_monthly": 300,
     "gcp_annual": 3600,
-    "baseline_note": "From billing-profile.json actual spend data",
-    "breakdown": { "compute": 75, "database": 50, "storage": 40, "networking": 20, "other": 15 }
+    "baseline_note": "From billing-profile.json actual spend data — or the mandatory derived-baseline caveat for inventory_estimate",
+    "breakdown": { "compute": 75, "database": 50, "storage": 40, "networking": 20, "other": 15 },
+    "derivation": [],
+    "excluded_resources": [],
+    "warnings": []
   },
 
   "projected_costs": {
@@ -217,6 +221,8 @@ The fields **`aws_monthly_premium`**, **`aws_monthly_balanced`**, **`aws_monthly
   "recommendation": {
     "path": "migrate_optimized",
     "path_label": "Migrate with Optimizations",
+    "outcome": "conditional_go",
+    "outcome_label": "Go, with conditions",
     "roi_justification": "2.6 month payback with operational efficiency; $475K 5-year savings",
     "confidence": "high",
     "migrate_if": [
@@ -227,6 +233,21 @@ The fields **`aws_monthly_premium`**, **`aws_monthly_balanced`**, **`aws_monthly
     "stay_if": [
       "cost is the only metric and AWS is more expensive",
       "team deeply experienced with GCP"
+    ],
+    "conditions": [
+      "Confirm database availability requirement — Multi-AZ was assumed, not confirmed (2x cost factor)"
+    ],
+    "decision_basis": {
+      "measured": [
+        "GCP baseline from billing export ($8,200/mo)",
+        "Cloud SQL disk size from Terraform (10 GB)"
+      ],
+      "assumed": ["Multi-AZ availability (defaulted)", "24/7 Cloud Run traffic (defaulted)"],
+      "unknown": ["Compliance requirements (Q2 unanswered)"]
+    },
+    "would_flip_if": [
+      "Single-AZ acceptable → AWS estimate drops ~$140/mo, strengthens go",
+      "HIPAA applies → BAA services + controls add ~$25/mo and re-gate region choice"
     ],
     "next_steps": [
       "Review financial case with stakeholders",
@@ -248,13 +269,27 @@ The `recommendation` block is the single source of truth for migrate/stay guidan
 | `"migrate_phased"`    | `"Phased Migration"`           |
 | `"stay"`              | `"Stay on GCP"`                |
 
+**Decision outcome (additive — v2 fields):** `outcome` expresses the _decision_, independent of the execution-path vocabulary above. `path` answers "how would we migrate"; `outcome` answers "should we, now". Both are written; consumers that only read `path` keep working.
+
+| `outcome` value        | `outcome_label` (display) | Meaning                                                                                                                                                       |
+| ---------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `"go"`                 | `"Go"`                    | Evidence supports migrating now; no unresolved material assumption                                                                                            |
+| `"conditional_go"`     | `"Go, with conditions"`   | Migrate, but named conditions (see `conditions[]`) must be confirmed or bounded first                                                                         |
+| `"defer_for_evidence"` | `"Defer — get evidence"`  | A hard trigger fired (see `estimate-infra.md` trigger table); decision needs one named piece of evidence. **Expected rare** — when in doubt, `conditional_go` |
+| `"stay"`               | `"Stay on GCP"`           | Evidence favors staying — reachable on any decisive factor, not only "cost is sole metric"                                                                    |
+
 Validation:
 
 - `path` is one of: `"migrate_optimized"`, `"migrate_phased"`, `"stay"`
 - `path_label` matches the corresponding display string for `path`
+- `outcome`, when present, is one of: `"go"`, `"conditional_go"`, `"defer_for_evidence"`, `"stay"` (readers MUST tolerate absence — pre-extension artifacts)
+- `conditions` is a non-empty array of strings when `outcome == "conditional_go"`
+- `decision_basis`, when present, has `measured`, `assumed`, and `unknown` string arrays (any may be empty)
+- `would_flip_if`, when present, is an array of strings
+- `outcome == "stay"` requires `path == "stay"`; `outcome == "defer_for_evidence"` may pair with any `path` (path shows what migration _would_ look like)
 - `migrate_if` and `stay_if` are non-empty arrays of strings
 - `next_steps` is a non-empty array of strings
-- Block is **REQUIRED** in `estimation-infra.json` output (Part 7 must write it)
+- Block is **REQUIRED** in `estimation-infra.json` output (Part 7 must write it; Part 7 always writes the v2 fields)
 
 ## Observability Entry in `projected_costs.breakdown`
 
@@ -263,20 +298,20 @@ When Part 2B of `estimate-infra.md` produces an observability cost, it is includ
 ```json
 {
   "service": "CloudWatch + X-Ray (Observability)",
-  "low": 7.00,
-  "mid": 10.00,
-  "high": 15.00,
+  "low": 4.00,
+  "mid": 5.21,
+  "high": 8.00,
   "accuracy": "±30%",
   "pricing_source": "cached",
   "components": {
-    "log_ingestion": 5.00,
-    "log_storage": 0.45,
-    "custom_metrics": 3.00,
-    "alarms": 0.50,
+    "log_ingestion": 3.50,
+    "log_storage": 0.21,
+    "custom_metrics": 1.50,
+    "alarms": 0.00,
     "tracing": 0.00
   },
   "volume_source": "heuristic",
-  "note": "GCP Cloud Operations includes 50 GB/month free logging, free alerting, and free profiling. CloudWatch charges from the first GB."
+  "note": "GCP Cloud Operations includes 50 GB/month free logging, free alerting, and free profiling. CloudWatch always-free tier includes 5 GB logs, 10 custom metrics, and 10 alarms per month. Estimate assumes usage above free-tier limits."
 }
 ```
 
@@ -287,6 +322,28 @@ When Part 2B of `estimate-infra.md` produces an observability cost, it is includ
 - `tracing` is 0 when no tracing signals detected in source — do not add X-Ray costs unprompted
 - `mid` equals the sum of all `components` values
 - This entry REPLACES any CloudWatch/log/metric portion in the "Supporting" row — never both
+
+## `architecture_comparison` (optional — Graviton/ARM64)
+
+Present in `estimation-infra.json` only when `preferences.json` → `design_constraints.cpu_architecture.value` is `graviton` or `mixed` (see `estimate-infra.md` Part 2C and `schema-graviton.md`). Omit entirely for `x86`.
+
+```json
+"architecture_comparison": {
+  "graviton_monthly": 245.00,
+  "x86_equivalent_monthly": 298.00,
+  "savings_amount": 53.00,
+  "savings_percent": 17.8,
+  "note": "Hourly price savings only; performance uplift may allow further downsizing after load testing"
+}
+```
+
+**Validation for architecture_comparison entry:**
+
+- All four numeric fields present; `savings_amount` equals `x86_equivalent_monthly − graviton_monthly`
+- `savings_percent` equals `savings_amount / x86_equivalent_monthly × 100` (one decimal)
+- Models the hourly price discount **only** — never performance-uplift capacity reduction
+- Not a fourth pricing tier — Graviton is the architecture within the Balanced/Premium/Optimized totals
+- Canonical field definitions live in `schema-graviton.md`
 
 ## Output Validation Checklist
 

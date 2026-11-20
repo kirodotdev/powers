@@ -17,7 +17,7 @@ If any required file is missing: **STOP**. Output: "Missing required artifact: [
 
 ## Part 1: Migration Timeline
 
-> **Before building the timeline, load `steering/migration-complexity.md` and classify the migration tier using inputs from `aws-design.json`, `gcp-resource-clusters.json`, `estimation-infra.json`, and `preferences.json`.**
+> **Before building the timeline, load `migration-complexity.md` and classify the migration tier using inputs from `aws-design.json`, `gcp-resource-clusters.json`, `estimation-infra.json`, and `preferences.json`.**
 
 Build a timeline using the **Infrastructure Path** ranges for the determined tier. Also consider:
 
@@ -214,7 +214,7 @@ Add additional risks based on discovered infrastructure:
 - If **stateful services** (Redis, Elasticsearch): Add "State migration data loss" (low/critical)
 - If **multiple regions** in GCP: Add "Cross-region dependency during migration" (medium/medium)
 - If **AI workloads** coexist: Add "Model performance drift on Bedrock" (medium/high)
-- If **BigQuery** resources exist (`google_bigquery_*` or `aws_service` is **`Deferred — specialist engagement`** in `aws-design.json`): Add "BigQuery migration complexity" (high/high) with mitigation: "**No automated AWS analytics target** — engage **AWS account team** and/or **data analytics migration partner** before architecture or cost commitments; plugin does not prescribe Athena/Redshift/Glue."
+- If **BigQuery** resources exist (`google_bigquery_*` or `aws_service` is **`Deferred — specialist engagement`** in `aws-design.json`): Add risk **"BigQuery AWS target not yet selected"** (severity **medium**, not high) with mitigation: "Engage **AWS account team** and/or **data analytics migration partner** to evaluate the best analytics migration path; does **not** block phased migration of compute, database, and AI. Plugin does not prescribe Athena/Redshift/Glue."
 
 ## Part 3: Success Metrics
 

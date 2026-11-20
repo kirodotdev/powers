@@ -11,6 +11,7 @@ Lightweight phase tracking. This is the SINGLE source of truth for the `.phase-s
     "clarify": "completed",
     "design": "in_progress",
     "estimate": "pending",
+    "workshop": "pending",
     "generate": "pending",
     "feedback": "pending"
   }
@@ -28,5 +29,7 @@ Lightweight phase tracking. This is the SINGLE source of truth for the `.phase-s
 **Rules:**
 
 - Phase status progresses: `"pending"` → `"in_progress"` → `"completed"`. Never goes backward.
-- Valid phase names: discover, clarify, design, estimate, generate, feedback.
+- Valid phase names: discover, clarify, design, estimate, workshop, generate, feedback.
+- `workshop` is an optional **sidebar** (like feedback): never appears as
+  `current_phase`; `"completed"` means resolved (entered or declined).
 - `migration_id` matches the `$MIGRATION_DIR` folder name (e.g., `0226-1430`).

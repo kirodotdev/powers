@@ -166,7 +166,7 @@ The parent orchestrator (`generate.md`) uses `generation-ai.json` to:
 
 ## Part 7: Generate STARTUP_PROGRAMS.md
 
-Always generate `$MIGRATION_DIR/STARTUP_PROGRAMS.md` when `preferences.json` contains `ai_monthly_spend` or `startup_program_status`. This artifact summarizes applicable AWS startup programs based on the user's detected spend and workload type.
+Always generate `$MIGRATION_DIR/STARTUP_PROGRAMS.md` when `preferences.json` contains `ai_monthly_spend` or `startup_program_status`. This artifact summarizes applicable AWS startup programs based on **Q27** (`startup_program_status`) and workload type — **not** GCP or AI spend bands alone.
 
 **Content rules (all amounts from AWS official sources only):**
 
@@ -205,6 +205,17 @@ An adjacent cohort program for agentic AI startups, distinct from the AWS Activa
 
 [End conditional]
 
+### Your profile
+
+[Conditional block — render exactly one branch from `startup_program_status.value` inside the generated file:]
+
+- **`eligible_founders`:** **Startup status:** eligible for **Activate Founders** (self-funded / pre-VC, not yet applied). **Recommended action:** Apply for Activate Founders ($5,000) before ramp-up.
+- **`eligible_portfolio`:** **Startup status:** likely eligible for **Activate Portfolio** (VC/accelerator-backed, not yet applied). **Recommended action:** Get Activate Provider Org ID from your investor, then apply.
+- **`has_credits`:** **Startup status:** AWS Activate credits already on account. **Recommended action:** Confirm credits are active before `terraform apply`.
+- **`unknown`:** **Startup status:** not confirmed in Clarify. **Recommended action:** Review both tiers above; self-funded → Founders, VC/accelerator-backed → Portfolio. Do **not** label a single tier as "yours" until confirmed.
+
+- **AI monthly spend:** [from `ai_monthly_spend`]
+
 ## How to use credits during this migration
 
 1. Apply for AWS Activate **before** running `terraform apply` — credits apply automatically to new charges
@@ -223,8 +234,12 @@ An adjacent cohort program for agentic AI startups, distinct from the AWS Activa
 
 **Generation rules:**
 
-- Always include the Activate section
+- Always include the Activate decision table (both Founders and Portfolio rows).
 - Only include the Generative AI Accelerator section when `ai_monthly_spend` is `"$2K-$10K"` or `">$10K"` AND `agentic_profile.is_agentic == true`
-- If `startup_program_status == "has_credits"`: replace the "Apply for AWS Activate" steps with "You already have AWS Activate credits — ensure they are applied to your account before running terraform apply"
+- If `startup_program_status.value == "has_credits"`: replace the "Apply for AWS Activate" steps with "You already have AWS Activate credits — ensure they are applied to your account before running terraform apply"
+- If `startup_program_status.value == "unknown"`: **never** write `your status: eligible_founders`, `your status: eligible_portfolio`, or "Eligible Founders tier" in this file or the migration report — use neutral copy per the `unknown` branch above
+- If `startup_program_status.value == "eligible_founders"`: may recommend Founders specifically; still mention Portfolio exists for VC-backed teams
+- If `startup_program_status.value == "eligible_portfolio"`: may recommend Portfolio specifically; still mention Founders for self-funded teams
 - Do NOT include any credit amounts not sourced from official AWS pages (aws.amazon.com)
 - Do NOT reference MAP, IW Migrate, or ISV Workload Migration Program — these are enterprise/partner programs, not startup self-service paths
+- After writing, run `validate-startup-program-artifacts.py` with `--migration-dir $MIGRATION_DIR` (see `validate-artifacts.md` check 16)

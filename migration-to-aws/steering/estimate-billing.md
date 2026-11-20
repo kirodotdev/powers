@@ -291,10 +291,12 @@ After writing `estimation-billing.json`, present a concise summary to the user:
 
 1. **Pricing source and accuracy**: State that estimates are billing-only projections with ±30-40% accuracy due to lack of infrastructure configuration. Example: "Billing-only estimates, accuracy ±30-40%. Provide Terraform files to narrow to ±10-15%."
 2. GCP baseline from billing data (total monthly spend)
-3. AWS projected cost ranges: low / mid / high per service
-4. Total projection: best case / expected / worst case vs GCP
+3. Estimated monthly AWS cost ranges: low / mid / high per service
+4. Total projection: best case / expected / worst case vs GCP (labeled as estimated monthly costs)
 5. Key unknowns that would narrow the estimates
 6. Recommendation: run IaC discovery for tighter estimates (±10-15% vs ±30-40%) — as a precision step, not as a human cost estimate
+
+**Cost labeling rule:** All dollar figures presented to the user MUST be labeled as "estimated monthly costs" or prefixed with "Est." — never present raw dollar amounts as if they are exact.
 
 Keep it under 20 lines. The user can ask for details or re-read `estimation-billing.json` at any time.
 

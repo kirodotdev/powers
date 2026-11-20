@@ -79,7 +79,7 @@ usage volume is unknown at Discover time and will be collected in Clarify (Q3, Q
 
 For each model in `models[]` of `ai-workload-profile.json`, map to the closest Bedrock
 equivalent using the table below, then look up both source and Bedrock per-token prices
-from `steering/cached-prices.md` (Source Provider Pricing + Bedrock Models sections).
+from `cached-prices.md` (Source Provider Pricing + Bedrock Models sections).
 
 **Source model → Bedrock equivalent mapping:**
 
@@ -305,7 +305,7 @@ END
 
 ### Service type -> dev-tier AWS line item mapping
 
-For each PRIMARY resource in `gcp-resource-inventory.json`, map to a dev-tier AWS equivalent and look up its monthly cost from `steering/cached-prices.md`:
+For each PRIMARY resource in `gcp-resource-inventory.json`, map to a dev-tier AWS equivalent and look up its monthly cost from `cached-prices.md`:
 
 | GCP Primary Type                                                     | Typical AWS Target          | Dev-tier sizing for preview      |
 | -------------------------------------------------------------------- | --------------------------- | -------------------------------- |

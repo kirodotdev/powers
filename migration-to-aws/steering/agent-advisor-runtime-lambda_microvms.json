@@ -1,0 +1,35 @@
+{
+  "id": "lambda_microvms",
+  "display_name": "Lambda MicroVMs",
+  "status": "ga",
+  "launched": "2026-06-22",
+  "service_card": "agent-advisor-lambda-microvms.md",
+  "hard_constraints": [
+    { "field": "session_duration", "value": "over_8hr", "reason": "Lambda MicroVMs max session is 8 hours" },
+    { "field": "compute_tier", "value": "gpu", "reason": "Lambda MicroVMs has no documented GPU support" }
+  ],
+  "affinities": {
+    "session_duration": { "under_15min": 3, "15min_to_8hr": 5, "over_8hr": 0, "unknown": 3 },
+    "traffic_pattern": { "bursty": 4, "steady": 3, "idle": 5, "unknown": 3 },
+    "platform_fit": { "ecs": 1, "eks": 1, "lambda": 3, "none": 3, "unknown": 2 },
+    "session_state": { "stateless": 3, "stateful": 5, "hitl": 5, "unknown": 3 },
+    "ops_preference": { "minimal": 2, "moderate": 5, "full_control": 3, "unknown": 2 },
+    "isolation": { "required": 4, "nice_to_have": 3, "not_needed": 2, "unknown": 2 },
+    "memory_needs": { "cross_session": 2, "session_only": 3, "none": 2, "unknown": 2 },
+    "multi_agent": { "yes": 2, "no": 2, "unknown": 2 },
+    "framework": { "strands": 2, "langgraph": 2, "crewai": 2, "custom": 3, "none": 2, "unknown": 2 },
+    "existing_cluster": { "eks": 1, "ecs": 1, "none": 3, "unknown": 2 },
+    "multi_cloud": { "yes": 2, "no": 2, "unknown": 2 },
+    "idle_resume": { "process_level": 5, "filesystem": 3, "none": 1, "unknown": 2 },
+    "compute_tier": { "light": 2, "heavy_non_gpu": 7, "gpu": 0, "unknown": 2 },
+    "launch_concurrency": { "high": 0, "moderate": 2, "low": 3, "unknown": 2 }
+  },
+  "deployment_models": [],
+  "volatile_facts": [
+    { "key": "session_cap", "value": "8h", "verify_via_mcp": true },
+    { "key": "max_compute", "value": "16vCPU/32GB", "verify_via_mcp": true },
+    { "key": "launch_tps", "value": "5 (not adjustable)", "verify_via_mcp": true },
+    { "key": "fedramp", "value": "unknown", "verify_via_mcp": true },
+    { "key": "regions", "value": [], "verify_via_mcp": true }
+  ]
+}
