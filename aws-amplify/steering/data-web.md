@@ -53,7 +53,7 @@ Both return an observable; call `.subscribe({ next })` and **MUST** call `sub.un
 ```tsx
 useEffect(() => {
   const sub = client.models.Todo.observeQuery().subscribe({
-    next: ({ items }) => setTodos(items),
+    next: ({ items }) => setTodos([...items]),
   });
   return () => sub.unsubscribe();
 }, []);
