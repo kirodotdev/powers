@@ -1,6 +1,6 @@
 ---
 name: analysis
-description: Run/start/restart/cancel/delete analyses (rapid-techdebt-analysis, tech-debt-comprehensive, security, agentic-readiness, modernization-readiness, graviton-readiness, custom). Detects vulnerabilities, outdated dependencies, migration opportunities, modernization candidates. Custom type runs one of your own analysis transformation definitions.
+description: Run/start/restart/cancel/delete analyses (rapid-techdebt-analysis, tech-debt-comprehensive, security, agentic-readiness, modernization-readiness, graviton-readiness, aws-health-readiness, custom). Detects vulnerabilities, outdated dependencies, migration opportunities, modernization candidates, Lambda runtime deprecations, EKS end-of-support, and Elastic Beanstalk platform retirement. Custom type runs one of your own analysis transformation definitions.
 ---
 
 name: analysis
@@ -40,7 +40,7 @@ If the user explicitly asks to disable telemetry, omit `--telemetry` for the res
 
 `atx ct analysis run` has no fixed repository cap of its own. The AWS Transform service refuses a run whose repository list is longer than the limit for the account (the service allows up to 5,000), and a request body over about 950 KB is refused before it is sent. In both cases nothing is created. The messages are `AWS Transform refused this analysis: <N> repositories is more than this account may put in ONE analysis (...). Split the submission (for example with --repo), ...` and `This analysis would send a <N>-byte ... request, over the 950000-byte budget ... Split the submission (for example with --repo), or use shorter source/repository names.`
 
-Before starting an analysis that targets many repos (for example a whole source), check how many repositories are in scope: `atx ct source list` or `atx ct repository list --source <name>` report the per-source count. (Bare `atx ct status` shows workspace-wide totals across all sources, so prefer a scoped form when the analysis targets a single source.) If a run is refused for its size, split the repositories into batches and start one run per batch with `--repo <source>::<slug>[,<source>::<slug>...]`, sized under the limit the message names, and tell the user you are splitting the work. Don't guess a batch size and retry in a loop.
+Before starting an analysis that targets many repos (for example a whole source), check how many repositories are in scope with `atx ct repository list --source <name>`. `atx ct source list` shows only each source's name, provider, and identifier, while `atx ct status` reports account-wide totals and has no `--source` filter. If a run is refused for its size, split the repositories into batches and start one run per batch with `--repo <source>::<slug>[,<source>::<slug>...]`, sized under the limit the message names, and tell the user you are splitting the work. Don't guess a batch size and retry in a loop.
 
 ## Commands
 
@@ -186,16 +186,16 @@ Use it when the user asks about moving Java workloads to Graviton or ARM64. It a
 
 ## AWS Health lifecycle
 
-`--type aws-health-readiness` finds the AWS Lambda runtime and Amazon EKS Kubernetes versions a repository sets that are deprecated or reach a lifecycle date within 180 days, using the AWS-managed `AWS/aws-health-lifecycle-analysis` transformation. Its report is saved under `aws-health-lifecycle-analysis/REPORT.md`. Each finding names the AWS-managed transformation that upgrades it (for example `AWS/python-version-upgrade`, `AWS/lambda-nodejs-runtime-upgrade`, `AWS/eks-kubernetes-version-upgrade`), so `atx ct remediation create --ids <finding-ids>` can resolve it.
+`--type aws-health-readiness` finds the AWS Lambda runtimes, Amazon EKS Kubernetes versions and Elastic Beanstalk PHP platforms a repository sets that are deprecated or reach an AWS Health lifecycle date within 180 days, using the AWS-managed `AWS/aws-health-lifecycle-analysis` transformation. Its report is saved under `aws-health-lifecycle-analysis/REPORT.md`. Each finding recommends a version and names the AWS-managed transformation that upgrades it (for example `AWS/python-version-upgrade`, `AWS/lambda-nodejs-runtime-upgrade`, `AWS/eks-kubernetes-version-upgrade`), so `atx ct remediation create --ids <finding-ids>` can resolve it.
 
 ```bash
 # Add --wait only if the installed CLI supports it (see "Running long analyses")
 atx ct analysis run --type aws-health-readiness --source <name> [--repo <source>::<slug>] --telemetry "agent=<AGENT>,executionMode=local"
 ```
 
-Use it when the user asks about AWS Health planned lifecycle events, Lambda runtime deprecation, or EKS end of support. It also runs remotely (`atx ct remote analysis --type aws-health-readiness` on EC2, Batch or AWS-managed) and on a schedule (`atx ct schedule create --type aws-health-readiness`).
+Use it when the user asks about AWS Health planned lifecycle events, Lambda runtime deprecation, EKS end of support, or Elastic Beanstalk PHP platform retirement. It also runs remotely (`atx ct remote analysis --type aws-health-readiness` on EC2, Batch or AWS-managed) and on a schedule (`atx ct schedule create --type aws-health-readiness`).
 
-When the account can read AWS Health, each finding also names the affected resources. That needs a Business or Enterprise Support plan and `health:DescribeEvents`, `health:DescribeEventDetails` and `health:DescribeAffectedEntities` for whoever runs it (the user's credentials locally, the stack's role remotely). Without them the analysis still completes from the code, and the report says "AWS Health was not used". A local run also needs AWS CLI v2 on PATH. When a prerequisite is missing, the repo fails with `AWS Health could not be read. Missing: <items>.`; report that failure and the missing items, never "no AWS Health issues".
+When the account can read AWS Health, each finding also names the affected resources. A local run requires AWS CLI v2 on PATH, a Business or Enterprise Support plan, and `health:DescribeEvents`, `health:DescribeEventDetails`, and `health:DescribeAffectedEntities` for the user's credentials; remote runs require the corresponding permissions on the stack role. If a required prerequisite is missing, the repository fails with `AWS Health could not be read. Missing: <items>.`; report that failure and the supplied missing items, never a clean result or code-derived findings. Throttled reads also fail the repository with `AWS Health could not be read`; when the failure supplies no missing-item details, direct the user to `aws-health-lifecycle-analysis/REPORT.md` instead of inventing an item. A `PARTIAL` result is different: report the code-derived findings and warn that some AWS data could not be read.
 
 ## Readiness steering flags
 
@@ -284,8 +284,8 @@ If an analysis returns 0 findings on a repo that's obviously stale (Java 8, Node
 | Filter          | Where it runs                           | Allowed values                                                                                                             |
 | --------------- | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | `--status`      | server-side (GSI-backed, fast)          | `pending`, `running`, `complete`, `cancelled`, `failed`                                                                    |
-| `--type`        | server-side (GSI-backed, fast)          | `rapid-techdebt-analysis`, `tech-debt-comprehensive`, `security`, `agentic-readiness`, `modernization-readiness`, `custom`, `graviton-readiness` |
-| `--category`    | client-side (does not reduce the fetch) | `"Tech Debt"`, `"Security"`, `"Agentic Readiness"`, `"Modernization Readiness"`, `"Graviton Readiness"`, `"Custom"`                |
+| `--type`        | server-side (GSI-backed, fast)          | `rapid-techdebt-analysis`, `tech-debt-comprehensive`, `security`, `agentic-readiness`, `modernization-readiness`, `custom`, `graviton-readiness`, `aws-health-readiness` |
+| `--category`    | client-side (does not reduce the fetch) | `"Tech Debt"`, `"Security"`, `"Agentic Readiness"`, `"Modernization Readiness"`, `"Graviton Readiness"`, `"AWS Health Readiness"`, `"Custom"` |
 | `--schedule-id` | server-side                             | a schedule's `sched-` analysisId (from `atx ct schedule list`) — lists that schedule's fired child runs, newest first      |
 
 **Recommended shapes:**

@@ -83,7 +83,7 @@ A custom analysis runs the same way, with the transformation definition to run:
 ```bash
 atx ct remote analysis \
   --type custom \
-  --transformation-name <TD-name> \
+  --transformation-name <transformation-name> \
   --sources <src> \
   --mode aws-managed \
   --telemetry "agent=kiro,executionMode=aws-managed"
