@@ -1,11 +1,11 @@
 ---
 name: release-readiness
-description: Guide for running code change risk analyses (formerly release readiness reviews) via the aws-devops-agent remote MCP server (typed tools). Use when the user wants to trigger a code change risk analysis, release readiness review, code review or change review on a PR/MR, check execution status, view execution journal, or cancel a review.
+description: Guide for running code change risk analyses (formerly release readiness reviews) via the aws-ops-agent remote MCP server (typed tools). Use when the user wants to trigger a code change risk analysis, release readiness review, code review or change review on a PR/MR, check execution status, view execution journal, or cancel a review.
 ---
 
 ## Overview
 
-This skill uses the typed tools from the `aws-devops-agent` remote MCP server to run code change risk analyses via the Code Change Risk Analysis Agent. It handles the full execution lifecycle — starting reviews, polling for progress, streaming journal output, and retrieving the final code change risk analysis report.
+This skill uses the typed tools from the `aws-ops-agent` remote MCP server to run code change risk analyses via the Code Change Risk Analysis Agent. It handles the full execution lifecycle — starting reviews, polling for progress, streaming journal output, and retrieving the final code change risk analysis report.
 
 ## Usage
 

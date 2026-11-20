@@ -1,14 +1,14 @@
 ---
-description: AWS DevOps Agent tool routing, fallback logic, and error handling
+description: AWS Ops Agent tool routing, fallback logic, and error handling
 alwaysApply: true
 ---
 
-# AWS DevOps Agent — Steering Rules
+# AWS Ops Agent — Steering Rules
 
 ## Server Priority
 
-1. **Path A**: `aws-devops-agent` (remote server, bearer token) — tools scoped by token
-2. **Path B**: `aws-devops-agent-sigv4` (local signing proxy, SigV4) — all tools, multi-space
+1. **Path A**: `aws-ops-agent` (remote server, bearer token) — tools scoped by token
+2. **Path B**: `aws-ops-agent-sigv4` (local signing proxy, SigV4) — all tools, multi-space
 3. **Fallback**: `aws-mcp` (generic AWS API proxy) — used when both primary paths are unavailable
 
 Use whichever server the user has configured. If both are active, prefer the one with broader tool access (SigV4 > bearer). Switch to `aws-mcp` only on connection failure, timeout, or HTTP 503.
@@ -107,7 +107,7 @@ If `list_recommendations` returns empty after investigation completes, trigger m
 2. Trigger mitigation (via aws-mcp fallback):
    aws___call_aws(cli_command="aws devops-agent update-backlog-task \
      --agent-space-id SPACE_ID --task-id TASK_ID \
-     --task-status PENDING_START --region $DEVOPS_AGENT_REGION")
+     --task-status PENDING_START --region $OPS_AGENT_REGION")
 
 3. Poll get_task every 30-45s until COMPLETED again (2-5 min)
 
@@ -246,7 +246,7 @@ Pack into `message` param (for `chat`) or `title`/`description` (for `investigat
 | Error | Auth Mode | Action |
 |-------|-----------|--------|
 | Remote server connection error / 503 | Bearer token | Switch to `aws-mcp` fallback |
-| 401 Invalid bearer token | Bearer token | Tell user: "Regenerate token in Operator Web App, update DEVOPS_AGENT_TOKEN, restart Kiro" |
+| 401 Invalid bearer token | Bearer token | Tell user: "Regenerate token in Operator Web App, update OPS_AGENT_TOKEN, restart Kiro" |
 | Tools missing (`investigate`, `chat` not in list) | Bearer token | Tell user: "Your token has `agent:read` scope only. Create a new token with `agent:operate` scope in the Operator Web App" |
 | `AccessDeniedException` on `investigate`/`chat` | Bearer token | Tell user: "Your token's scope doesn't cover this operation. Create a new token with `agent:read` + `agent:operate` scopes" |
 | `AccessDeniedException` on any operation | SigV4 (fallback) | Tell user: "Your IAM role lacks permissions. Attach `AIDevOpsAgentFullAccess` managed policy" |

@@ -1,6 +1,6 @@
 ---
-name: "aws-devops-agent"
-displayName: "AWS DevOps Agent"
+name: "aws-ops-agent"
+displayName: "AWS Ops Agent"
 description: "AI agent for AWS operational intelligence. Investigate incidents, optimize costs, review architecture, map topology, chat with the agent, get remediation, run automated release tests (UI and API), and trigger pre-merge code change risk analyses — all enhanced with your local workspace context."
 keywords:
   - "devops"
@@ -64,11 +64,11 @@ keywords:
 author: "AWS"
 ---
 
-# AWS DevOps Agent — Kiro Power
+# AWS Ops Agent — Kiro Power
 
-You are enhanced with the **AWS DevOps Agent**, an AI-powered operational intelligence system for AWS environments. It connects via a dedicated remote MCP server (`aws-devops-agent`) with `aws-mcp` as a fallback.
+You are enhanced with the **AWS Ops Agent**, an AI-powered operational intelligence system for AWS environments. It connects via a dedicated remote MCP server (`aws-ops-agent`) with `aws-mcp` as a fallback.
 
-**Your superpower**: Combine local workspace knowledge (files, git, terminal) with the DevOps Agent's cloud knowledge (CloudWatch, X-Ray, IAM, topology) by packing local context into tool parameters.
+**Your superpower**: Combine local workspace knowledge (files, git, terminal) with the Ops Agent's cloud knowledge (CloudWatch, X-Ray, IAM, topology) by packing local context into tool parameters.
 
 **Extended capabilities**: In addition to investigations and chat, you can run **automated release testing** (UI and API) against pre-configured test profiles, and trigger **pre-merge code change risk analyses** on GitHub PRs, GitLab MRs, or local branches.
 
@@ -78,20 +78,20 @@ You are enhanced with the **AWS DevOps Agent**, an AI-powered operational intell
 
 | Server | Transport | Auth | Role |
 |--------|-----------|------|------|
-| `aws-devops-agent` | Remote (Streamable HTTP) | Bearer token | **Option A** — simplest setup, scoped to one AgentSpace |
-| `aws-devops-agent-sigv4` | Local signing proxy (stdio) | SigV4 from AWS credentials | **Option B** — full access, multi-space routing, no token expiry |
+| `aws-ops-agent` | Remote (Streamable HTTP) | Bearer token | **Option A** — simplest setup, scoped to one AgentSpace |
+| `aws-ops-agent-sigv4` | Local signing proxy (stdio) | SigV4 from AWS credentials | **Option B** — full access, multi-space routing, no token expiry |
 | `aws-mcp` | Local (stdio) | SigV4 from environment | **Last Resort Fallback** — generic AWS API access when remote is unavailable |
 
-Two auth options. Both connect to the same remote DevOps Agent endpoint — they differ in how they authenticate:
+Two auth options. Both connect to the same remote Ops Agent endpoint — they differ in how they authenticate:
 
 - **Option A (Bearer token):** Zero local dependencies. Tools scoped by token (see "Tool Availability by Auth Mode"). Best for single AgentSpace setups.
 - **Option B (SigV4):** Requires `uvx` locally. All tools available (limited only by IAM policy). Best for multi-space routing or admin configuration.
 
-> **Note:** `aws-mcp` and `aws-devops-agent-sigv4` both require `uvx` (part of `uv`). If `uvx` is not in your PATH, these servers cannot launch.
+> **Note:** `aws-mcp` and `aws-ops-agent-sigv4` both require `uvx` (part of `uv`). If `uvx` is not in your PATH, these servers cannot launch.
 
 ---
 
-## Tools (aws-devops-agent — Remote Server)
+## Tools (aws-ops-agent — Remote Server)
 
 ### High-Level (start here)
 
@@ -330,7 +330,7 @@ investigate(title="ECS 503 errors on checkout-service — OOM suspected", priori
 
 ## Fallback: When Remote Server Is Unavailable
 
-If bearer token (`aws-devops-agent`) or SigV4 (`aws-devops-agent-sigv4`) isn't working, fall back to `aws-mcp` using the manual CLI patterns below:
+If bearer token (`aws-ops-agent`) or SigV4 (`aws-ops-agent-sigv4`) isn't working, fall back to `aws-mcp` using the manual CLI patterns below:
 
 **Chat fallback:**
 ```
@@ -427,7 +427,7 @@ Check if `.kiro/hooks/devops-agent-post-spec-completion.kiro.hook` already exist
       },
       "then": {
         "type": "askAgent",
-        "prompt": "A spec task just completed. Evaluate the changes made during this task. If the changes are substantial enough to warrant a code change risk analysis (e.g., multiple files modified, logic changes, new APIs, dependency updates, security-sensitive code, infrastructure changes), immediately run the code change risk analysis workflow from the aws-devops-agent power autonomously — do not ask the user for confirmation. Skip the branch creation confirmation step in the local flow and proceed without asking for approval to create/push the branch. If the changes are trivial (e.g., a single typo fix, comment update, formatting-only, renaming a variable), do nothing."
+        "prompt": "A spec task just completed. Evaluate the changes made during this task. If the changes are substantial enough to warrant a code change risk analysis (e.g., multiple files modified, logic changes, new APIs, dependency updates, security-sensitive code, infrastructure changes), immediately run the code change risk analysis workflow from the aws-ops-agent power autonomously — do not ask the user for confirmation. Skip the branch creation confirmation step in the local flow and proceed without asking for approval to create/push the branch. If the changes are trivial (e.g., a single typo fix, comment update, formatting-only, renaming a variable), do nothing."
       }
     }
     ```
@@ -440,12 +440,12 @@ Check if `.kiro/hooks/devops-agent-post-spec-completion.kiro.hook` already exist
 
 ### Recommended `autoApprove` list
 
-These tools are read-only and cannot modify any AWS resource or DevOps Agent state:
+These tools are read-only and cannot modify any AWS resource or Ops Agent state:
 
 ```json
 {
   "mcpServers": {
-    "aws-devops-agent": {
+    "aws-ops-agent": {
       "autoApprove": [
         "list_agent_spaces",
         "get_agent_space",
@@ -483,7 +483,7 @@ These tools are read-only and cannot modify any AWS resource or DevOps Agent sta
 
 ### What still requires approval
 
-**aws-devops-agent**: Mutation tools (`chat`, `send_message`, `investigate`, `create_investigation`, `create_release_testing_job`, `create_code_change_risk_analysis`, `cancel_release_testing_job`, `cancel_code_change_risk_analysis`, `create_agent_space`, `update_recommendation`).
+**aws-ops-agent**: Mutation tools (`chat`, `send_message`, `investigate`, `create_investigation`, `create_release_testing_job`, `create_code_change_risk_analysis`, `cancel_release_testing_job`, `cancel_code_change_risk_analysis`, `create_agent_space`, `update_recommendation`).
 
 **aws-mcp**: `aws___call_aws` and `aws___run_script` can perform both reads and writes, so they cannot be safely auto-approved.
 
@@ -500,8 +500,8 @@ These tools are read-only and cannot modify any AWS resource or DevOps Agent sta
 
 ## Support & Legal
 
-- **Documentation**: [AWS DevOps Agent User Guide](https://docs.aws.amazon.com/devopsagent/latest/userguide/)
-- **Setup for DevOps Agent Remote Server**: [Connect to DevOps Agent Remote Servers](https://docs.aws.amazon.com/devopsagent/latest/userguide/accessing-devops-agent-connect-to-devops-agent-remote-servers.html)
+- **Documentation**: [AWS Ops Agent User Guide](https://docs.aws.amazon.com/devopsagent/latest/userguide/)
+- **Setup for Ops Agent Remote Server**: [Connect to Ops Agent Remote Servers](https://docs.aws.amazon.com/devopsagent/latest/userguide/accessing-devops-agent-connect-to-devops-agent-remote-servers.html)
 - **Setup for the AWS MCP Server**: [AWS MCP Server Getting Started](https://docs.aws.amazon.com/agent-toolkit/latest/userguide/getting-started-aws-mcp-server.html)
 - **Support**: [AWS Support Center](https://console.aws.amazon.com/support/)
 - **License**: Apache-2.0
