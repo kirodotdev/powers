@@ -1,11 +1,11 @@
 ---
 name: release-testing
-description: Guide for running release testing jobs (UI or API) via the aws-devops-agent remote MCP server (typed tools). Use when the user wants to run automated tests, check job status, view test progress, or download test reports.
+description: Guide for running release testing jobs (UI or API) via the aws-ops-agent remote MCP server (typed tools). Use when the user wants to run automated tests, check job status, view test progress, or download test reports.
 ---
 
 ## Overview
 
-This skill uses the typed tools from the `aws-devops-agent` remote MCP server to run release testing in the cloud via the Release Testing Agent. It handles the full job lifecycle — creating jobs, polling for progress, streaming journal output, and retrieving the final test report.
+This skill uses the typed tools from the `aws-ops-agent` remote MCP server to run release testing in the cloud via the Release Testing Agent. It handles the full job lifecycle — creating jobs, polling for progress, streaming journal output, and retrieving the final test report.
 
 **Input is a test profile** — the test profile already contains the target URL, agent type (UI or API), test personas, and credentials. Do NOT ask the user for a URL directly; the URL is defined in the test profile.
 
@@ -23,7 +23,7 @@ Use this skill when:
 
 ## Prerequisites
 
-- A pre-existing test profile (Knowledge Item ID like `ki-12345`) created from the AWS DevOps Agent operator app console.
+- A pre-existing test profile (Knowledge Item ID like `ki-12345`) created from the AWS Ops Agent operator app console.
 
 ## Instructions
 
@@ -34,7 +34,7 @@ Before starting any workflow, you MUST gather the following parameters. Do NOT p
 #### Step 1 — Test profile (required)
 Ask the user which test profile to use. The test profile already contains the target URL, agent type (UI or API), test personas, and credentials configuration — these do NOT need to be gathered separately.
 
-**Note:** A pre-existing test profile is a prerequisite for running this agent. Test profiles are created using the AWS DevOps Agent console or API, not through this tool. If the user asks whether they need a test profile or whether one can be created here, inform them that a test profile must already exist before starting a release testing job.
+**Note:** A pre-existing test profile is a prerequisite for running this agent. Test profiles are created using the AWS Ops Agent console or API, not through this tool. If the user asks whether they need a test profile or whether one can be created here, inform them that a test profile must already exist before starting a release testing job.
 
 #### Step 2 — Test requirement (optional)
 If the user has not already mentioned a test focus, ask:

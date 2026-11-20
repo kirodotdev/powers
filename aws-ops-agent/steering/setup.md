@@ -1,11 +1,11 @@
 ---
-description: Setup diagnostics, onboarding, and troubleshooting for the AWS DevOps Agent power
+description: Setup diagnostics, onboarding, and troubleshooting for the AWS Ops Agent power
 alwaysApply: false
 ---
 
-# AWS DevOps Agent — Setup & Diagnostics
+# AWS Ops Agent — Setup & Diagnostics
 
-Use this file when a user needs help setting up, diagnosing connection issues, or troubleshooting the DevOps Agent power.
+Use this file when a user needs help setting up, diagnosing connection issues, or troubleshooting the Ops Agent power.
 
 ---
 
@@ -14,8 +14,8 @@ Use this file when a user needs help setting up, diagnosing connection issues, o
 ### 1a. Check environment variables
 
 ```bash
-echo "DEVOPS_AGENT_TOKEN: $([ -n "$DEVOPS_AGENT_TOKEN" ] && echo 'set' || echo 'not set')"
-echo "DEVOPS_AGENT_REGION: ${DEVOPS_AGENT_REGION:-not set}"
+echo "OPS_AGENT_TOKEN: $([ -n "$OPS_AGENT_TOKEN" ] && echo 'set' || echo 'not set')"
+echo "OPS_AGENT_REGION: ${OPS_AGENT_REGION:-not set}"
 ```
 
 ### 1b. If token and region are set, verify connectivity
@@ -40,7 +40,7 @@ After checking, report which paths are configured and functional.
 ## Option A — Bearer Token Setup
 
 ### 1. Get a token
-1. Open the AWS DevOps Agent **Operator Web App** for the desired AgentSpace
+1. Open the AWS Ops Agent **Operator Web App** for the desired AgentSpace
 2. Navigate to **Settings → Access Keys**
 3. Create an access token with scopes: **`agent:read` + `agent:operate`** (recommended)
 
@@ -52,32 +52,32 @@ Ask the user for their token and the region where their AgentSpace is deployed.
 
 **macOS / Linux:**
 ```bash
-export DEVOPS_AGENT_TOKEN="your-token-here"
-export DEVOPS_AGENT_REGION="us-east-1"
+export OPS_AGENT_TOKEN="your-token-here"
+export OPS_AGENT_REGION="us-east-1"
 ```
 
 **Windows (PowerShell):**
 ```powershell
-setx DEVOPS_AGENT_TOKEN "your-token-here"
-setx DEVOPS_AGENT_REGION "us-east-1"
-$env:DEVOPS_AGENT_TOKEN = "your-token-here"
-$env:DEVOPS_AGENT_REGION = "us-east-1"
+setx OPS_AGENT_TOKEN "your-token-here"
+setx OPS_AGENT_REGION "us-east-1"
+$env:OPS_AGENT_TOKEN = "your-token-here"
+$env:OPS_AGENT_REGION = "us-east-1"
 ```
 
 > ⚠️ **Windows users:** After `setx`, restart Kiro for the env var to take effect.
 
-> **Alternative:** Instead of `DEVOPS_AGENT_REGION`, hardcode the region in `.kiro/settings/mcp.json`:
+> **Alternative:** Instead of `OPS_AGENT_REGION`, hardcode the region in `.kiro/settings/mcp.json`:
 > ```json
-> { "mcpServers": { "aws-devops-agent": { "url": "https://connect.aidevops.us-east-1.api.aws/mcp" } } }
+> { "mcpServers": { "aws-ops-agent": { "url": "https://connect.aidevops.us-east-1.api.aws/mcp" } } }
 > ```
 
 ### 3. Approve environment variables in Kiro
 
-Go to **Kiro → Settings → MCP Approved Env Vars** and ensure `DEVOPS_AGENT_REGION` and `DEVOPS_AGENT_TOKEN` are present. Without this, Kiro will not pass these variables to MCP servers.
+Go to **Kiro → Settings → MCP Approved Env Vars** and ensure `OPS_AGENT_REGION` and `OPS_AGENT_TOKEN` are present. Without this, Kiro will not pass these variables to MCP servers.
 
 ### 4. Token lifecycle
 - Tokens expire (default 90 days). HTTP 401 → create a new token.
-- Rotate without downtime: create new token → update `DEVOPS_AGENT_TOKEN` → restart Kiro.
+- Rotate without downtime: create new token → update `OPS_AGENT_TOKEN` → restart Kiro.
 
 ---
 
@@ -91,10 +91,10 @@ Go to **Kiro → Settings → MCP Approved Env Vars** and ensure `DEVOPS_AGENT_R
 
 ### 2. Set the region
 
-Ask the user for the region where their DevOps Agent resource is deployed:
+Ask the user for the region where their Ops Agent resource is deployed:
 
 ```bash
-export DEVOPS_AGENT_REGION="us-east-1"  # replace with actual region
+export OPS_AGENT_REGION="us-east-1"  # replace with actual region
 ```
 
 ### 3. Ensure valid AWS credentials
@@ -103,7 +103,7 @@ export DEVOPS_AGENT_REGION="us-east-1"  # replace with actual region
 aws sts get-caller-identity
 ```
 
-The IAM role must have DevOps Agent permissions (e.g., `AIDevOpsAgentFullAccess`).
+The IAM role must have Ops Agent permissions (e.g., `AIDevOpsAgentFullAccess`).
 
 ---
 
@@ -126,12 +126,12 @@ If `uvx` is found but `mcp-proxy-for-aws` has never been fetched, it auto-downlo
 
 ## Troubleshooting
 
-### Option A: Remote server (`aws-devops-agent`) — no tools or errors
+### Option A: Remote server (`aws-ops-agent`) — no tools or errors
 
 Run in order, stop at first failure:
 
-1. **Is `DEVOPS_AGENT_TOKEN` set?**
-   - Check: `[ -n "$DEVOPS_AGENT_TOKEN" ] && echo 'Token is set' || echo 'Token is NOT set'` (macOS/Linux) or `if ($env:DEVOPS_AGENT_TOKEN) { 'Token is set' } else { 'Token is NOT set' }` (PowerShell)
+1. **Is `OPS_AGENT_TOKEN` set?**
+   - Check: `[ -n "$OPS_AGENT_TOKEN" ] && echo 'Token is set' || echo 'Token is NOT set'` (macOS/Linux) or `if ($env:OPS_AGENT_TOKEN) { 'Token is set' } else { 'Token is NOT set' }` (PowerShell)
    - Fix: Set it (see Option A above) and **restart Kiro**
 
 2. **Is the token valid?**
@@ -147,7 +147,7 @@ Run in order, stop at first failure:
    - Bearer token: Your token's scope doesn't cover this operation
    - This differs from "tools missing" — missing means scope filters them out; AccessDenied means scope covers the tool but server-side authorization failed (rare)
 
-### Option B: SigV4 proxy (`aws-devops-agent-sigv4`) — no tools or errors
+### Option B: SigV4 proxy (`aws-ops-agent-sigv4`) — no tools or errors
 
 Run in order, stop at first failure:
 
@@ -164,9 +164,9 @@ Run in order, stop at first failure:
    - `Unable to locate credentials` → `aws configure sso` or `aws configure`
    - `ExpiredToken` / `InvalidClientTokenId` → `aws sso login`
 
-4. **Does the IAM role have DevOps Agent permissions?**
-   - Check: `aws devops-agent list-agent-spaces --region $DEVOPS_AGENT_REGION`
-   - `AccessDeniedException` → User needs a role with DevOps Agent permissions
+4. **Does the IAM role have Ops Agent permissions?**
+   - Check: `aws devops-agent list-agent-spaces --region $OPS_AGENT_REGION`
+   - `AccessDeniedException` → User needs a role with Ops Agent permissions
 
 ### Fallback server (`aws-mcp`) — no tools
 
@@ -176,7 +176,7 @@ Same checks as Option B steps 1-3 (uvx → proxy launch → AWS creds).
 
 | Error | Cause | Fix |
 |-------|-------|-----|
-| No tools (remote) | Token not set or Kiro not restarted | Set `DEVOPS_AGENT_TOKEN`, restart Kiro |
+| No tools (remote) | Token not set or Kiro not restarted | Set `OPS_AGENT_TOKEN`, restart Kiro |
 | 401 from remote | Token invalid/expired | Regenerate in Operator Web App |
 | Tools missing (`investigate`, `chat` absent) | Token scope is `agent:read` only | Create token with `agent:operate` scope |
 | No tools (SigV4 proxy) | `uvx` not installed or creds missing | `uvx --version`, then `aws sts get-caller-identity` |
@@ -193,15 +193,15 @@ Same checks as Option B steps 1-3 (uvx → proxy launch → AWS creds).
 
 When MCP tools aren't appearing, diagnose each configured path independently:
 
-### Path A (`aws-devops-agent`) shows no tools:
-1. Check `DEVOPS_AGENT_TOKEN` is set and non-empty
-2. Check `DEVOPS_AGENT_REGION` is set (otherwise URL is invalid)
-3. If neither is set → tell user: "Path A (bearer token) isn't configured. Set DEVOPS_AGENT_TOKEN + DEVOPS_AGENT_REGION, or use Path B (SigV4)."
+### Path A (`aws-ops-agent`) shows no tools:
+1. Check `OPS_AGENT_TOKEN` is set and non-empty
+2. Check `OPS_AGENT_REGION` is set (otherwise URL is invalid)
+3. If neither is set → tell user: "Path A (bearer token) isn't configured. Set OPS_AGENT_TOKEN + OPS_AGENT_REGION, or use Path B (SigV4)."
 
-### Path B (`aws-devops-agent-sigv4`) shows no tools but AWS creds exist:
+### Path B (`aws-ops-agent-sigv4`) shows no tools but AWS creds exist:
 1. Confirm `uvx --version` works
 2. Confirm `aws sts get-caller-identity` succeeds
-3. Check DevOps Agent access: `aws devops-agent list-agent-spaces --region $DEVOPS_AGENT_REGION`
+3. Check Ops Agent access: `aws devops-agent list-agent-spaces --region $OPS_AGENT_REGION`
 4. If AccessDenied → user needs `AIDevOpsAgentFullAccess`
 5. If creds valid but server still shows no tools → **restart Kiro** (MCP servers initialize at IDE launch)
 
