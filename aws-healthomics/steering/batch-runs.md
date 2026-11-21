@@ -65,6 +65,7 @@ The IAM service role passed in `roleArn` requires the same permissions as for in
    - `outputUri` — S3 output location (check `.healthomics/config.toml`).
    - `storageType` — Use `DYNAMIC` (recommended).
    - `sessionPolicy` — Optional; an inline IAM policy (JSON) that scopes down the permissions of `roleArn` for every run in the batch (effective permissions = the intersection of the role's policies and this policy). Applies uniformly to all runs in the batch. See the [Session Policies SOP](./session-policy.md).
+   - `runtimePlatformPreference` — Optional; `X86_64` or `ARM64` for every run in the batch. A run's own `inlineSettings` / `s3UriSettings` entry overrides it. See the [Runtime Platform SOP](./runtime-platform.md).
    - `parameters` — Common parameters shared across all runs (e.g., reference genome).
 3. Prepare per-run configurations, each with a unique `runSettingId` and any parameter overrides.
 

@@ -31,6 +31,7 @@ Whenever you are asked to perform a task related to any of the following scenari
 - Using a VPC and subnets owned by a different AWS account (security groups may be owned by either the requester or the VPC owner) — RAM-shared VPCs (`vpcOwnerAccountId`), centralized egress, or VPC peering -> use `./steering/cross-account-vpc-configuration-setup.md`
 - Understanding regional feature availability, GPU instance limitations, or troubleshooting region-specific errors -> use `./steering/regional-capabilities.md`
 - Scoping down a workflow run's IAM permissions with an inline session policy (the StartRun / StartRunBatch `sessionPolicy` parameter) -> use `./steering/session-policy.md`
+- Choosing x86_64 or ARM64 compute for a run or task (`runtimePlatformPreference`, task-level `runtimePlatform`) -> use `./steering/runtime-platform.md`
 
 
 # Onboarding

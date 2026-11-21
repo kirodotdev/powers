@@ -41,6 +41,12 @@ Follow this SOP WHEN:
 
 > **Tooling support**: `sessionPolicy` is part of the HealthOmics REST API but is not exposed by every AWS CLI/SDK/MCP client version. Confirm the client you use accepts it before relying on it (e.g., `aws omics start-run help` should list `--session-policy`); older clients reject it as an unknown parameter.
 
+### Compute Architecture
+
+`StartRun` accepts an optional `runtimePlatformPreference` — `X86_64` or `ARM64` — applied to tasks that do not set their own architecture; inferred from the container image if omitted. See the [Runtime Platform SOP](./runtime-platform.md).
+
+> **Tooling support**: `runtimePlatformPreference` is part of the HealthOmics API but is not exposed by every AWS CLI/SDK/MCP client version. Confirm the client accepts it (e.g., `aws omics start-run help` lists `--runtime-platform-preference`). IF the HealthOmics MCP tool rejects it, use the AWS CLI for that call — DO NOT silently drop the setting.
+
 ### Engine Settings
 
 `StartRun` accepts an `engineSettings` map that customizes how HealthOmics invokes the workflow engine. The map is engine-agnostic in concept; today only Nextflow keys are implemented, so pass it only for Nextflow workflows. Pass it only when the user requests the corresponding behavior.
