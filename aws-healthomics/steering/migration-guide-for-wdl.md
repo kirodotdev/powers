@@ -46,9 +46,12 @@ AWS HealthOmics requires:
    > **The registry map is a workflow attribute, not a run parameter.** It is supplied at workflow creation, and registration does not appear to validate the definition against it: a workflow whose tasks name public registries registers as `ACTIVE` and is unrunnable. The run then fails partway through with `has an invalid structure. Provide a valid ECR image URI`, naming the task it reached rather than the missing attribute, after earlier tasks have already consumed billed compute. ENSURE the map is attached at creation — a successful `CreateAHOWorkflow` does NOT confirm it.
 5. Verify container CONTENTS, not just availability. For each task:
    - List the binaries its `command` block invokes. Take the first bare word of each pipeline stage and of each line, including inside `if`/`for` bodies, and discard shell builtins (`set`, `cd`, `echo`, `if`, `then`, `fi`, `for`, `do`, `done`, `mkdir`, `mv`, `cp`) and `~{}` interpolations.
-   - Confirm each one is present in that task's image:
+   - Confirm each one is present in that task's image. `command -v` only checks a single name per invocation, so loop over the tools rather than passing them all at once — otherwise a missing tool after the first silently passes:
      ```bash
-     docker run --rm <image> sh -lc 'command -v bwa samtools bcftools'
+     docker run --rm <image> sh -lc '
+       for c in bwa samtools bcftools; do
+         command -v "$c" >/dev/null || { echo "missing: $c" >&2; exit 1; }
+       done'
      ```
    - IF any binary is absent, the task WILL fail at run time — resolve it via step 6 before proceeding.
 

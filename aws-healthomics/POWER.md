@@ -23,14 +23,22 @@ Whenever you are asked to perform a task related to any of the following scenari
 - Onboarding an existing Nextflow workflow ensuring compatibility with HealthOmics -> use `./steering/migration-guide-for-nextflow.md`
 - Modifying, updating, or fixing an existing HealthOmics workflow -> use `./steering/workflow-versioning.md`
 - Diagnosing workflow creation issues -> use `./steering/troubleshooting.md`
-- Diagnosing run failures -> use `./steering/troubleshooting.md`
+- Diagnosing why a specific workflow run failed -> use `./steering/diagnose-run-failure.md`
+- Diagnosing VPC-connected run failures -> use `./steering/troubleshooting.md`
+- Optimizing a completed run's cost or performance, or checking for over-provisioned resources -> use `./steering/optimize-run.md`
+- Analyzing run or workflow resource utilization, performance, or metrics (CPU/GPU/memory/filesystem/scratch usage, throughput, stuck runs, right-sizing, comparing runs) -> use `./steering/metrics-analysis.md`
 - Using public containers with HealthOmics via ECR Pullthrough Caches -> use `./steering/ecr-pull-through-cache.md`
+- Using containers from registries not supported by ECR Pull-Through Cache (Seqera Wave, NVIDIA NGC, Google Artifact Registry) via image staging -> use `./steering/image-staging.md`
 - Setting up VPC infrastructure for HealthOmics workflows (subnets, NAT Gateway, security groups, endpoints) -> use `./steering/vpc-setup.md`
 - Managing HealthOmics VPC configurations (creating, listing, getting, or deleting configurations) -> use `./steering/healthomics-configuration.md`
 - Running workflows with VPC connectivity, public internet access, cross-region access, or access to private VPC resources -> use `./steering/vpc-connected-workflow-runs.md`
 - Using a VPC and subnets owned by a different AWS account (security groups may be owned by either the requester or the VPC owner) — RAM-shared VPCs (`vpcOwnerAccountId`), centralized egress, or VPC peering -> use `./steering/cross-account-vpc-configuration-setup.md`
 - Understanding regional feature availability, GPU instance limitations, or troubleshooting region-specific errors -> use `./steering/regional-capabilities.md`
+- Configuring or troubleshooting local scratch storage (`/tmp`, ephemeral EBS storage, disk exhaustion) for workflow tasks on `STATIC` or `DYNAMIC` runs -> use `./steering/ephemeral-storage.md`
 - Scoping down a workflow run's IAM permissions with an inline session policy (the StartRun / StartRunBatch `sessionPolicy` parameter) -> use `./steering/session-policy.md`
+- Using S3 run storage (`storageType: S3`, `workDirUri`, `taskWorkDirS3Uri`), local scratch or `/tmp` on S3 runs, or troubleshooting S3 storage run failures (`S3_STORAGE_*`, including `S3_STORAGE_LOCAL_STORAGE_EXHAUSTED`) -> use `./steering/s3-run-storage.md` (takes precedence over ephemeral-storage.md for runs with `storageType: S3`)
+- Using the `EXPRESS` run mode (`runMode`) for faster startup of short runs -> use `./steering/express-run-mode.md`
+- Choosing x86_64 or ARM64 compute for a run or task (`runtimePlatformPreference`, task-level `runtimePlatform`) -> use `./steering/runtime-platform.md`
 
 
 # Onboarding
@@ -45,7 +53,7 @@ Whenever you are asked to perform a task related to any of the following scenari
     omics_iam_role = "arn:aws:iam::<ACCOUNT_ID>:role/<HEALTHOMICS_ROLE_NAME>"
     // Outputs of runs are written here, the service role must have write permissions to this location
     run_output_uri = "s3://<YOUR_BUCKET>/healthomics-outputs/"
-    run_storage_type = "DYNAMIC"  # Recommended for faster runs and automatic scaling
+    run_storage_type = "DYNAMIC"  # Recommended for faster runs and automatic scaling; "S3" keeps intermediates in your own bucket (see ./steering/s3-run-storage.md)
     ```
 
     - Ask the customer for the `omics_iam_role` and `run_output_uri` values. You may also offer to create them. Record the values by updating the toml

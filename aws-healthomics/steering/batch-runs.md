@@ -63,7 +63,11 @@ The IAM service role passed in `roleArn` requires the same permissions as for in
    - `workflowId` — The deployed workflow ID.
    - `roleArn` — IAM service role ARN (check `.healthomics/config.toml`).
    - `outputUri` — S3 output location (check `.healthomics/config.toml`).
-   - `storageType` — Use `DYNAMIC` (recommended).
+   - `storageType` — Use `DYNAMIC` (recommended), or `S3` to keep intermediates in your own S3 location. See the [S3 Run Storage SOP](./s3-run-storage.md).
+   - `workDirUri` — `S3` storage only; S3 location for intermediates and logs. Always set it for S3 runs (some accounts require it; otherwise it falls back to `outputUri`). Can be overridden per run in `inlineSettings` or `s3UriSettings` entries; `storageType` applies to the whole batch. The `StartAHORunBatch` MCP tool has no `work_dir_uri` parameter, so submit S3-storage batches with the AWS CLI (`aws omics start-run-batch`, with `storageType` and `workDirUri` inside `--default-run-setting`); DO NOT drop `workDirUri` silently.
+   - `runtimePlatformPreference` — Optional; `X86_64` or `ARM64` for every run in the batch. A run's own `inlineSettings` / `s3UriSettings` entry overrides it. See the [Runtime Platform SOP](./runtime-platform.md).
+   - `runMode` is NOT supported for batch runs; batch runs use `STANDARD`. See the [EXPRESS Run Mode SOP](./express-run-mode.md).
+   - `scratchStorageMode` — Optional; set to `LOCAL` to enable per-task EBS-backed ephemeral `/tmp` storage for every run in the batch, or `SHARED` (default) to use the shared run filesystem. Applies uniformly to all runs in the batch — there is no per-run override. See the [Local Scratch Storage SOP](./ephemeral-storage.md). Has no effect when `storageType` is `S3`: CPU tasks on S3 runs always get local scratch (see the [S3 Run Storage SOP](./s3-run-storage.md#local-storage-on-s3-runs)).
    - `sessionPolicy` — Optional; an inline IAM policy (JSON) that scopes down the permissions of `roleArn` for every run in the batch (effective permissions = the intersection of the role's policies and this policy). Applies uniformly to all runs in the batch. See the [Session Policies SOP](./session-policy.md).
    - `parameters` — Common parameters shared across all runs (e.g., reference genome).
 3. Prepare per-run configurations, each with a unique `runSettingId` and any parameter overrides.
@@ -224,4 +228,5 @@ The S3 file at `s3://my-bucket/configs/run-configs.json` is a JSON array with th
 - **Ready2Run workflows** — Not supported with batch runs.
 - **Inline limit** — `inlineSettings` supports up to 100 entries. For larger batches, use `s3UriSettings`.
 - **S3 file immutability** — Do not modify the S3 configuration file after submitting the batch.
+- **Scratch storage is batch-wide, not per-run** — `scratchStorageMode` lives in `defaultRunSetting` and applies to every run in the batch identically; individual run settings (`inlineSettings`/`s3UriSettings`) cannot override it. See the [Local Scratch Storage SOP](./ephemeral-storage.md).
 - **Session policy is batch-wide, not per-run** — `sessionPolicy` lives in `defaultRunSetting` and applies to every run in the batch identically; individual run settings (`inlineSettings`/`s3UriSettings`) cannot override it. See the [Session Policies SOP](./session-policy.md).
