@@ -7,10 +7,12 @@
       "autoApprove": [
         "search_agentcore_docs",
         "fetch_agentcore_doc",
-        "manage_agentcore_runtime",
-        "manage_agentcore_memory",
-        "manage_agentcore_gateway"
+        "get_runtime_guide",
+        "get_memory_guide",
+        "get_gateway_guide",
+        "get_identity_guide",
+        "get_policy_guide"
       ]
     }
- }
+  }
 }

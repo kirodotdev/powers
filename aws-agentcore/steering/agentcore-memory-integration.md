@@ -2,383 +2,176 @@
 
 ## Overview
 
-This guide provides step-by-step instructions for adding AgentCore Memory to a Strands agent. Memory enables conversation persistence and long-term knowledge retention across sessions.
+AgentCore Memory stores conversation events (short-term memory) and, with strategies, extracts long-term records such as facts, summaries, and preferences. With the AgentCore CLI, a memory is a project resource: `agentcore add memory` declares it in `agentcore.json`, `agentcore deploy` creates it, and the deployed runtimes receive its ID in an environment variable.
 
-## Prerequisites
+Projects created from `agent-python-strands`, `agent-typescript-strands`, `a2a-python-strands`, or `agui-python-strands` already include a memory named `agentMemory` with semantic and episodic strategies, wired into `memory/session.py`. For those projects, skip to Step 4 (deploy) unless the user wants a different memory.
 
-- Existing Strands agent deployed or ready to deploy
-- `bedrock-agentcore-starter-toolkit` installed
-- AWS credentials configured
-
-## Step 1: Install Required Package
+## Step 1: Add the Memory
 
 ```bash
-pip install 'bedrock-agentcore[strands-agents]'
+# Short-term memory only (events, no extraction)
+agentcore add memory --name supportMemory
+
+# With long-term strategies
+agentcore add memory --name supportMemory --strategies SEMANTIC,SUMMARIZATION
 ```
 
-Add to `pyproject.toml` or `requirements.txt`:
-```
-bedrock-agentcore[strands-agents]
-```
+Options:
 
-## Step 2: Create Memory Resource
+- `--strategies`: comma-separated strategy types: `SEMANTIC`, `SUMMARIZATION`, `USER_PREFERENCE`, `EPISODIC`. A JSON `strategies[]` array (as stored in `agentcore.json`) is also accepted for custom namespaces.
+- `--event-expiry-duration`: days to keep raw events, 3 to 365 (default 30).
+- `--description`, `--encryption-key-arn`, `--execution-role-arn`, `--tags`: see `agentcore add memory --help`.
 
-**IMPORTANT**: Memory creation is a ONE-TIME setup, done separately from your agent code.
+Each strategy type gets a default namespace:
 
-### Option A: Using CLI (Recommended)
+| Strategy | Default namespace |
+| --- | --- |
+| `SEMANTIC` | `/users/{actorId}/facts` |
+| `SUMMARIZATION` | `/summaries/{actorId}/{sessionId}` |
+| `USER_PREFERENCE` | `/users/{actorId}/preferences` |
+| `EPISODIC` | `/episodes/{actorId}/{sessionId}` (reflections in `/episodes/{actorId}`) |
 
-```bash
-# Create basic memory (STM only)
-agentcore memory create my_agent_memory \
-    --description "Memory for my agent" \
-    --region us-west-2 \
-    --wait
+Memory is not available in the China regions.
 
-# Create with LTM strategies (advanced)
-agentcore memory create my_agent_memory \
-    --description "Memory with long-term strategies" \
-    --strategies '[
-        {
-            "summaryMemoryStrategy": {
-                "name": "SessionSummarizer",
-                "namespaces": ["/summaries/{actorId}/{sessionId}"]
-            }
-        },
-        {
-            "userPreferenceMemoryStrategy": {
-                "name": "PreferenceLearner",
-                "namespaces": ["/preferences/{actorId}"]
-            }
-        },
-        {
-            "semanticMemoryStrategy": {
-                "name": "FactExtractor",
-                "namespaces": ["/facts/{actorId}"]
-            }
-        }
-    ]' \
-    --region us-west-2 \
-    --wait
+## Step 2: Add the Dependency
+
+The Strands integration ships with the AgentCore SDK. In the runtime's `pyproject.toml`:
+
+```toml
+dependencies = [
+    "aws-opentelemetry-distro ~= 0.21.0",
+    "bedrock-agentcore[strands-agents] >= 1.18.1, < 2.0.0",
+    "strands-agents >= 1.62.0, < 2.0.0",
+]
 ```
 
-### Option B: Using Python (for scripts)
+Run `uv sync` in the runtime folder after editing it.
 
-```python
-from bedrock_agentcore.memory import MemoryClient
+## Step 3: Use the Memory in the Agent
 
-client = MemoryClient(region_name="us-west-2")
-
-# Basic memory
-basic_memory = client.create_memory(
-    name="MyAgentMemory",
-    description="Memory for my agent"
-)
-
-memory_id = basic_memory.get('id')
-print(f"Created memory with ID: {memory_id}")
-```
-
-**Save the memory ID** - you'll need it for your agent configuration.
-
-## Step 3: Update Agent Code
-
-Add memory imports and configuration to your agent:
+On deploy, every runtime in the project receives `MEMORY_<NAME>_ID` and `MEMORY_<NAME>_ARN`, where `<NAME>` is the memory name in upper case. A memory named `supportMemory` arrives as `MEMORY_SUPPORTMEMORY_ID`. Read it from the environment and run without memory when it is missing, so the agent still works locally and before the first deploy.
 
 ```python
 import os
-from datetime import datetime
+
 from strands import Agent
-from bedrock_agentcore import BedrockAgentCoreApp
-from bedrock_agentcore.memory.integrations.strands.config import AgentCoreMemoryConfig
+from bedrock_agentcore.runtime import BedrockAgentCoreApp
+from bedrock_agentcore.memory.integrations.strands.config import AgentCoreMemoryConfig, RetrievalConfig
 from bedrock_agentcore.memory.integrations.strands.session_manager import AgentCoreMemorySessionManager
+
+MEMORY_ID = os.environ.get("MEMORY_SUPPORTMEMORY_ID")
+REGION = os.environ.get("AWS_REGION")
 
 app = BedrockAgentCoreApp()
 
+
+def memory_session_manager(session_id: str, actor_id: str):
+    if not MEMORY_ID:
+        return None
+    return AgentCoreMemorySessionManager(
+        AgentCoreMemoryConfig(
+            memory_id=MEMORY_ID,
+            session_id=session_id,
+            actor_id=actor_id,
+            # Keys are the strategy namespaces with the actor and session filled in.
+            retrieval_config={
+                f"/users/{actor_id}/facts": RetrievalConfig(top_k=3, relevance_score=0.0),
+                f"/summaries/{actor_id}/{session_id}": RetrievalConfig(top_k=1, relevance_score=0.0),
+            },
+        ),
+        REGION,
+    )
+
+
 @app.entrypoint
-def invoke(payload):
-    # Memory configuration
-    memory_id = "your-memory-id-here"  # From Step 2
-    
-    # Get session and actor IDs from payload or generate defaults
-    session_id = payload.get("session_id", f"session_{datetime.now().strftime('%Y%m%d%H%M%S')}")
-    actor_id = payload.get("actor_id", "default_user")
-    
-    # Create AgentCore Memory session manager
-    agentcore_memory_config = AgentCoreMemoryConfig(
-        memory_id=memory_id,
-        session_id=session_id,
-        actor_id=actor_id
-    )
-    
-    session_manager = AgentCoreMemorySessionManager(
-        agentcore_memory_config=agentcore_memory_config,
-        region_name="us-west-2"
-    )
-    
-    # Create agent with memory
+def invoke(payload, context):
+    session_id = context.session_id or "default-session"
+    actor_id = payload.get("actorId", "default")
     agent = Agent(
         system_prompt="You are a helpful assistant.",
-        session_manager=session_manager
+        session_manager=memory_session_manager(session_id, actor_id),
     )
-    
-    # Process the user prompt
-    prompt = payload.get("prompt", "Hello")
-    response = agent(prompt)
-    
-    return {
-        "response": response,
-        "session_id": session_id,
-        "actor_id": actor_id
-    }
+    result = agent(payload.get("prompt", ""))
+    return {"response": str(result)}
+
 
 if __name__ == "__main__":
     app.run()
 ```
 
-## Step 4: Configure Environment Variables (Optional)
+Points to keep:
 
-Create `.env` file:
-```bash
-AGENTCORE_MEMORY_ID=your-memory-id-here
-AWS_REGION=us-west-2
-```
+- The session ID comes from the runtime request (`context.session_id`, set from the `X-Amzn-Bedrock-AgentCore-Runtime-Session-Id` header), not from the payload.
+- The actor ID identifies the end user. Take it from the payload or the caller's identity, and use a stable value per user.
+- Leave out `retrieval_config` for short-term memory only. Only list namespaces of strategies the memory has.
+- `relevance_score=0.0` returns the `top_k` records without score filtering. Raise it to filter out weak matches.
 
-Then use in code:
-```python
-memory_id = os.environ.get("AGENTCORE_MEMORY_ID", "fallback-memory-id")
-```
+## Step 4: Deploy and Test
 
-## Step 5: Update AgentCore Configuration
-
-Edit `.bedrock_agentcore.yaml`:
-
-```yaml
-agents:
-  YourAgent:
-    memory:
-      mode: STM_ONLY  # or STM_AND_LTM for long-term memory
-      memory_id: your-memory-id-here
-      memory_name: MyAgentMemory
-      event_expiry_days: 30
-```
-
-**CRITICAL DEPLOYMENT NOTE:**
-- If deploying a NEW agent with memory, start with `mode: NO_MEMORY` first
-- Deploy and test the agent successfully
-- Then update to `mode: STM_ONLY` or `mode: STM_AND_LTM`
-- Redeploy the agent
-
-This ensures the agent works before adding memory complexity.
-
-## Step 6: Deploy Agent
+Confirm with the user before deploying.
 
 ```bash
-agentcore launch
+agentcore deploy
+agentcore invoke --runtime agent --payload '{"prompt": "My name is Alice and I like pizza", "actorId": "alice"}'
 ```
 
-## Step 7: Test Memory Functionality
-
-Test conversation persistence:
+`invoke` prints the `runtime-session-id` it used. Pass it back to continue the same session:
 
 ```bash
-# First message
-agentcore invoke '{
-    "prompt": "My name is Alice and I like pizza",
-    "session_id": "test_session_001",
-    "actor_id": "alice"
-}'
-
-# Second message - agent should remember
-agentcore invoke '{
-    "prompt": "What is my name and what do I like?",
-    "session_id": "test_session_001",
-    "actor_id": "alice"
-}'
+agentcore invoke --runtime agent --session-id <runtime-session-id> \
+  --payload '{"prompt": "What is my name?", "actorId": "alice"}'
 ```
 
-## Memory Management Commands
+To check long-term memory, ask from a new session (omit `--session-id`) with the same `actorId`. Extraction runs in the background, so long-term records can take a short while to appear.
 
-### List all memories
+## Testing Memory Locally
+
+`agentcore dev` does not inject `MEMORY_<NAME>_ID`, so a local run has no memory by default. After the first deploy, get the memory ID and add it to `agentcore/.env.local`, which `agentcore dev` loads:
+
 ```bash
-agentcore memory list --region us-west-2
+agentcore memory list
+echo 'MEMORY_SUPPORTMEMORY_ID=<memory-id>' >> agentcore/.env.local
 ```
 
-### Get memory detailsd
+The local agent then reads and writes the deployed memory with the developer's AWS credentials.
+
+## Inspect Memory Contents
+
+These commands call the AgentCore APIs directly and work with or without a project:
+
 ```bash
-agentcore memory get your-memory-id --region us-west-2
+agentcore memory list
+agentcore memory get --id <memory-id>
+agentcore memory actor list --id <memory-id>
+agentcore memory session list --id <memory-id> --actor-id alice
+agentcore memory event list --id <memory-id> --actor-id alice --session-id <session-id> --include-payloads
+agentcore memory record list --id <memory-id> --namespace /users/alice/facts
 ```
 
-### Check memory status
+The MCP server offers the same reads (`memory_list`, `memory_list_events`, `memory_list_records`, `memory_retrieve_records`) and a reference guide (`get_memory_guide`).
+
+## Change or Remove a Memory
+
+`agentcore add memory` does not change an existing memory. To change its strategies or expiry, edit that memory's entry in `agentcore/agentcore.json` (only with the user's agreement) and deploy.
+
+Removing a memory from the project and deploying deletes the memory with all its events and records. Confirm with the user first.
+
 ```bash
-agentcore memory status your-memory-id --region us-west-2
+agentcore remove memory --name supportMemory
+agentcore deploy
 ```
-
-### Delete memory (WARNING: Permanent)
-```bash
-agentcore memory delete your-memory-id --region us-west-2 --wait
-```
-
-## Memory Configuration Options
-
-### AgentCoreMemoryConfig Parameters
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `memory_id` | str | Yes | ID of the memory resource |
-| `session_id` | str | Yes | Unique session identifier |
-| `actor_id` | str | Yes | Unique user/actor identifier |
-| `retrieval_config` | Dict | No | Configuration for LTM retrieval |
-
-### RetrievalConfig (for LTM)
-
-```python
-from bedrock_agentcore.memory.integrations.strands.config import RetrievalConfig
-
-config = AgentCoreMemoryConfig(
-    memory_id=memory_id,
-    session_id=session_id,
-    actor_id=actor_id,
-    retrieval_config={
-        "/preferences/{actorId}": RetrievalConfig(
-            top_k=5,
-            relevance_score=0.7
-        ),
-        "/facts/{actorId}": RetrievalConfig(
-            top_k=10,
-            relevance_score=0.3
-        )
-    }
-)
-```
-
-## Memory Strategies Explained
-
-### 1. Short-Term Memory (STM)
-- Stores conversation events within a session
-- Automatic expiry based on retention policy (default: 90 days)
-- Best for: Conversation continuity
-
-### 2. Summary Memory Strategy
-- Automatically summarizes conversation sessions
-- Namespace: `/summaries/{actorId}/{sessionId}`
-- Best for: Session recaps, context compression
-
-### 3. User Preference Memory Strategy
-- Learns and stores user preferences across sessions
-- Namespace: `/preferences/{actorId}`
-- Best for: Personalization, user settings
-
-### 4. Semantic Memory Strategy
-- Extracts and stores factual information
-- Namespace: `/facts/{actorId}`
-- Best for: Knowledge retention, fact recall
-
-## Best Practices
-
-1. **Session IDs**: Use consistent, meaningful session IDs for related conversations
-2. **Actor IDs**: Use unique identifiers per user (e.g., user ID, email hash)
-3. **Memory Modes**: Start with `STM_ONLY`, add LTM strategies as needed
-4. **Testing**: Always test memory locally before deploying
-5. **Monitoring**: Check CloudWatch logs for memory-related errors
-6. **Cleanup**: Delete unused memory resources to avoid costs
 
 ## Troubleshooting
 
-### Memory Not Persisting
-- Verify memory ID is correct
-- Check session_id is consistent across calls
-- Ensure memory mode is not `NO_MEMORY`
-- Check CloudWatch logs for errors
+**Nothing is remembered between calls:** check that the calls share the same `--session-id` (short-term) or `actorId` (long-term), that the code reads the right `MEMORY_<NAME>_ID`, and that the project was deployed after the memory was added. Locally, check `agentcore/.env.local`.
 
-### Memory Creation Fails
-- Verify AWS permissions for AgentCore Memory
-- Check if memory name already exists
-- Ensure region is supported
+**No long-term records:** the memory needs at least one strategy, and extraction is asynchronous. Check `agentcore memory record list` after a short wait, and make sure `retrieval_config` uses the same namespaces as the strategies.
 
-### Agent Fails After Adding Memory
-- Start with `mode: NO_MEMORY` and test
-- Verify memory resource is ACTIVE
-- Check IAM role has memory permissions
+**`unrecognized memory strategy`:** use one of `SEMANTIC`, `SUMMARIZATION`, `USER_PREFERENCE`, `EPISODIC`.
 
-## Example: Complete Agent with Memory
-
-```python
-import os
-from datetime import datetime
-from strands import Agent, tool
-from bedrock_agentcore import BedrockAgentCoreApp
-from bedrock_agentcore.memory.integrations.strands.config import AgentCoreMemoryConfig
-from bedrock_agentcore.memory.integrations.strands.session_manager import AgentCoreMemorySessionManager
-
-@tool
-def get_time() -> str:
-    """Get the current time"""
-    return datetime.now().strftime("%H:%M:%S")
-
-app = BedrockAgentCoreApp()
-
-@app.entrypoint
-def invoke(payload):
-    # Memory configuration
-    memory_id = os.environ.get("AGENTCORE_MEMORY_ID", "your-memory-id")
-    session_id = payload.get("session_id", f"session_{datetime.now().strftime('%Y%m%d%H%M%S')}")
-    actor_id = payload.get("actor_id", "default_user")
-    
-    # Create session manager
-    config = AgentCoreMemoryConfig(
-        memory_id=memory_id,
-        session_id=session_id,
-        actor_id=actor_id
-    )
-    
-    session_manager = AgentCoreMemorySessionManager(
-        agentcore_memory_config=config,
-        region_name="us-west-2"
-    )
-    
-    # Create agent with memory and tools
-    agent = Agent(
-        system_prompt="You are a helpful assistant with memory. Remember user preferences and past conversations.",
-        tools=[get_time],
-        session_manager=session_manager
-    )
-    
-    # Process request
-    prompt = payload.get("prompt", "Hello")
-    response = agent(prompt)
-    
-    return {
-        "response": response,
-        "session_id": session_id,
-        "actor_id": actor_id
-    }
-
-if __name__ == "__main__":
-    app.run()
-```
+**Errors in the deployed agent:** read them with `agentcore logs runtime --name <runtime> --since 15m`.
 
 ## Resources
 
-- [AgentCore Memory Documentation](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/memory.html)
-- [Strands Session Management](https://strandsagents.com/latest/documentation/docs/user-guide/concepts/agents/session-management/)
-- [Memory Namespaces Guide](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/session-actor-namespace.html)
-
-## Quick Reference
-
-```bash
-# Create memory
-agentcore memory create my_memory --wait
-
-# List memories
-agentcore memory list
-
-# Get memory details
-agentcore memory get <memory-id>
-
-# Delete memory
-agentcore memory delete <memory-id> --wait
-```
-
----
-
-**Remember**: Memory is created ONCE, then referenced by ID in your agent code. The memory resource persists independently of your agent deployments.
+- [AgentCore Memory documentation](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/memory.html)
+- [Strands session management](https://strandsagents.com/latest/documentation/docs/user-guide/concepts/agents/session-management/)
