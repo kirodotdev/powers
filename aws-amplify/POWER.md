@@ -59,32 +59,32 @@ packages, and directory structure rules — patterns needed for **all** tasks,
 not just new projects.
 
 - **Web** (React, Next.js, Vue, Angular, React Native): You **MUST** read
-  [core-web.md](references/core-web.md)
+  [core-web.md](steering/core-web.md)
 - **Mobile** (Flutter, Swift, Android): You **MUST** read
-  [core-mobile.md](references/core-mobile.md)
+  [core-mobile.md](steering/core-mobile.md)
 - **Backend only** (no frontend work): Skip to Step 1.
 
 ### Step 1: Identify the Task Type
 
-| Task                                     | Go To                                                                    |
-| ---------------------------------------- | ------------------------------------------------------------------------ |
-| **Create a new project**                 | → [scaffolding.md](references/scaffolding.md), then Step 2 and/or Step 3 |
-| **Add or modify a backend feature**      | → Step 2 (Backend Features)                                              |
-| **Connect frontend to existing backend** | → Step 3 (Frontend Integration)                                          |
-| **Deploy the application**               | → [deployment.md](references/deployment.md)                              |
+| Task                                     | Go To                                                                  |
+| ---------------------------------------- | ---------------------------------------------------------------------- |
+| **Create a new project**                 | → [scaffolding.md](steering/scaffolding.md), then Step 2 and/or Step 3 |
+| **Add or modify a backend feature**      | → Step 2 (Backend Features)                                            |
+| **Connect frontend to existing backend** | → Step 3 (Frontend Integration)                                        |
+| **Deploy the application**               | → [deployment.md](steering/deployment.md)                              |
 
 ### Step 2: Backend Features
 
 You **MUST** read the corresponding reference for each backend feature:
 
-| Feature          | Reference                                               | When to Use                                                                                                |
-| ---------------- | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| Authentication   | [auth-backend.md](references/auth-backend.md)           | Email/password, social login, MFA, SAML/OIDC                                                               |
-| Data Models      | [data-backend.md](references/data-backend.md)           | GraphQL schema, DynamoDB, relationships, auth rules                                                        |
-| File Storage     | [storage-backend.md](references/storage-backend.md)     | S3 uploads/downloads, access rules                                                                         |
-| Functions & API  | [functions-and-api.md](references/functions-and-api.md) | Lambda, custom resolvers, REST/HTTP APIs, calling from client                                              |
-| AI Features      | [ai.md](references/ai.md)                               | Conversation, generation, AI tools via Bedrock _(backend config + React/Next.js frontend)_                 |
-| Geo, PubSub, CDK | [advanced-features.md](references/advanced-features.md) | Backend-only: custom CDK stacks, overrides, custom outputs. Backend + frontend: Geo, PubSub, Face Liveness |
+| Feature          | Reference                                             | When to Use                                                                                                |
+| ---------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Authentication   | [auth-backend.md](steering/auth-backend.md)           | Email/password, social login, MFA, SAML/OIDC                                                               |
+| Data Models      | [data-backend.md](steering/data-backend.md)           | GraphQL schema, DynamoDB, relationships, auth rules                                                        |
+| File Storage     | [storage-backend.md](steering/storage-backend.md)     | S3 uploads/downloads, access rules                                                                         |
+| Functions & API  | [functions-and-api.md](steering/functions-and-api.md) | Lambda, custom resolvers, REST/HTTP APIs, calling from client                                              |
+| AI Features      | [ai.md](steering/ai.md)                               | Conversation, generation, AI tools via Bedrock _(backend config + React/Next.js frontend)_                 |
+| Geo, PubSub, CDK | [advanced-features.md](steering/advanced-features.md) | Backend-only: custom CDK stacks, overrides, custom outputs. Backend + frontend: Geo, PubSub, Face Liveness |
 
 Each backend feature file is self-contained. Load only what you need.
 
@@ -99,23 +99,23 @@ platform and feature:
 
 **Web** (React, Next.js, Vue, Angular, React Native):
 
-| Feature                   | Reference                                   |
-| ------------------------- | ------------------------------------------- |
-| Auth UI & flows           | [auth-web.md](references/auth-web.md)       |
-| Data CRUD & subscriptions | [data-web.md](references/data-web.md)       |
-| Storage upload/download   | [storage-web.md](references/storage-web.md) |
+| Feature                   | Reference                                 |
+| ------------------------- | ----------------------------------------- |
+| Auth UI & flows           | [auth-web.md](steering/auth-web.md)       |
+| Data CRUD & subscriptions | [data-web.md](steering/data-web.md)       |
+| Storage upload/download   | [storage-web.md](steering/storage-web.md) |
 
 **Mobile** (Flutter, Swift, Android):
 
-| Feature                   | Reference                                         |
-| ------------------------- | ------------------------------------------------- |
-| Auth UI & flows           | [auth-mobile.md](references/auth-mobile.md)       |
-| Data CRUD & subscriptions | [data-mobile.md](references/data-mobile.md)       |
-| Storage upload/download   | [storage-mobile.md](references/storage-mobile.md) |
+| Feature                   | Reference                                       |
+| ------------------------- | ----------------------------------------------- |
+| Auth UI & flows           | [auth-mobile.md](steering/auth-mobile.md)       |
+| Data CRUD & subscriptions | [data-mobile.md](steering/data-mobile.md)       |
+| Storage upload/download   | [storage-mobile.md](steering/storage-mobile.md) |
 
 > **Note:** AI and Functions frontend patterns are included in
-> [ai.md](references/ai.md) and
-> [functions-and-api.md](references/functions-and-api.md) respectively —
+> [ai.md](steering/ai.md) and
+> [functions-and-api.md](steering/functions-and-api.md) respectively —
 > they are **not** split into separate web/mobile files.
 
 ## Core Concepts
