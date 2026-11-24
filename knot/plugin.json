@@ -1,0 +1,23 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "knot",
+  "version": "1.0.0",
+  "description": "Bring governed product specs, architectural decisions, superseded constraints, and cross-AI handoffs from ChatGPT, Claude, Gemini, and Cursor into Kiro.",
+  "author": {
+    "name": "ConnectKnot",
+    "email": "support@connectknot.com",
+    "url": "https://connectknot.com"
+  },
+  "homepage": "https://connectknot.com/developers/quickstart",
+  "repository": "https://github.com/ConnectKnot/knot-kiro-power",
+  "license": "MIT",
+  "keywords": [
+    "knot",
+    "shared-context",
+    "spec-hydration",
+    "cross-ai-continuity",
+    "provenance",
+    "handoffs",
+    "enterprise-brain"
+  ]
+}
