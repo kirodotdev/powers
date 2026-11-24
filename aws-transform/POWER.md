@@ -4,7 +4,7 @@ displayName: "AWS Transform"
 description: "Migrate, modernize, and upgrade codebases: .NET Framework to .NET 8/10, mainframe COBOL to Java, VMware VMs to EC2, SQL Server/Oracle/MySQL to Aurora, and Java/Python/Node.js version upgrades or AWS SDK migrations. Assess, plan, and execute code transformations from your IDE."
 keywords: ["migrate", "modernize", "mainframe", "cobol", "vmware", "dotnet", ".net framework", "windows", "sql server", "oracle", "mysql", "aurora", "ec2 migration", "rehost", "lift-and-shift", "replatform", "legacy", "code upgrade", "sdk migration", "boto3", "java upgrade", "atx", "continuous modernization", "AWS Transform - continuous modernization"]
 author: "AWS"
-version: "2.9.1"
+version: "2.10.0"
 ---
 
 # AWS Transform Power
@@ -64,6 +64,8 @@ Step 9: Execute       → Run transforms, monitor, review diffs
 ### Step A: Identify the workload
 
 Look for an explicit workload signal in the user's request — a named technology (`.NET`, `VMware`, `SQL Server`/`Aurora`/`Oracle`/`MySQL`, `mainframe`/`COBOL`), workload-specific terminology (Hyper-V, EC2 rehost, stored procs, CICS, JCL), or file/project signals already in the conversation. If no signal is present, treat the request as **workload-unspecified**.
+
+**An existing job is a workload signal.** When the user resumes or attaches to an existing job (a resumed `.atx/context.json`, a job URL, or a job picked from Browse My Jobs), route by that job's workload, even if the request was classified as workload-unspecified earlier. Take the workload from the context's `workload` field, the job's plan step names, or the job messages, record it in `.atx/context.json`, and load the matching steering files (Step B) before you report the job's status or act on it.
 
 ### Step B: Apply workload-specific routing
 
@@ -161,7 +163,7 @@ Check for `.atx/context.json` (workspace-relative). NEVER read `~/.aws/atx/kiro-
 - **No context found:** Go directly to Step 2. Produce no user-visible output for this step.
 - **Context found:** If the context has an active job (`assessment.jobId` or entries in `execution.activeJobIds`), try to refresh live state from the service, but do so invisibly:
   - **Check auth first** (no-auth-required). If sign-in is NOT configured, skip the refresh entirely — do not attempt service calls. Use local context only.
-  - **If sign-in is configured**, fetch each resource your resume message depends on — at minimum the job itself and all pending user tasks. Surface every pending task to the user; do not cherry-pick one and omit the others. `BLOCKING` HITL tasks hold up progress even when the job status is active; `NON_BLOCKING` tasks still need attention but don't stall the job. Name every pending task; flag blocking ones. Don't infer one resource from another.
+  - **If sign-in is configured**, fetch each resource your resume message depends on — at minimum every read in **Job Status Checks** (Step 9). Surface every pending task to the user; do not cherry-pick one and omit the others. `BLOCKING` HITL tasks hold up progress even when the job status is active; `NON_BLOCKING` tasks still need attention but don't stall the job. Name every pending task; flag blocking ones. Don't infer one resource from another.
   - **If any call fails** for any reason, silently fall back to local context. **Do NOT reveal your reasoning about the refresh to the user** — no "sign-in isn't configured so I'll skip", no "the service isn't reachable". The user should see only the resume message. Do NOT demand auth or block the flow.
 
   Then tell the user about their prior session. Frame the offer explicitly as a **continuation** of that same session — not a new one. The message should make clear:
@@ -302,6 +304,15 @@ When the AWS Transform agent asks for input, needs files, or hits a checkpoint:
 2. Present to user via AskUserQuestion
 3. WAIT for user response
 4. Relay user's decision back to agent
+
+### Job Status Checks
+
+Every status check of a job (the Resume refresh, a user asking for status, or a check after relaying an answer) reads all of these:
+- The job (`get_resource resource="job"`) and its plan (`list_resources resource="plan"`).
+- Pending tasks (`list_resources resource="tasks"`).
+- The job messages (`list_resources resource="messages"`). The agent can ask a question in the job chat without creating a task or changing the job status, so an empty task list does not mean the job is not waiting on the user.
+
+Never call `get_job_status` without `detailed=true`: its default posts a status question to the job chat. The workload's steering files may add reads; follow them too.
 
 ### Uploading Artifacts to Agents
 
