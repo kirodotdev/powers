@@ -148,6 +148,13 @@ Documentation is available at https://kiro.dev/docs/powers/
 
 ---
 
+### knot
+**Cross-AI Shared Context and Spec Continuity with Knot** - Hydrate Kiro specs and steering with governed product requirements, architectural decisions, superseded constraints, and task handoffs from ChatGPT, Claude, Gemini, and Cursor, and sync verified engineering decisions back across your AI stack.
+
+**MCP Servers:** knot (HTTPS)
+
+---
+
 ### localstack
 **Develop AWS apps with LocalStack** - Build, test, and debug AWS applications locally and in CI/CD using LocalStack. Manage the local cloud environment, deploy infrastructure with CDK/Terraform/SAM, analyze logs, enforce IAM policies, inject chaos faults, and manage state snapshots.
 
