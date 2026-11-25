@@ -191,7 +191,7 @@ Documentation is available at https://kiro.dev/docs/powers/
 ---
 
 ### shipyard-hosted
-**Agentic Testing in Ephemeral Environments** - Shipyard by StackGen: put your repo on Shipyard and check its preview environments, with nothing to install: sign in with Shipyard, pick an organization, and the agent writes a Docker Compose file if your repo has none.
+**Agentic Testing in Ephemeral Environments** - Shipyard by StackGen. Put your repo on Shipyard and check its preview environments, with nothing to install: sign in with Shipyard, pick an organization, and the agent writes a Docker Compose file if your repo has none.
 
 **MCP Servers:** shipyard (remote, OAuth sign-in)
 
