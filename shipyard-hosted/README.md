@@ -1,8 +1,8 @@
-# Shipyard by StackGen
+# Agentic Testing in Ephemeral Environments
 
-Put your repo on [Shipyard](https://shipyard.build) and check its preview environments from your coding agent, with
-nothing to install. Sign in with Shipyard, and the agent adds your GitHub repo as an app, writes a Docker Compose file
-if the repo has none, and gives you a live preview environment for each branch.
+Shipyard by StackGen. Put your repo on [Shipyard](https://shipyard.build) and check its preview environments from your
+coding agent, with nothing to install. Sign in with Shipyard, and the agent adds your GitHub repo as an app, writes a
+Docker Compose file if the repo has none, and gives you a live preview environment for each branch.
 
 ## Overview
 

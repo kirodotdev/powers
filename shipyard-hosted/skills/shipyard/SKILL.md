@@ -3,7 +3,7 @@ name: shipyard
 description: Use when the user just installed this power or plugin and wants to try it, wants to put a repo or app on Shipyard, get started with Shipyard, get a preview environment for a branch, write a docker-compose file for Shipyard, or check a pushed change, build or failure on a Shipyard environment (ephemeral, preview or pull request environments).
 ---
 
-# Shipyard by StackGen
+# Agentic Testing in Ephemeral Environments
 
 Use the `shipyard` MCP tools. They act on the user's real Shipyard org: the one they picked when they connected.
 Nothing needs installing.
