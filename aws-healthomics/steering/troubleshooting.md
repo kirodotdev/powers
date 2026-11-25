@@ -29,6 +29,7 @@ IF a workflow fails to reach `ACTIVE` status, check these causes in order:
     3. IF you modify the workflow definition you MUST create a new version via `CreateAHOWorkflowVersion`.
     4. IF the previous run used a Run Cache you MUST reference that when starting the new run. Otherwise, you MAY create a Run Cache for this run.
     5. Start a new run of the workflow/ workflow version using identical or modified inputs and Run Cache as appropriate.
+- IF a GPU task fails with `INSTANCE_RESERVATION_FAILED` (no capacity within the wait timeout): RECOMMEND expanded accelerator search over every GPU type and size the task can use, a longer `omicsResourceWaitTimeoutInMin`, or `omicsResourceFallbackOrder` with a final CPU profile. See the [Expanded Accelerator Search SOP](./expanded-accelerator-search.md#troubleshooting).
 
 ## Nextflow Version-Specific Issues
 

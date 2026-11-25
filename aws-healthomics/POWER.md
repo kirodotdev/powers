@@ -17,20 +17,31 @@ Whenever you are asked to perform a task related to any of the following scenari
 - Creating a workflow from a remote Git repository URL (GitHub, GitLab, Bitbucket) -> use `./steering/git-integration.md` (takes precedence over workflow-development.md)
 - Creating a new WDL, Nextflow or CWL workflow from local files -> use `./steering/workflow-development.md`
 - Configuring a task to automatically fall back across GPU types or to CPU using `omicsResourceFallbackOrder` -> use `./steering/resource-fallback.md`
+- Letting a GPU task run on any of several accelerator types and sizes (expanded accelerator search: a comma-separated `acceleratorType`, `omicsMaxCpu`, `omicsMaxMemory`), or reducing long GPU capacity waits -> use `./steering/expanded-accelerator-search.md`
 - Running a deployed HealthOmics workflow -> use `./steering/running-a-workflow.md`
+- Using S3 Requester Pays buckets with HealthOmics workflow runs -> use `./steering/running-a-workflow.md`
 - Submitting, monitoring, or managing batch runs (multiple samples/runs at once) -> use `./steering/batch-runs.md`
 - Onboarding an existing WDL workflow ensuring compatibility with HealthOmics -> use `./steering/migration-guide-for-wdl.md`
 - Onboarding an existing Nextflow workflow ensuring compatibility with HealthOmics -> use `./steering/migration-guide-for-nextflow.md`
 - Modifying, updating, or fixing an existing HealthOmics workflow -> use `./steering/workflow-versioning.md`
 - Diagnosing workflow creation issues -> use `./steering/troubleshooting.md`
-- Diagnosing run failures -> use `./steering/troubleshooting.md`
+- Diagnosing why a specific workflow run failed -> use `./steering/diagnose-run-failure.md`
+- Diagnosing VPC-connected run failures -> use `./steering/troubleshooting.md`
+- Optimizing a completed run's cost or performance, or checking for over-provisioned resources -> use `./steering/optimize-run.md`
+- Analyzing run or workflow resource utilization, performance, or metrics (CPU/GPU/memory/filesystem/scratch usage, throughput, stuck runs, right-sizing, comparing runs) -> use `./steering/metrics-analysis.md`
 - Using public containers with HealthOmics via ECR Pullthrough Caches -> use `./steering/ecr-pull-through-cache.md`
+- Using containers from registries not supported by ECR Pull-Through Cache (Seqera Wave, NVIDIA NGC, Google Artifact Registry) via image staging -> use `./steering/image-staging.md`
 - Setting up VPC infrastructure for HealthOmics workflows (subnets, NAT Gateway, security groups, endpoints) -> use `./steering/vpc-setup.md`
 - Managing HealthOmics VPC configurations (creating, listing, getting, or deleting configurations) -> use `./steering/healthomics-configuration.md`
 - Running workflows with VPC connectivity, public internet access, cross-region access, or access to private VPC resources -> use `./steering/vpc-connected-workflow-runs.md`
 - Using a VPC and subnets owned by a different AWS account (security groups may be owned by either the requester or the VPC owner) — RAM-shared VPCs (`vpcOwnerAccountId`), centralized egress, or VPC peering -> use `./steering/cross-account-vpc-configuration-setup.md`
 - Understanding regional feature availability, GPU instance limitations, or troubleshooting region-specific errors -> use `./steering/regional-capabilities.md`
+- Configuring or troubleshooting local scratch storage (`/tmp`, ephemeral EBS storage, disk exhaustion) for workflow tasks on `STATIC` or `DYNAMIC` runs -> use `./steering/ephemeral-storage.md`
 - Scoping down a workflow run's IAM permissions with an inline session policy (the StartRun / StartRunBatch `sessionPolicy` parameter) -> use `./steering/session-policy.md`
+- Using S3 run storage (`storageType: S3`, `workDirUri`, `taskWorkDirS3Uri`), local scratch or `/tmp` on S3 runs, or troubleshooting S3 storage run failures (`S3_STORAGE_*`, including `S3_STORAGE_LOCAL_STORAGE_EXHAUSTED`) -> use `./steering/s3-run-storage.md` (takes precedence over ephemeral-storage.md for runs with `storageType: S3`)
+- Making a workflow run well on S3 run storage (a run slower on S3 than on `DYNAMIC`, planning a move to S3 storage, optimizing a run with `storageType: S3`, or changing a workflow so its tasks stop hitting `S3_STORAGE_LOCAL_STORAGE_EXHAUSTED`) -> use `./steering/s3-run-storage-tuning.md` (takes precedence over optimize-run.md for the storage part of S3 runs, and over metrics-analysis.md when the user wants an S3 slowdown explained and fixed; for `S3_STORAGE_LOCAL_STORAGE_EXHAUSTED`, use s3-run-storage.md to explain or diagnose the failure and this SOP to change the workflow so it stops)
+- Using the `EXPRESS` run mode (`runMode`) for faster startup of short runs -> use `./steering/express-run-mode.md`
+- Choosing x86_64 or ARM64 compute for a run or task (`runtimePlatformPreference`, task-level `runtimePlatform`) -> use `./steering/runtime-platform.md`
 
 
 # Onboarding
@@ -45,12 +56,13 @@ Whenever you are asked to perform a task related to any of the following scenari
     omics_iam_role = "arn:aws:iam::<ACCOUNT_ID>:role/<HEALTHOMICS_ROLE_NAME>"
     // Outputs of runs are written here, the service role must have write permissions to this location
     run_output_uri = "s3://<YOUR_BUCKET>/healthomics-outputs/"
-    run_storage_type = "DYNAMIC"  # Recommended for faster runs and automatic scaling
+    run_storage_type = "DYNAMIC"  # Recommended for faster runs and automatic scaling; "S3" keeps intermediates in your own bucket (see ./steering/s3-run-storage.md)
     ```
 
     - Ask the customer for the `omics_iam_role` and `run_output_uri` values. You may also offer to create them. Record the values by updating the toml
     - ALWAYS use settings from `.healthomics/config.toml` when they are set
 4. **Dependencies** The MCP server configured by this power requires [`uvx`](https://docs.astral.sh/uv/getting-started/installation/)
+   IF the HealthOmics MCP tools are not available (for example `uvx` is not installed), use the AWS CLI for the run, task and definition data: `aws omics get-run`, `aws omics list-run-tasks`, `aws omics get-run-task` and `aws omics get-workflow --export DEFINITION`, plus `aws logs` on the `/aws/omics/WorkflowLog` log group for the run manifest.
 ```
 
 # Integrations

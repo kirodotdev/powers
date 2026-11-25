@@ -65,13 +65,14 @@ The following regions support **Workflows only** (no Storage or Analytics):
 
 ## GPU Instance Type Availability
 
-HealthOmics supports the following GPU instance families: g4dn, g5, and g6. Not all GPU families are available in every region.
+HealthOmics supports the following GPU instance families: g4dn (NVIDIA T4), g5 (NVIDIA A10G), g6 (NVIDIA L4), and g6e (NVIDIA L40S). Not all GPU families are available in every region. In us-west-2 and us-east-1 all four families are available.
 
 Notable regional GPU limitations:
 - **il-central-1 (Tel Aviv)** — g5 only
 - **ap-southeast-1 (Singapore)** — g4dn only
 - **eu-west-1 (Ireland), eu-west-2 (London), and eu-central-1 (Frankfurt)** — g4dn and g5 only
-- **ap-northeast-2 (Seoul), ap-northeast-1 (Tokyo), and us-east-2 (Ohio)** — g4dn, g5, and g6 available. g5.12xlarge and larger sizes not currently available.
+- **ap-northeast-2 (Seoul)** — g4dn, g5, g6, and g6e available. g5.12xlarge and larger sizes not currently available.
+- **ap-northeast-1 (Tokyo) and us-east-2 (Ohio)** — g4dn, g5, g6, and g6e available including g5.12xlarge and larger sizes.
 
 ## When to Use Each Region Type
 
