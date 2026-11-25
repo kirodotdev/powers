@@ -190,7 +190,7 @@ Documentation is available at https://kiro.dev/docs/powers/
 
 ---
 
-### shipyard
+### shipyard-hosted
 **Shipyard by StackGen** - Put your repo on Shipyard and check its preview environments, with nothing to install: sign in with Shipyard, pick an organization, and the agent writes a Docker Compose file if your repo has none.
 
 **MCP Servers:** shipyard (remote, OAuth sign-in)

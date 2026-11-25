@@ -1,6 +1,6 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
-  "name": "shipyard",
+  "name": "shipyard-hosted",
   "version": "0.2.2",
   "description": "Put your repo on Shipyard and check its preview environments from your coding agent, with nothing to install: sign in with Shipyard, pick an organization, and the agent writes a Docker Compose file if your repo has none.",
   "author": { "name": "StackGen", "url": "https://stackgen.com", "email": "support@shipyard.build" },
