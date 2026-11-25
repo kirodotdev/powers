@@ -1,0 +1,12 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "shipyard-hosted",
+  "displayName": "Agentic Testing in Ephemeral Environments",
+  "version": "0.2.2",
+  "description": "Put your repo on Shipyard and check its preview environments from your coding agent, with nothing to install: sign in with Shipyard, pick an organization, and the agent writes a Docker Compose file if your repo has none.",
+  "author": { "name": "StackGen", "url": "https://stackgen.com", "email": "support@shipyard.build" },
+  "homepage": "https://shipyard.build",
+  "repository": "https://github.com/shipyard/shipyard-plugins",
+  "license": "Apache-2.0",
+  "keywords": ["shipyard", "stackgen", "ephemeral-environments", "preview-environments", "pull-request-environments", "preview environment", "docker compose", "deploy branch"]
+}
