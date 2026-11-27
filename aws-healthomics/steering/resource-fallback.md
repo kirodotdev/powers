@@ -41,7 +41,7 @@ by the standard `maxRetries` directive and operate independently (see
   map is one profile to try, in order.
 - You MUST use quoted (string) keys in every profile — e.g. `{"acceleratorType": "nvidia-l4"}`.
   Unquoted/bareword keys are invalid and fail workflow validation.
-- Each profile MAY set any of these 5 fields; all are optional per profile, but a profile
+- Each profile MAY set any of these 7 fields; all are optional per profile, but a profile
   MUST NOT be empty (`{}`):
 
   | Field | Type | Default when omitted | Max |
@@ -50,12 +50,17 @@ by the standard `maxRetries` directive and operate independently (see
   | `acceleratorCount` | Integer | Absent when `acceleratorType` is also absent | 4 |
   | `cpu` | Integer or Float | 1 vCPU, or a GPU-instance default if a GPU profile omits it | 192 |
   | `memory` | String (e.g. `"32 GiB"`) | 1 GiB, or a GPU-instance default if a GPU profile omits it | 1536 GiB |
-  | `omicsResourceWaitTimeoutInMin` | Integer | System default wait window | none (recommend >= 20 min; lower produces a warning) |
+  | `omicsMaxCpu` | Integer | No upper limit | Expanded accelerator search only: the maximum vCPUs; MUST be at least the profile's `cpu`. Not allowed in a CPU profile. |
+  | `omicsMaxMemory` | String (e.g. `"64 GiB"`) | No upper limit | Expanded accelerator search only: the maximum memory; MUST be at least the profile's `memory`. Not allowed in a CPU profile. |
+  | `omicsResourceWaitTimeoutInMin` | Integer | 20 minutes | The supported range is 20–10080 minutes (7 days). A negative value is rejected. A positive value below 20 is set to 20 and a value above 10080 is set to 10080, with a warning in the run log |
 
 - `acceleratorType`, when set, MUST be one of the 7 supported values: `nvidia-tesla-t4`,
   `nvidia-tesla-t4-a10g`, `nvidia-tesla-a10g`, `nvidia-t4-a10g-l4`, `nvidia-l4-a10g`,
   `nvidia-l4`, `nvidia-l40s`. Omit the field entirely to signal a CPU-only profile — do NOT
   set it to `""` or `"cpu"`; both are rejected.
+- A profile can also use expanded accelerator search: a comma-separated list of these values in
+  `acceleratorType`, optionally with `omicsMaxCpu` and `omicsMaxMemory` upper bounds. See the
+  [Expanded Accelerator Search SOP](./expanded-accelerator-search.md#use-expanded-search-in-a-fallback-profile).
 - `acceleratorCount` and `acceleratorType` MUST be set together — a profile cannot have one
   without the other.
 - The list MUST contain at least 1 and at most 10 profiles.
@@ -121,21 +126,27 @@ GPU is available.
 
 ## Validation Rules Enforced at Workflow Creation and Task Run Time
 
-Most rules below cause outright rejection. The exceptions — below-minimum wait time,
-duplicate profiles, and an `acceleratorType` unsupported in the run's region — only produce a
-warning (the profile is skipped at scheduling time for the region case).
+Most rules below cause outright rejection. The exceptions — a positive wait time outside 20–10080
+minutes (set to the nearest bound; a negative wait time is rejected), duplicate profiles, and an
+`acceleratorType` unsupported in the run's region — only produce a warning (the profile is skipped at
+scheduling time for the region case).
 
 1. Cannot mix `omicsResourceFallbackOrder` with the top-level `acceleratorType`,
-   `acceleratorCount`, `cpu`, `memory`, or `omicsResourceWaitTimeoutInMin` directives.
+   `acceleratorCount`, `cpu`, `memory`, `omicsResourceWaitTimeoutInMin`, `omicsMaxCpu`, or
+   `omicsMaxMemory` directives (WDL rejects the workflow; Nextflow warns, see
+   [Nextflow Specifics](#nextflow-specifics)). To use expanded accelerator search with a fallback
+   order, set `omicsMaxCpu` and `omicsMaxMemory` in a profile.
 2. Must be a list (array), not a single map.
 3. Must contain at least 1 profile.
 4. Must not contain more than 10 profiles.
 5. Every profile key MUST be a quoted string.
 6. No empty profiles (`{}`).
 7. `acceleratorType` and `acceleratorCount` must be set together, or both omitted.
-8. `acceleratorType`, if set, must be one of the 7 supported values (or omitted for CPU).
-9. `omicsResourceWaitTimeoutInMin` below 20 minutes produces a warning, not a rejection.
-10. Unrecognized fields in a profile are rejected.
+8. `acceleratorType`, if set, must be one of the 7 supported values, or a comma-separated list
+   of them for [expanded accelerator search](./expanded-accelerator-search.md) (or omitted for CPU).
+9. A negative `omicsResourceWaitTimeoutInMin` is rejected. A positive value outside 20–10080 minutes is set to the nearest bound (20 or 10080), with a warning in the run log, not a rejection.
+10. Unrecognized fields in a profile are rejected. Only the 7 fields in the table above are allowed, and
+    `omicsMaxCpu`/`omicsMaxMemory` only in a profile that sets `acceleratorType`.
 11. Field values must be the correct type (e.g. `cpu` must be numeric, not a string).
 12. At most one CPU profile is allowed in the list.
 13. A CPU profile, if present, must be the last profile in the list.
@@ -172,12 +183,11 @@ profile it landed on:
 ## Timeout Best Practices
 
 - The default wait window when `omicsResourceWaitTimeoutInMin` is omitted is 20 minutes.
-- A value as low as 1 minute is accepted, but only allows roughly one capacity-search cycle
-  before advancing — this is USUALLY too aggressive for anything but a deliberately fast
-  first-choice profile.
-- RECOMMEND >= 20 minutes so the profile gets a fair chance before advancing (see rule 9
-  above). Shortening trades faster fallback for lower odds of securing that profile — this
-  applies regardless of accelerator type, since there's no signal for current capacity.
+- The supported range is 20–10080 minutes (7 days). A negative value is rejected. A positive value
+  outside the range is set to the nearest bound, with a warning in the run log (see rule 9 above).
+- RECOMMEND keeping the 20-minute default or longer so the profile gets a fair chance before
+  advancing. A shorter wait trades faster fallback for lower odds of securing that profile —
+  this applies regardless of accelerator type, since there's no signal for current capacity.
 - The sum of every profile's wait window SHOULD stay well under the run's overall timeout
   (default maximum 7 days) — a long fallback list with generous per-profile timeouts can
   otherwise consume most of the run's time budget before a task even starts.
@@ -228,8 +238,11 @@ process {
 
 ### Process-level directives
 
-- Setting `cpus`, `memory`, or `accelerator` at the process level alongside the directive (rule 1)
-  produces a warning in the workflow's `statusMessage` and the run's engine log, not a rejection.
+- Setting `cpus`, `memory`, `accelerator`, `omicsMaxCpu`, `omicsMaxMemory`, or
+  `omicsResourceWaitTimeoutInMin` at the process level alongside the directive (rule 1) produces a
+  warning in the workflow's `statusMessage` and the run's engine log, not a rejection. The fallback
+  order wins: the process-level `omicsMaxCpu`, `omicsMaxMemory` and `omicsResourceWaitTimeoutInMin`
+  are never applied, so set them in a profile.
 - A profile that omits `cpus` or `memory` inherits the process's `cpus`/`memory` directive (after
   `resourceLimits`). If the process doesn't set it either, a GPU profile gets the GPU instance
   default and a CPU profile gets the service default. RECOMMEND setting `cpus` and `memory` in
