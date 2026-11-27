@@ -8,7 +8,7 @@ For metric semantics, availability rules, and direct metric queries (specific va
 
 ## Procedure
 
-1. **Get run context.** Call `GetAHORun` for the run's configuration: scratch storage mode, run duration, and workflow ID. `GetAHORun` does not return the storage type or capacity; read those with `aws omics get-run --id <run-id>`. IF the storage type is `S3`, ALSO follow the [S3 Run Storage Tuning SOP](./s3-run-storage-tuning.md) for storage-related slowness; do not recommend lowering vCPUs for tasks it shows as waiting on storage.
+1. **Get run context.** Call `GetAHORun` for the run's configuration: storage type and capacity, scratch storage mode, run duration, and workflow ID.
 2. **Analyze performance.** Call `AnalyzeAHORunPerformance` with the run ID. The report contains:
     - Manifest-based analysis: execution timeline, task durations, per-task cost estimates, CPU/memory efficiency, and potential savings.
     - A vended-metrics section (when available): per-task resource signatures against limits with bottleneck categories (`CPU_BOUND`, `MEMORY_PRESSURE`, `IO_BOUND`, `GPU_IDLE`, `SCRATCH_NEAR_LIMIT`, `OVER_PROVISIONED`), and observed-peak right-sizing suggestions with headroom. Prefer these fine-grained signatures over manifest-only numbers when both are present. IF the section says vended metrics are unavailable (run predates the feature launch, unsupported region, storage configuration), say so and rely on the manifest-based sections.
@@ -19,7 +19,7 @@ For metric semantics, availability rules, and direct metric queries (specific va
     - **Sequential scatter**: scattered tasks of the same name running one after another instead of in parallel indicates a service quota ceiling — suggest a quota increase.
     - **Storage sizing**: run storage and scratch sized far above observed peaks; suggest smaller values (or DYNAMIC storage where appropriate).
     - **GPU capacity waits**: GPU tasks that wait long for an instance, or runs that failed or retried with `INSTANCE_RESERVATION_FAILED`, on a single `acceleratorType` or a predefined accelerator bundle → suggest expanded accelerator search over every GPU type the task can use (see the [Expanded Accelerator Search SOP](./expanded-accelerator-search.md)).
-5. **Make recommendations concrete.** For each recommendation give the specific configuration change (task resource declaration, storage capacity value, quota name) with example code where the workflow definition changes, and the estimated saving or speedup. IF you modify the workflow definition you MUST create a new version via `CreateAHOWorkflowVersion` (for workflows with `storageType: S3` or a `workDirUri`, use the AWS CLI as in the [S3 Run Storage Tuning SOP](./s3-run-storage-tuning.md), Step 5).
+5. **Make recommendations concrete.** For each recommendation give the specific configuration change (task resource declaration, storage capacity value, quota name) with example code where the workflow definition changes, and the estimated saving or speedup. IF you modify the workflow definition you MUST create a new version via `CreateAHOWorkflowVersion`.
 
 ## Expected Output
 
