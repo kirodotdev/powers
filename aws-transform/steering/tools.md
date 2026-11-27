@@ -4,7 +4,7 @@ Canonical tool names, parameters, and per-resource requirements come from the MC
 
 ## Jobs
 
-`create_job` creates AND starts the job in one call — no separate `control_job` start is needed. Only orchestrator agents can create jobs; discover them via `list_resources resource="agents" agentType="ORCHESTRATOR_AGENT"`. Use `jobType` OR `orchestratorAgent`, not both — if one fails, retry with the other.
+`create_job` creates AND starts the job in one call — no separate `control_job` start is needed. Only orchestrator agents can create jobs; discover them via `list_resources resource="agents" agentType="ORCHESTRATOR_AGENT"` and pass the name as `orchestratorAgent`. `jobType` is no longer accepted.
 
 ## Connectors
 
@@ -104,7 +104,7 @@ The CLI uses standard AWS credentials (see `auth.md`). Always set `AWS_REGION`.
 |---------|-----------|
 | Job stuck in RUNNING | Check `list_resources resource="tasks"` for pending HITL tasks |
 | Job fails immediately | Check `get_resource resource="job"` for `errorDetails`. Common: connectors not set up or not ACTIVE |
-| Job type not found | Use `list_resources resource="agents"` to discover available agents. Try `orchestratorAgent` instead of `jobType` |
+| Orchestrator not found | Use `list_resources resource="agents" agentType="ORCHESTRATOR_AGENT"` to discover available orchestrators |
 | Missing artifacts | Job may not be complete — check status first |
 
 ### Connector Issues
