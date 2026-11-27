@@ -6,7 +6,7 @@ This SOP defines how you, the agent, answer questions about HealthOmics run and 
 
 Use it for: "why is my run slow?", "what is the CPU/GPU/filesystem utilization?", "is this run stuck?", "show me DataReadThroughput for run X", aggregation and metric math across tasks or runs, storage-type comparisons, I/O bottleneck/imbalance questions, trends over a run's duration, and cross-run comparisons.
 
-Related SOPs: a *failed* run → [diagnose-run-failure.md](./diagnose-run-failure.md); holistic optimization of a completed run → [optimize-run.md](./optimize-run.md); fixing a slow or failing workflow on S3 run storage → [s3-run-storage-tuning.md](./s3-run-storage-tuning.md). Any of these may pull you back here for metric evidence.
+Related SOPs: a *failed* run → [diagnose-run-failure.md](./diagnose-run-failure.md); holistic optimization of a completed run → [optimize-run.md](./optimize-run.md). Both may pull you back here for metric evidence.
 
 ## Rule 1: Check availability before answering
 
@@ -28,7 +28,7 @@ Vended metrics exist ONLY for runs started after the feature's production launch
 | No GPU tasks | `gpu.*` (3 metrics) | Only emitted when a task requests accelerators |
 | SHARED scratch mode | `scratch.storage.limit` | Shared run filesystem has no per-task limit |
 | DYNAMIC (EFS) storage | `run.filesystem.limit` | EFS has no fixed capacity |
-| S3 run storage | `run.filesystem.*` | No run filesystem exists. Per-task `filesystem.io`/`filesystem.operations` may still be present: trust `ListAHORunMetrics` over this table (see the [S3 Run Storage Tuning SOP](./s3-run-storage-tuning.md)) |
+| S3 run storage | all filesystem metrics | No run filesystem exists |
 | Run started before 2026-09-09 | everything | Predates production launch |
 
 ## Timing caveats you MUST mention when relevant
@@ -63,7 +63,7 @@ Expected output: the bottleneck task(s), the 1–2 metrics that prove it, right-
 For "what local disk / how much storage should I set?". Variables: workflow ID (preferred) or run ID.
 
 1. `GetAHOWorkflowMetrics(workflow_id)` — per-task-name p50/p90/max distributions of scratch and storage peaks across recent completed runs. (Single run only available → use `GetAHORunMetrics` scratch/run-filesystem families and say the recommendation rests on one run.)
-2. Recommend: observed p90–max peak plus headroom (~20%). For LOCAL scratch give a per-task size; for STATIC run storage give a run-level capacity; remind that DYNAMIC storage removes the sizing decision. For per-task disk on S3 run storage runs, use the sizing rule in the [S3 Run Storage Tuning SOP](./s3-run-storage-tuning.md) (Step 5) instead.
+2. Recommend: observed p90–max peak plus headroom (~20%). For LOCAL scratch give a per-task size; for STATIC run storage give a run-level capacity; remind that DYNAMIC storage removes the sizing decision.
 3. Output: recommended value, the observed distribution it rests on (p50/p90/max, sample count), and confidence.
 
 ## Skill: right-size-compute
@@ -78,11 +78,10 @@ For "am I under-utilizing compute?" / "over-provisioned?". Variables: workflow I
 
 For "why did run B take longer than run A?" and Static-vs-Dynamic / today-vs-yesterday comparisons. Variables: two run IDs.
 
-1. `ListAHORunMetrics(run_id_a)` and `ListAHORunMetrics(run_id_b)` — availability and caveats for each run (Rule 1). IF either run has no vended metrics (e.g. it predates the launch), say which run and why; the comparison then degrades to wall-clock/timeline only. Runs on S3 run storage always lack the run-filesystem metrics; task filesystem and network metrics may or may not be present, so check `ListAHORunMetrics`.
+1. `ListAHORunMetrics(run_id_a)` and `ListAHORunMetrics(run_id_b)` — availability and caveats for each run (Rule 1). IF either run has no vended metrics (e.g. it predates the launch, or S3 storage), say which run and why; the comparison then degrades to wall-clock/timeline only.
 2. `CompareAHORunMetrics(run_id_a, run_id_b)` — aligns tasks **by task name**, diffs wall-clock and per-task durations, and reports each task's largest metric deltas (window totals for counters, peaks for gauges).
 3. Lead with which phase/task drove the wall-clock delta and its metric signature (e.g. "+1841s, driven by 4.6× more filesystem operations on the STATIC run"). Note configuration differences (storage type, scratch mode) from the run configs in the response.
 4. IF the runs share no task names (different workflows), the comparison degrades to wall-clock only — say so and suggest comparing runs of the same workflow.
-5. IF the slower run uses `storageType: S3` and the user wants the slowdown fixed, not only explained, follow the [S3 Run Storage Tuning SOP](./s3-run-storage-tuning.md); it takes precedence for tuning workflows on S3 run storage.
 
 ---
 

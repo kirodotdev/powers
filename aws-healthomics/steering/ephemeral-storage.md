@@ -14,16 +14,11 @@ Follow this SOP WHEN:
 - User wants to size a `disk`/`disks`/`tmpdirMin` directive for a task.
 
 DO NOT follow this SOP WHEN:
-- The user is asking about `storageType` (`STATIC`/`DYNAMIC`/`S3`) or overall run storage
+- The user is asking about `storageType` (`STATIC`/`DYNAMIC`) or overall run storage
   sizing — that is separate from per-task `/tmp` scratch storage. See the
-  [Running a Workflow SOP](./running-a-workflow.md) and, for `S3`, the
-  [S3 Run Storage SOP](./s3-run-storage.md).
+  [Running a Workflow SOP](./running-a-workflow.md).
 - The user is diagnosing a generic run failure unrelated to disk space — see the
   [Troubleshooting SOP](./troubleshooting.md).
-- The run uses `storageType: S3`, including `S3_STORAGE_LOCAL_STORAGE_EXHAUSTED` failures —
-  see [Local Storage on S3 Runs](./s3-run-storage.md#local-storage-on-s3-runs) in the S3 Run
-  Storage SOP. S3 runs always use local scratch, so the `scratchStorageMode` guidance here
-  does not apply to them.
 
 ## Key Concepts
 
@@ -39,10 +34,8 @@ DO NOT follow this SOP WHEN:
   no extra cost. No `disk` directive is required to get this default.
 - **`disk` directive** — A per-task hint (WDL `disks`, Nextflow `disk`, CWL `tmpdirMin`)
   requesting more than the 16 GiB default. Only takes effect when
-  `scratchStorageMode` is `LOCAL`, or on runs with `storageType: S3` (which always use
-  local scratch — see the [S3 Run Storage SOP](./s3-run-storage.md#local-storage-on-s3-runs)).
-  For `STATIC`/`DYNAMIC` runs, rounded up to the next 16 GiB tier, maximum 3,072 GiB per task
-  (CPU). S3 runs size the volume differently — see the S3 Run Storage SOP. Does NOT affect instance type selection (`cpu`/`memory`/`acceleratorType`
+  `scratchStorageMode` is `LOCAL`. Rounded up to the next 16 GiB tier, maximum 3,072 GiB
+  per task (CPU). Does NOT affect instance type selection (`cpu`/`memory`/`acceleratorType`
   still drive that).
 - **GPU tasks** — Always use local NVMe ephemeral storage; capacity is fixed per instance
   type at no extra cost. `scratchStorageMode` and `disk` directives do not change the storage
@@ -98,16 +91,12 @@ Notes:
   mode for a run, call `GetRun` and check the field directly.
 - WHEN `scratchStorageMode` is `SHARED`, ALL `disk`/`disks`/`tmpdirMin` directives are
   ignored for CPU tasks — no local volume is provisioned. GPU tasks are unaffected.
-  EXCEPTION: on runs with `storageType: S3`, CPU workflow tasks always get local scratch and
-  `disk` directives apply whatever `scratchStorageMode` is.
 
 ### Step 3: Size Per-Task Storage (Optional)
 
-ONLY relevant when `scratchStorageMode` is `LOCAL` (or the run uses `storageType: S3`)
-and the default allocation is insufficient — 16 GiB for `STATIC`/`DYNAMIC` runs; S3 runs size
-the volume differently (see the [S3 Run Storage SOP](./s3-run-storage.md#local-storage-on-s3-runs)).
-This applies, for example, to RNA-seq fusion detection, de novo assembly, or BAM sort/dedup
-steps that repeatedly rewrite large intermediate files.
+ONLY relevant when `scratchStorageMode` is `LOCAL` and the default 16 GiB is
+insufficient (for example, RNA-seq fusion detection, de novo assembly, or BAM sort/dedup
+steps that repeatedly rewrite large intermediate files).
 
 Use the engine-appropriate directive in the task/process definition — see the
 [Workflow Development SOP](./workflow-development.md) for where task resource
@@ -119,8 +108,7 @@ directives live:
 | Nextflow | `disk` | `disk '700 GB'` |
 | CWL | `tmpdirMin` | `tmpdirMin: 716800` (value in MiB) |
 
-Rules (`STATIC`/`DYNAMIC` runs; for S3 runs, see
-[Local Storage on S3 Runs](./s3-run-storage.md#local-storage-on-s3-runs)):
+Rules:
 - Values are rounded UP to the next 16 GiB tier (16, 32, 48, ... up to 3,072 GiB per task).
 - A task cannot receive less than the 16 GiB default.
 - Requests above 3,072 GiB are capped at 3,072 GiB with a run-log warning — the task is
@@ -207,9 +195,7 @@ per the [Troubleshooting SOP](./troubleshooting.md#run-failures):
    `CreateAHOWorkflowVersion` — see the [Workflow Versioning SOP](./workflow-versioning.md).
 4. Retry the run. Alternatively, the user MAY opt out entirely by omitting
    `scratchStorageMode` or explicitly setting it to `SHARED` for that run, which removes
-   the per-task capacity limit at the cost of shared-filesystem contention. This does NOT
-   apply to runs with `storageType: S3`: they always use local scratch, so increase the
-   `disk` directive instead (see the [S3 Run Storage SOP](./s3-run-storage.md#local-storage-on-s3-runs)).
+   the per-task capacity limit at the cost of shared-filesystem contention.
 
 ### Ephemeral storage does not appear to be used
 

@@ -16,10 +16,7 @@ For workflow *creation* failures or VPC connectivity failures, use the [Troubles
 4. **Identify the root cause.** State specifically what went wrong: the failing task, the error message and its meaning, and whether the cause is the workflow definition, container image, input parameters, service role permissions, or resource sizing.
     - IF the run is a Nextflow run, check the symptom against [Nextflow Version-Specific Issues](./troubleshooting.md#nextflow-version-specific-issues) first — for example a removed `echo` directive on v26.10, a registry-style module include, or an unexpected engine version.
     - For feature-specific failure reasons, load the matching SOP:
-        - `S3_STORAGE_*` or `ECR_RUN_ROLE_PERMISSION_ERROR` on a run with `storageType: S3` -> [S3 Run Storage SOP](./s3-run-storage.md#troubleshooting)
-        - `RUN_TIMED_OUT` on a run with `runMode: EXPRESS` -> [EXPRESS Run Mode SOP](./express-run-mode.md#troubleshooting)
-        - `UNSUPPORTED_RUNTIME_PLATFORM_TYPE`, or `UNSUPPORTED_GPU_INSTANCE_TYPE` mentioning ARM64 -> [Runtime Platform SOP](./runtime-platform.md#troubleshooting)
-        - `INSTANCE_RESERVATION_FAILED`, `INVALID_TASK_RESOURCE_VALUE` or `UNSUPPORTED_GPU_INSTANCE_TYPE` on a task with a comma-separated `acceleratorType` or `omicsMaxCpu`/`omicsMaxMemory`, and the message does not mention ARM64 (ARM64 goes to the Runtime Platform SOP above) -> [Expanded Accelerator Search SOP](./expanded-accelerator-search.md#troubleshooting)
+        - `INSTANCE_RESERVATION_FAILED`, `INVALID_TASK_RESOURCE_VALUE` or `UNSUPPORTED_GPU_INSTANCE_TYPE` on a task with a comma-separated `acceleratorType` or `omicsMaxCpu`/`omicsMaxMemory` -> [Expanded Accelerator Search SOP](./expanded-accelerator-search.md#troubleshooting)
 5. **Remediate.**
     - IF you modify the workflow definition you MUST create a new version via `CreateAHOWorkflowVersion` (never edit in place).
     - IF the previous run used a run cache you MUST reference that cache when starting the new run; otherwise you MAY create one so the retry skips completed work.
